@@ -1,9 +1,9 @@
 # MacGym deck: speaker notes (final)
 
 Open http://localhost:8765/deck/index.html. Keys: → / space / click = next, ← = back, F = fullscreen, P = notes overlay, **L = live playground in a new tab**, Home/End. Hash routing #1..#15. Slide 3 has 2 steps.
-Static export: `?static=1&slide=N`. Exports in `export/`. Evidence in `data/` (re-polled every 12 s); `assets/pg_t30_counter.png` is a crop of data/pg_t30.png.
+Static export: `?static=1&slide=N`. Exports in `export/`. Evidence in `data/`; `assets/pg_t30_counter.png` is a crop of data/pg_t30.png.
 
-Spine: the ordinary laptop on every desk (slide 2, GPU idle) becomes a robot-learning lab (slide 15, same laptop full of robots, 7.8 days of practice in 1:06).
+One number per fact: cheat speed 6.16 m/s (6.64 m/s = the warm-start-only ablation run); walker transfer 22.0 m MacGym vs 19.7 m MuJoCo (transfer_robust, n=20); slide 7 lanes are their own 8 s replay (21.5 m, one run); speed 22× at 4,096 robots (40× at 16,384) vs MuJoCo C rollout.
 
 ## Slides
 
@@ -27,7 +27,7 @@ This is a real screen recording, not an animation. I add a fourth leg right in t
 
 You describe the robot, top right. The joint line with motor 80 becomes these lines of generated Metal: a torque that falls off with speed, like a real DC motor. Every robot copy is one GPU thread running the whole step, contacts included. PPO in MLX learns on the same memory, and you export to CoreML.
 
-### 06. The number · simulated robot time: 3.2 days of / practice. / 28 seconds.
+### 06. The number · simulated robot time: 3.2 days of / simulated practice. / 28 seconds.
 
 This is the real playground counter, frozen at twenty eight seconds: 4,096 tripods have already done three point two days of practice. Same run hits seven point eight days at one minute six. It is simulated robot time: robots times steps times the 0.02 second timestep.
 
@@ -39,17 +39,17 @@ These are real replays from one run. At zero seconds it falls. Ten seconds, it l
 
 My favorite part. The first walkers ran six metres a second. That was RL cheating: infinite motor power and feet that skated. We added a foot-slip metric to catch it, then fixed the physics: contacts that remember last step’s push, and a real DC motor curve. Now the walker does 2.7 metres a second and slip dropped fourteen times.
 
-### 09. Checked against MuJoCo: Same tests as / the pro simulator. / Same answers.
+### 09. Checked against MuJoCo: Matches MuJoCo on / textbook physics. / Walker contact: / first 0.7 s.
 
-Is it real physics? Same tests as the pro simulator, MuJoCo. The textbook cases match: pendulum period off by less than a hundredth of a percent, friction stop within millimetres, the drop lands on the same frame. The hard one is the walker hitting the ground: it tracks MuJoCo within five centimetres for the first six to eight tenths of a second, then the contact models differ, and both end in the same pose.
+Is it real physics? We ran the same tests as the pro simulator, MuJoCo. The textbook cases, a pendulum, a friction slide and a drop, match to about a hundredth of a percent. The walker hitting the ground matches for the first 0.7 seconds, then drifts, because the contact models differ. Both end in the same pose.
 
-### 10. Fast · same 2D walker, MuJoCo’s fastest CPU path: 40×
+### 10. Fast · same 2D walker, MuJoCo’s fastest CPU path: 22×
 
-One number. Same 2D walker model, against MuJoCo’s fastest CPU path, the C rollout module on all eleven threads: about forty times more practice per second, twenty two times at the 4,096 we train with. Where it comes from: the GPU alone is about 3.7 times, compiling each robot into one Metal kernel is another 33 times. Training is limited by the PPO update, not physics. And our physics is simpler, planar 2D.
+Speed, in one number. At 4,096 robots, the size we actually train at, MacGym gives each robot twenty two times more practice per second than MuJoCo’s fastest CPU path on this same laptop, same 2D walker. Forty times at 16,384. Our physics is simpler, planar 2D. And training is limited by the learning step, not physics.
 
 ### 11. It’s a framework: Not a demo. / A library.
 
-And it is a real library. This is real terminal output: macgym train hopper, four thousand robots, forty iterations, seventeen seconds, distance climbing from zero to three metres. Then one command exports it to CoreML, checked against the original to within four ten-millionths.
+And it is a real library. This is a fresh install on this laptop: clone, pip install, macgym train walker. Eighty seven seconds from clone to a trained walker, best training distance 54 metres. One more command exports it to CoreML, checked against the original to within four ten-millionths.
 
 ### 12. Built today: One day. / One laptop.
 
@@ -61,7 +61,7 @@ Who it is for: RL classes and clubs where everyone has a MacBook. First users ar
 
 ### 14. Done · next: Sim-to-sim: / transfers.
 
-Sim-to-sim: the walker policy trained in MacGym, run unchanged in MuJoCo, keeps about ninety percent of its distance with zero falls, and the robustness rows show it under changed friction, mass and starts. This is MuJoCo, not real hardware. Next: MJCF import, 3D, and since the approach is compile a robot into one GPU kernel, it is backend agnostic: Metal today, CUDA or ROCm codegen is possible.
+Sim-to-sim: the walker policy trained in MacGym, run unchanged in MuJoCo, goes 19.7 metres versus 22.0 in MacGym over twenty episodes. It still walks with twenty percent more or less grip and a lighter body; a twenty percent heavier body falls in three of twenty. This is MuJoCo, not real hardware. Next: MJCF import and 3D. An idea, not built yet: the same compiler could emit CUDA or ROCm.
 
 ### 15. Close: Elevate the ordinary.
 
@@ -69,7 +69,7 @@ The laptop on your desk is the most ordinary computer you own. MacGym turns it i
 
 ## Q&A appendix
 
-**Is 40× a fair number?** It is MacGym vs MuJoCo's fastest CPU path, the C rollout module on all 11 threads, on the same 2D walker model: 6.75M vs 165.1K env-steps/s (MuJoCo at its best batch size; MacGym at 16,384 envs) = 40.9×, and 22.0× at 4,096 envs. Physics is simpler on our side (planar 2D, impulse contacts, ground only).
+**Is 22× (40× at 16,384) a fair number?** It is MacGym vs MuJoCo's fastest CPU path, the C rollout module on all 11 threads, on the same 2D walker model: 6.75M vs 165.1K env-steps/s (MuJoCo at its best batch size; MacGym at 16,384 envs) = 40.9×, and 22.0× at 4,096 envs. Physics is simpler on our side (planar 2D, impulse contacts, ground only).
 
 **Where does the speed come from?** Same algorithm at 16,384 walkers: CPU array ops 135K → same ops on the GPU 498K (×3.7) → one compiled Metal kernel per robot 16.3M (×32.8) = 121×. Each GPU thread runs one robot's whole control step (8 substeps × 4 solver iterations, motors, joints, ground contacts) in one dispatch.
 

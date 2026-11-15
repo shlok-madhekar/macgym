@@ -180,3 +180,18 @@ body.static #pager, body.static #brand { display: none; }
 .rtab { display: grid; grid-template-columns: auto auto auto; gap: 2px 22px; margin-top: 8px; font-size: 19px; }
 .rtab span { color: var(--mute); }
 .rtab em { font-style: normal; color: var(--mute); }
+/* ---- final polish ---- */
+.steps3 { display: flex; align-items: center; gap: 16px; margin-top: 40px; width: 760px; }
+.steps3 div { font-family: 'Bebas Neue', sans-serif; font-size: 40px; line-height: 1; color: var(--ink); }
+.steps3 div b { display: block; font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--accent); margin-bottom: 6px; }
+.steps3 i { font-style: normal; font-size: 34px; color: var(--accent); }
+.code.code-py { font-size: 24px; top: 190px; }
+.code.code-metal { font-size: 22px; top: 520px; line-height: 1.7; }
+.codecap.kcap { top: 492px; }
+.anno { top: 410px; }
+.chip { display: inline-block; font-size: 18px; padding: 6px 12px; margin-right: 14px; font-weight: 700; }
+.chip.m { background: #F6E3D6; color: var(--ink); }
+.chip.d { border: 1px solid var(--hair); color: var(--mute); }
+.chartnote { top: 812px; border-left: none; padding-left: 0; }
+.rtab.sm { font-size: 16px; }
+.vmask { position: absolute; left: 0; top: 418px; width: 340px; height: 24px; background: #F2F1EC; display: none; }
