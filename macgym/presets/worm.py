@@ -1,3 +1,4 @@
+# Robots are planar (2D): bodies move in the x/y plane only (x forward, y up), no 3D.
 """Worm: five segments lying on the ground, hinged end to end.
 
 No legs at all. It has to discover an inchworm wave on its own.

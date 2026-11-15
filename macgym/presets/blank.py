@@ -1,3 +1,4 @@
+# Robots are planar (2D): bodies move in the x/y plane only (x forward, y up), no 3D.
 """A blank robot to start from.
 
     robot.body(name, start=(x, y), end=(x, y), radius=r)   # a capsule

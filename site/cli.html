@@ -20,27 +20,31 @@
 
 <p>Installing the package adds a <code>macgym</code> command. Robot files must define <code>robot</code> and <code>task</code> at module level, or a <code>make_env(num_envs)</code> function. Anywhere a file is accepted you can also pass a built-in name: <code>walker</code>, <code>cheetah</code>, <code>hopper</code>, <code>tripod</code>, <code>worm</code>.</p>
 <h2 id="train">macgym train</h2>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym train &lt;file.py | builtin&gt; [--envs 4096] [--iters 200] [--save PATH]</code></pre></div>
-<p>Headless PPO. Prints one progress line per interval in human units: distance in metres, steps per second, elapsed time.</p>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym train &lt;file.py | builtin&gt; [--envs 4096] [--iters 200] [--save PATH]
+                [--hidden 256,256] [--seed 0] [--log-every N]</code></pre></div>
+<p>Headless PPO. Prints one progress line per interval: mean distance per episode in metres, mean return, steps per second, total env-steps, elapsed time.</p>
 <table class="t"><thead><tr><th>Flag</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
 <tr><td><code>--envs</code></td><td>4096</td><td>Number of robots simulated in parallel.</td></tr>
 <tr><td><code>--iters</code></td><td>200</td><td>PPO iterations.</td></tr>
 <tr><td><code>--save</code></td><td>runs/&lt;name&gt;.npz</td><td>Checkpoint path.</td></tr>
+<tr><td><code>--hidden</code></td><td>256,256</td><td>MLP hidden sizes, comma-separated.</td></tr>
+<tr><td><code>--seed</code></td><td>0</td><td>Random seed.</td></tr>
+<tr><td><code>--log-every</code></td><td>iters / 20</td><td>Print a progress line every N iterations.</td></tr>
 </tbody></table>
 <div class="codeblock"><pre><code data-lang="sh">$ macgym train walker --envs 16384
 $ macgym train my_robot.py --iters 400 --save runs/my_robot.npz</code></pre></div>
 <h2 id="view">macgym view</h2>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym view [&lt;file.py | builtin&gt;]</code></pre></div>
-<p>Starts the local server and opens the viewer in your browser. Every robot is drawn on one runway, the best in orange, with a progress chart and replays of earlier generations.</p>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym view [&lt;file.py | builtin&gt;] [--port 8765] [--envs 4096] [--no-browser]</code></pre></div>
+<p>Starts the local server and opens the viewer in your browser. A robot file opens in the Playground and starts training; a built-in trains in the viewer; no target lets you pick in the browser. Every robot is drawn on one runway, the best in orange, with a progress chart and replays of earlier generations.</p>
 <h2 id="export">macgym export</h2>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym export &lt;ckpt.npz&gt; --format onnx | coreml</code></pre></div>
-<p>Writes <code>.onnx</code> or <code>.mlpackage</code> next to the checkpoint. Requires the <code>[export]</code> extra.</p>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym export &lt;ckpt.npz&gt; [--format onnx | coreml | npz] [--out PATH]</code></pre></div>
+<p>Default format is <code>onnx</code>. Writes <code>&lt;ckpt&gt;.onnx</code>, <code>&lt;ckpt&gt;.mlpackage</code> or <code>&lt;ckpt&gt;_actor.npz</code> next to the checkpoint unless <code>--out</code> is given, then prints the max absolute difference vs the MLX policy. ONNX and CoreML need the <code>[export]</code> extra.</p>
 <h2 id="new">macgym new</h2>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym new &lt;name&gt;</code></pre></div>
-<p>Scaffolds <code>&lt;name&gt;.py</code> from a template with a two-leg robot and a forward-velocity task, ready for <code>macgym train</code>.</p>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym new &lt;name&gt; [--out PATH] [--force]</code></pre></div>
+<p>Scaffolds <code>&lt;name&gt;.py</code> (name must be a Python identifier) from a template: a planar torso on two legs with feet, 4 motors, and a forward-velocity task, ready for <code>macgym train</code>. Refuses to overwrite without <code>--force</code>.</p>
 <h2 id="bench">macgym bench</h2>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym bench</code></pre></div>
-<p>Runs <code>scripts/bench.py</code>: MLX on the GPU vs CPU MuJoCo (one thread, and one process per core). Writes <code>web/bench.json</code>. See <a class="ln" href="benchmarks.html">Benchmarks</a>.</p>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym bench [--quick] [--sizes 1024,4096,16384] [--out PATH]</code></pre></div>
+<p>Runs <code>scripts/bench.py</code>: MLX on the GPU vs CPU MuJoCo (one thread, and one process per core). Writes <code>web/bench.json</code> unless <code>--out</code> is given. See <a class="ln" href="benchmarks.html">Benchmarks</a>.</p>
 
 <div class="pager"><a href="api.html"><span class="mono-label">Previous</span><strong>Python API</strong></a><a class="next" href="examples.html"><span class="mono-label">Next</span><strong>Examples</strong></a></div>
 </main><nav class="toc"><span class="mono-label">On this page</span></nav></div>

@@ -1,3 +1,4 @@
+# Robots are planar (2D): bodies move in the x/y plane only (x forward, y up), no 3D.
 """Walker: a planar biped. Torso, two thighs, two shins, two feet.
 
 The classic locomotion benchmark shape, in about 20 lines.

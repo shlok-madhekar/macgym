@@ -6,11 +6,19 @@
   const REPLAY_AT = [0, 10, 30, 60, 120, 240];
   const LOCO = new Set(["walker", "cheetah"]);
   const META = {
-    walker: { unit: "m", label: "average distance walked", hib: true },
-    cheetah: { unit: "m", label: "average distance run", hib: true },
+    walker: { unit: "m", label: "average distance per episode", hib: true },
+    cheetah: { unit: "m", label: "average distance per episode", hib: true },
     arm: { unit: "cm", label: "average miss distance", hib: false },
     cartpole: { unit: "s", label: "average time balanced", hib: true },
   };
+  // Any env not in META (e.g. "playground" frames from /playground, or a custom robot) is a
+  // planar locomotion robot: label it by its own name instead of pretending it is the walker.
+  function metaFor(env, robot) {
+    if (META[env]) return META[env];
+    const name = robot || (env === "playground" ? "playground robot" : env);
+    return { unit: "m", label: `average distance per episode · ${name}`, hib: true, custom: true };
+  }
+  const isLoco = (env) => LOCO.has(env) || (!!env && !META[env]);
   const params = new URLSearchParams(location.search);
   const DEMO = params.get("demo") === "1";
   const $ = (id) => document.getElementById(id);
@@ -77,12 +85,12 @@
   }
 
   function onFrame(m) {
-    if (m.env && m.env !== S.env) setEnv(m.env, false);
+    if (m.env && m.env !== S.env) setEnv(m.env, false, m.robot);
     const R = m.R | 0, K = m.K | 0;
     const caps = Float32Array.from(m.capsules || []);
     let dist = m.dist ? Float32Array.from(m.dist) : null;
     let shift = null;
-    if (LOCO.has(S.env) && !dist) {
+    if (isLoco(S.env) && !dist) {
       // Server without start-relative frames: fall back to camera_x (torso x) or torso capsule x.
       dist = new Float32Array(R);
       for (let i = 0; i < R; i++) dist[i] = m.camera_x ? m.camera_x[i] : caps[i * K * 5];
@@ -123,7 +131,7 @@
     let ts = m.train_seconds;
     if (ts == null) ts = S.localStart ? (performance.now() - S.localStart) / 1000 : (typeof m.time === "number" ? m.time : 0);
     S.trainSeconds = ts;
-    const meta = META[S.env] || META.walker;
+    const meta = metaFor(S.env);
     let v = m.human_value, best = m.human_best, unit = m.human_unit, label = m.human_label, hib = m.higher_is_better;
     if (v == null) {
       if (m.dist_mean != null) { v = m.dist_mean; best = m.dist_best; unit = "m"; }
@@ -148,7 +156,7 @@
     const rep = { ...m, born: performance.now() };
     if (m.label === "now") S.replays = S.replays.filter((r) => r.label !== "now");
     if (idx >= 0) S.replays[idx] = rep; else S.replays.push(rep);
-    if (LOCO.has(S.env) && m.label !== "now" && idx < 0 && S.frame) S.avgMarks.push({ label: m.label, x: S.liveMean || 0 });
+    if (isLoco(S.env) && m.label !== "now" && idx < 0 && S.frame) S.avgMarks.push({ label: m.label, x: S.liveMean || 0 });
     S.replays.sort((a, b) => (a.train_seconds ?? 0) - (b.train_seconds ?? 0));
     buildGens();
   }
@@ -176,14 +184,15 @@
     resetRun();
     send({ cmd: "start", env: S.env, num_envs: S.numEnvs, render_envs: 256 });
   }
-  function setEnv(env, user) {
-    if (!META[env]) return;
+  function setEnv(env, user, robot) {
+    if (!env) return;
+    const meta = metaFor(env, robot);
     const changed = env !== S.env;
     S.env = env;
     for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.env === env);
     if (changed) {
       S.frame = null; S.prev = null; S.hist = []; S.replays = []; S.avgMarks = []; S.humanValue = null; S.record = 0;
-      S.unit = META[env].unit; S.label = META[env].label; S.hib = META[env].hib;
+      S.unit = meta.unit; S.label = meta.label; S.hib = meta.hib;
       S.cam.range = S.cam.targetRange = 6;
       buildGens(); renderHeadline();
     }
@@ -209,7 +218,7 @@
     const R = S.frame ? S.frame.R : 256;
     $("heroLabel").textContent = "Track";
     $("heroNote").textContent = S.frame
-      ? `${fmtInt(R)} of ${fmtInt(S.numEnvs)} robots shown, overlaid${LOCO.has(S.env) ? " · each from its own start" : ""}`
+      ? `${fmtInt(R)} of ${fmtInt(S.numEnvs)} robots shown, overlaid${isLoco(S.env) ? " · each from its own start" : ""}`
       : "";
   }
   function renderHeadline() {
@@ -270,7 +279,7 @@
     ctx.clearRect(0, 0, w, h);
     const pad = 32;
     const f = interpolated(now);
-    if (LOCO.has(S.env)) drawLoco(ctx, w, h, pad, f, dt);
+    if (isLoco(S.env)) drawLoco(ctx, w, h, pad, f, dt);
     else if (S.env === "arm") drawArm(ctx, w, h, pad, f);
     else drawCart(ctx, w, h, pad, f);
   }
@@ -382,13 +391,13 @@
     }
   }
   function fmtResult(v) {
-    const u = (META[S.env] || META.walker).unit;
+    const u = metaFor(S.env).unit;
     return u === "cm" ? `${v.toFixed(1)} cm` : u === "s" ? `${v.toFixed(1)} s` : `${v.toFixed(1)} m`;
   }
   function drawGens(now) {
     for (const g of genCells) {
       const env = g.rep.env || S.env;
-      const kind = LOCO.has(env) ? "loco" : env === "arm" ? "arm" : "cart";
+      const kind = isLoco(env) ? "loco" : env === "arm" ? "arm" : "cart";
       const isNew = g.cv.closest(".gen").classList.contains("newest");
       T.drawReplay(g.cv, g.rep, now, g.start, isNew, kind, { robotH: env === "cheetah" ? 1.05 : 1.6 });
     }

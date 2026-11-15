@@ -1,3 +1,4 @@
+# Robots are planar (2D): bodies move in the x/y plane only (x forward, y up), no 3D.
 """Tripod: a flat body on three two-segment legs.
 
 Try it: add a fourth hip position to HIPS, then press Run.

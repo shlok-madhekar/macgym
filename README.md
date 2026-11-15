@@ -2,12 +2,12 @@
 
 **Robot learning, on the Mac you already own.**
 
-MacGym is a robot-learning framework for Apple Silicon. Define a robot in about 15 lines of Python, train 4,096 copies of it on your Mac's GPU, and export the policy to CoreML. No NVIDIA card, no CUDA, no cloud.
+MacGym is a robot-learning framework for Apple Silicon. Define a planar (2D) robot in about 15 lines of Python, train 4,096 copies of it on your Mac's GPU, and export the policy to CoreML. No NVIDIA card, no CUDA, no cloud.
 
 ```python
 import macgym as mg
 
-robot = mg.Robot("tripod")
+robot = mg.Robot("strider")   # planar (2D): x forward, y up
 torso = robot.body("torso", start=(0, 1.0), end=(0.6, 1.0), radius=0.06)
 front = robot.body("front", start=(0.6, 1.0), end=(0.6, 0.5), radius=0.04)
 back = robot.body("back", start=(0.0, 1.0), end=(0.0, 0.5), radius=0.04)
@@ -18,8 +18,11 @@ task = mg.Task(
     reward=lambda s: s.root.vx - 0.001 * s.action_sq,
     done=lambda s: s.root.y < 0.4,
 )
-env = mg.make(robot, task, num_envs=4096)
-mg.train(env, iters=200, save="runs/tripod.npz")
+
+if __name__ == "__main__":   # `macgym train strider.py` only reads robot + task
+    env = mg.make(robot, task, num_envs=4096)
+    result = mg.train(env, iters=200, save="runs/strider.npz")
+    print(mg.evaluate(env, result.policy))   # {'dist': ..., 'return': ..., 'survived': ...}
 ```
 
 `mg.make` turns that body plan into its own Metal kernel (one GPU thread per robot), and `mg.train` runs PPO in MLX on the same chip, sharing unified memory with the simulator.
@@ -39,10 +42,10 @@ pip install -e ".[export]"   # optional: onnx + coremltools
 ## CLI
 
 ```bash
-macgym new tripod                                   # scaffold a robot file
-macgym train tripod.py --envs 4096 --iters 200      # headless PPO, progress in metres and steps/s
-macgym view tripod.py                               # live viewer in the browser
-macgym export runs/tripod.npz --format coreml       # or --format onnx
+macgym new strider                                   # scaffold a robot file
+macgym train strider.py --envs 4096 --iters 200      # headless PPO, progress in metres and steps/s
+macgym view strider.py                               # live viewer in the browser
+macgym export runs/strider.npz --format coreml       # or --format onnx
 macgym bench                                        # GPU vs CPU MuJoCo on this machine
 ```
 
@@ -52,17 +55,30 @@ Anywhere a file is accepted you can pass a built-in name instead: `walker`, `che
 
 | Call | What it does |
 |------|--------------|
-| `mg.Robot(name)` | Planar robot builder. `.body(name, start, end, radius, density=1000)` adds a capsule; `.joint(parent, child, at, limits, motor, damping=0.1, stiffness=0.0)` adds a motorized hinge; `.set_root(body)` picks the body used for position and distance. |
-| `mg.Task(reward, done=None, episode_steps=1000, obs=None)` | Reward and termination as lambdas over a batched `State`. Observations are generated from the robot unless you pass `obs`. |
-| `mg.make(robot, task, num_envs=4096, seed=0)` | Compiles the robot and returns a batched env with `reset`, `step`, `render_state` and `metrics`. Auto-resets. |
-| `mg.train(env, iters=200, hidden=(256, 256), on_iter=None, save=None)` | PPO on the GPU. Returns `TrainResult(policy, history)`. |
-| `mg.load_policy(path, env)` | Loads a checkpoint. `policy.act(obs)` returns actions. |
-| `policy.export("x.mlpackage" \| "x.onnx")` | CoreML or ONNX, chosen by extension. Needs the `[export]` extra. |
-| `mg.view(env, policy=None, port=8765)` | Local server plus browser viewer for any env. Trains live if no policy is given. |
+| `mg.Robot(name="robot", friction=0.9, dt=0.02, substeps=8, iters=4)` | Planar robot builder. `.body(name, start, end, radius=0.05, density=1000.0, color=None)` adds a capsule; `.joint(parent, child, at, limits=(-1.0, 1.0), motor=50.0, damping=0.1, stiffness=0.0, name=None)` adds a motorized hinge; `.set_root(body)` picks the body used for position and distance. |
+| `mg.Task(reward, done=None, episode_steps=1000, obs=None, name=None)` | Reward and termination as lambdas over a batched `State` (pure `mx` ops; they run inside `mx.compile`). Observations come from `mg.default_obs(s)` unless you pass `obs`. |
+| `mg.make(robot, task, num_envs=4096, seed=0, backend=None)` | Compiles the robot and returns a `RobotEnv` with `reset()`, `step(a) -> (obs, reward, done, info)`, `obs_dim`, `act_dim`, `render_state` and `metrics`. Auto-resets. Also accepts a `(robot, task)` pair from `mg.robots.*`. |
+| `mg.train(env, iters=200, hidden=(256, 256), on_iter=None, save=None, lr=3e-4, seed=0, verbose=True, log_every=None, **ppo_kwargs)` | PPO on the GPU. Returns `TrainResult(policy, history, ppo)`; `result.final` is the last metrics dict. `on_iter(metrics)` returning `False` stops early. |
+| `mg.evaluate(env, policy=None, steps=None)` | Deterministic rollout from a fresh reset. Returns `{"dist", "return", "survived"}` (mean metres, mean return, fraction still standing). |
+| `mg.load_policy(path, env=None)` | Loads a checkpoint. `policy.act(obs)` returns actions in [-1, 1] (MLX or NumPy in, same out); also `.save(path)`, `.weights()`. |
+| `policy.export(path, format=None, verify=True, tol=1e-4)` | CoreML (`.mlpackage`), ONNX (`.onnx`) or `.npz`, chosen by extension; verified against MLX and returns `{path, max_abs_err, ...}`. Needs the `[export]` extra. |
+| `mg.view(target=None, policy=None, port=8765, num_envs=4096, open_browser=True)` | Local server plus browser viewer. `target` is a built-in name or a robot `.py` path (not an env object). Blocks. |
 | `mg.to_gymnasium(env)` | `gymnasium.vector.VectorEnv` wrapper (NumPy in and out) for Stable-Baselines3, CleanRL, or your own loop. |
-| `mg.robots.walker()`, `cheetah()`, `hopper()`, `tripod()`, `worm()` | Built-in `(robot, task)` pairs, written with the same public API. |
+| `mg.robots.walker()`, `cheetah()`, `hopper()`, `tripod()`, `worm()` | Built-in `(robot, task)` pairs, written with the same public API (see table below). |
 
-Inside `reward`, `done` and `obs`, every field of `s` is an MLX array with one entry per robot: `s.root.{x, y, vx, vy, angle, omega, height}`, `s.body("name")`, `s.joint("name" or index).{q, qd}`, `s.action`, `s.action_sq`, `s.contact("name")`, `s.t`, `s.dt`.
+Inside `reward`, `done` and `obs`, every field of `s` is an MLX array with one entry per robot: `s.root.{x, y, vx, vy, angle, omega, height}` (x/y are world metres, angle is relative to the rest pose), `s.body("name")`, `s.joint("name" or index).{q, qd}`, `s.q` / `s.qd` (N, J), `s.action`, `s.action_sq`, `s.contact("name")`, `s.contacts` (N, B), `s.t`, `s.dt`.
+
+### Built-in robots
+
+All robots are planar (2D: x forward, y up). MacGym does not simulate 3D bodies.
+
+| Call | Body plan |
+|------|-----------|
+| `mg.robots.walker()` | Planar biped: torso + 2 x (thigh, shin, foot), 6 motors. Same 24-dim observation as the legacy `walker` env, so `runs/walker.npz` loads. |
+| `mg.robots.cheetah()` | HalfCheetah-like runner: torso + back/front (thigh, shin, foot), 6 motors. 17-dim observation. |
+| `mg.robots.hopper()` | One-legged hopper (MuJoCo Hopper proportions): torso, thigh, leg, foot; 3 motors. |
+| `mg.robots.tripod()` | Horizontal torso on three 2-segment legs (front, middle, back); 6 motors. |
+| `mg.robots.worm()` | 5-segment chain lying on the ground that has to crawl forward; 4 motors; 500-step episodes. |
 
 ## Playground
 

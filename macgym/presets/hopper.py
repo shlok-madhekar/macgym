@@ -1,3 +1,4 @@
+# Robots are planar (2D): bodies move in the x/y plane only (x forward, y up), no 3D.
 """Hopper: one leg, four bodies. It has to learn to hop without falling."""
 import macgym as mg
 

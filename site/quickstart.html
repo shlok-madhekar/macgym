@@ -28,10 +28,10 @@ $ pip install -e .</code></pre></div>
 $ pip install -e &quot;.[export]&quot;   # onnx + coremltools</code></pre></div>
 <h2 id="first-robot">Your first robot</h2>
 <p>Scaffold a robot file, or write one by hand. A robot is a set of capsule bodies connected by motorized hinge joints. A task is a reward function, an optional termination, and an episode length.</p>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym new tripod</code></pre></div>
-<div class="codeblock"><div class="cap"><span class="mono-label">tripod.py</span></div><pre><code data-lang="py">import macgym as mg
+<div class="codeblock"><pre><code data-lang="sh">$ macgym new strider</code></pre></div>
+<div class="codeblock"><div class="cap"><span class="mono-label">strider.py</span></div><pre><code data-lang="py">import macgym as mg
 
-robot = mg.Robot(&quot;tripod&quot;)
+robot = mg.Robot(&quot;strider&quot;)   # planar (2D): x forward, y up
 torso = robot.body(&quot;torso&quot;, start=(0, 1.0), end=(0.6, 1.0), radius=0.06)
 front = robot.body(&quot;front&quot;, start=(0.6, 1.0), end=(0.6, 0.5), radius=0.04)
 back = robot.body(&quot;back&quot;, start=(0.0, 1.0), end=(0.0, 0.5), radius=0.04)
@@ -42,23 +42,39 @@ task = mg.Task(
     reward=lambda s: s.root.vx - 0.001 * s.action_sq,
     done=lambda s: s.root.y &lt; 0.4,
 )
-env = mg.make(robot, task, num_envs=4096)
-mg.train(env, iters=200, save=&quot;runs/tripod.npz&quot;)</code></pre></div>
+
+if __name__ == &quot;__main__&quot;:   # `macgym train strider.py` only reads robot + task
+    env = mg.make(robot, task, num_envs=4096)
+    result = mg.train(env, iters=200, save=&quot;runs/strider.npz&quot;)
+    print(mg.evaluate(env, result.policy))   # {'dist': ..., 'return': ..., 'survived': ...}</code></pre></div>
 <p>Inside <code>reward</code> and <code>done</code>, <code>s</code> is a batched <a class="ln" href="api.html#state">State</a>: every field is an MLX array with one value per robot. Observations are built from the robot automatically.</p>
 <h2 id="train">Train and watch</h2>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym train tripod.py --envs 4096 --iters 200
-iter  40/200   dist  2.8 m   best  6.1 m   3.0M steps/s   0:14
-...
-saved runs/tripod.npz</code></pre></div>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym train strider.py --envs 4096 --iters 200</code></pre></div>
+<p>Each progress line reports mean distance per episode in metres, mean return, simulation throughput, total env-steps and wall time. Real output from a built-in robot on an M3 Pro (lines trimmed):</p>
+<div class="codeblock"><pre><code data-lang="text">$ macgym train hopper --iters 40 --envs 4096
+macgym train  hopper  |  4096 envs  |  40 iters
+  robot ready in 0.0s  |  obs 16  act 3  |  dt 0.020s
+  iter     1/40  |  distance   -0.04 m  |  return       2.7  |  47k steps/s  |     0.10M steps  |      2s
+  iter    10/40  |  distance    0.47 m  |  return      47.6  |  352k steps/s  |     0.98M steps  |      4s
+  iter    20/40  |  distance    1.43 m  |  return     120.0  |  345k steps/s  |     1.97M steps  |      7s
+  iter    30/40  |  distance    2.79 m  |  return     232.6  |  258k steps/s  |     2.95M steps  |     10s
+  iter    38/40  |  distance    5.82 m  |  return     449.1  |  318k steps/s  |     3.74M steps  |     13s
+  iter    40/40  |  distance    5.56 m  |  return     428.7  |  303k steps/s  |     3.93M steps  |     13s
+done in 13s  |  best distance 5.82 m  |  saved runs/hopper.npz</code></pre></div>
 <p>To watch the whole population learn in your browser, run <code>macgym view</code>. It starts a local server and opens the viewer, where every robot is drawn on one shared runway and the best one is highlighted.</p>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym view tripod.py</code></pre></div>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym view strider.py</code></pre></div>
 <div class="note"><span class="mono-label">Playground</span>Prefer to iterate on the body plan itself? The <a class="ln" href="/playground">Playground</a> puts the robot file in an editor next to the live track. Change a leg, press Run, and 4,096 copies start learning.</div>
 <h2 id="export">Export</h2>
-<div class="codeblock"><pre><code data-lang="sh">$ macgym export runs/tripod.npz --format coreml
-$ macgym export runs/tripod.npz --format onnx</code></pre></div>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym export runs/strider.npz --format coreml   # runs/strider.mlpackage
+$ macgym export runs/strider.npz --format onnx     # runs/strider.onnx</code></pre></div>
 <p>Or from Python:</p>
-<div class="codeblock"><pre><code data-lang="py">policy = mg.load_policy(&quot;runs/tripod.npz&quot;, env)
-policy.export(&quot;tripod.mlpackage&quot;)</code></pre></div>
+<div class="codeblock"><pre><code data-lang="py">import macgym as mg
+from strider import robot, task
+
+env = mg.make(robot, task, num_envs=64)
+policy = mg.load_policy(&quot;runs/strider.npz&quot;, env)
+print(mg.evaluate(env, policy))           # mean distance (m), return, fraction still standing
+policy.export(&quot;strider.onnx&quot;)             # or strider.mlpackage; verified against MLX</code></pre></div>
 <h2 id="next">Next steps</h2>
 <ul><li><a class="ln" href="api.html">Python API reference</a></li><li><a class="ln" href="examples.html">Examples</a>: built-in robots, reward shaping, Gymnasium, export</li><li><a class="ln" href="how-it-works.html">How it works</a>: Metal kernels, MLX PPO, unified memory</li></ul>
 

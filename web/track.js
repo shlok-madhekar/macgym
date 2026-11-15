@@ -174,7 +174,7 @@
       const xa = X(mean), xb = X(dist[bi] ?? max);
       dashed(ctx, xa, mTop + 8, groundY, C.ink, [4, 4]);
       dashed(ctx, xb, mTop - 14, groundY, C.accent, []);
-      const avgTxt = `avg ${mean.toFixed(1)} m`, bestTxt = `best ${(dist[bi] ?? max).toFixed(1)} m`;
+      const avgTxt = `avg now ${mean.toFixed(1)} m`, bestTxt = `best ${(dist[bi] ?? max).toFixed(1)} m`;
       ctx.font = `600 14px ${SANS}`;
       const close = Math.abs(xb - xa) < ctx.measureText(avgTxt).width + 20;
       label(ctx, avgTxt, close ? xa - 6 : xa + 6, mTop + 18, C.ink, close ? "right" : "left");

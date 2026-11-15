@@ -30,10 +30,10 @@
     <div class="req mono-label">Apple Silicon (M1 or newer) · Python 3.10+ · MLX</div>
   </div>
   <div class="r">
-    <div class="codeblock"><div class="cap"><span class="mono-label">tripod.py</span><button class="copy" type="button" data-copy="#hero-code">Copy</button></div>
+    <div class="codeblock"><div class="cap"><span class="mono-label">strider.py</span><button class="copy" type="button" data-copy="#hero-code">Copy</button></div>
     <pre><code id="hero-code" data-lang="py" data-lines>import macgym as mg
 
-robot = mg.Robot(&quot;tripod&quot;)
+robot = mg.Robot(&quot;strider&quot;)   # planar (2D): x forward, y up
 torso = robot.body(&quot;torso&quot;, start=(0, 1.0), end=(0.6, 1.0), radius=0.06)
 front = robot.body(&quot;front&quot;, start=(0.6, 1.0), end=(0.6, 0.5), radius=0.04)
 back = robot.body(&quot;back&quot;, start=(0.0, 1.0), end=(0.0, 0.5), radius=0.04)
@@ -44,11 +44,14 @@ task = mg.Task(
     reward=lambda s: s.root.vx - 0.001 * s.action_sq,
     done=lambda s: s.root.y &lt; 0.4,
 )
-env = mg.make(robot, task, num_envs=4096)
-mg.train(env, iters=200, save=&quot;runs/tripod.npz&quot;)</code></pre></div>
+
+if __name__ == &quot;__main__&quot;:   # `macgym train strider.py` only reads robot + task
+    env = mg.make(robot, task, num_envs=4096)
+    result = mg.train(env, iters=200, save=&quot;runs/strider.npz&quot;)
+    print(mg.evaluate(env, result.policy))   # {'dist': ..., 'return': ..., 'survived': ...}</code></pre></div>
     <div class="after-code">
-      <div><span class="mono-label">Train</span><code>macgym train tripod.py</code></div>
-      <div><span class="mono-label">Watch</span><code>macgym view tripod.py</code></div>
+      <div><span class="mono-label">Train</span><code>macgym train strider.py</code></div>
+      <div><span class="mono-label">Watch</span><code>macgym view strider.py</code></div>
       <div><span class="mono-label">Ship</span><code>--format coreml</code></div>
     </div>
   </div>
@@ -71,14 +74,20 @@ mg.train(env, iters=200, save=&quot;runs/tripod.npz&quot;)</code></pre></div>
 </section>
 <div class="section-head"><h2>Everything is a command away.</h2><a class="mono-label" href="cli.html" style="color:var(--ink)">CLI reference &rarr;</a></div>
 <div class="cli-strip">
-  <div><span class="cap mono-label">Terminal</span><pre><code data-lang="sh">$ macgym new tripod
-$ macgym train tripod.py --envs 4096 --iters 200
-$ macgym view tripod.py
-$ macgym export runs/tripod.npz --format coreml</code></pre></div>
-  <div><span class="cap mono-label">Example output</span><pre><code data-lang="text">iter  40/200   dist  2.8 m   best  6.1 m   3.0M steps/s   0:14
-iter  80/200   dist  7.4 m   best 12.9 m   3.0M steps/s   0:29
-iter 120/200   dist 11.0 m   best 17.2 m   2.9M steps/s   0:43
-saved runs/tripod.npz</code></pre></div>
+  <div><span class="cap mono-label">Terminal</span><pre><code data-lang="sh">$ macgym new strider
+$ macgym train strider.py --envs 4096 --iters 200
+$ macgym view strider.py
+$ macgym export runs/strider.npz --format coreml</code></pre></div>
+  <div><span class="cap mono-label">Real output · M3 Pro · lines trimmed</span><pre><code data-lang="text">$ macgym train hopper --iters 40 --envs 4096
+macgym train  hopper  |  4096 envs  |  40 iters
+  robot ready in 0.0s  |  obs 16  act 3  |  dt 0.020s
+  iter     1/40  |  distance   -0.04 m  |  return       2.7  |  47k steps/s  |     0.10M steps  |      2s
+  iter    10/40  |  distance    0.47 m  |  return      47.6  |  352k steps/s  |     0.98M steps  |      4s
+  iter    20/40  |  distance    1.43 m  |  return     120.0  |  345k steps/s  |     1.97M steps  |      7s
+  iter    30/40  |  distance    2.79 m  |  return     232.6  |  258k steps/s  |     2.95M steps  |     10s
+  iter    38/40  |  distance    5.82 m  |  return     449.1  |  318k steps/s  |     3.74M steps  |     13s
+  iter    40/40  |  distance    5.56 m  |  return     428.7  |  303k steps/s  |     3.93M steps  |     13s
+done in 13s  |  best distance 5.82 m  |  saved runs/hopper.npz</code></pre></div>
 </div>
 <footer class="foot"><span>MacGym. Robot learning for Apple Silicon. MIT licensed.</span><span class="links"><a href="quickstart.html">Docs</a><a href="api.html">API</a><a href="benchmarks.html">Benchmarks</a><a href="https://github.com/shlokmadhekar/macgym">GitHub</a></span></footer>
 <script src="site.js"></script></body></html>

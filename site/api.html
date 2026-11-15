@@ -20,70 +20,76 @@
 
 <div class="codeblock"><pre><code data-lang="py">import macgym as mg</code></pre></div>
 <h2 id="robot">Robot</h2>
-<div class="api-entry"><div class="sig"><span class="n">mg.Robot</span>(<span class="a">name: str</span>)</div>
-<p>Builder for a planar multibody robot. Bodies are capsules in the x/y plane, connected by hinge joints with a motor at each joint.</p></div>
-<h3 id="robot-body">robot.body<span class="sig-args">(name, start, end, radius, density=1000)</span></h3>
+<div class="api-entry"><div class="sig"><span class="n">mg.Robot</span>(<span class="a">name=&quot;robot&quot;, friction=0.9, dt=0.02, substeps=8, iters=4</span>)</div>
+<p>Builder for a planar multibody robot. Bodies are capsules in the x/y plane, connected by hinge joints with a motor at each joint. <code>dt</code> is the control timestep (s), <code>substeps</code> physics substeps per control step, <code>iters</code> constraint iterations per substep, <code>friction</code> ground friction. Also: <code>robot.validate()</code>, <code>robot.body_names</code>, <code>robot.joint_names</code>, <code>robot.body_index(name)</code>, <code>robot.joint_index(name)</code>.</p></div>
+<h3 id="robot-body">robot.body<span class="sig-args">(name, start, end, radius=0.05, density=1000.0, color=None)</span></h3>
 <p>Adds a capsule. Returns a <code>Body</code> handle.</p>
-<div class="params"><div><code>name</code><span><span class="ty">str</span>Unique name, used by s.body(name) and s.contact(name).</span></div><div><code>start, end</code><span><span class="ty">tuple[float, float]</span>Endpoints of the capsule axis in metres, at rest pose.</span></div><div><code>radius</code><span><span class="ty">float</span>Capsule radius in metres.</span></div><div><code>density</code><span><span class="ty">float = 1000</span>kg/m³. Mass and inertia are derived from the shape.</span></div></div>
-<h3 id="robot-joint">robot.joint<span class="sig-args">(parent, child, at, limits, motor, damping=0.1, stiffness=0.0)</span></h3>
-<p>Connects two bodies with a hinge. Returns a <code>Joint</code> handle. Each joint adds one action dimension.</p>
-<div class="params"><div><code>parent, child</code><span><span class="ty">Body</span>Handles returned by robot.body.</span></div><div><code>at</code><span><span class="ty">tuple[float, float]</span>Hinge location in world coordinates at rest pose.</span></div><div><code>limits</code><span><span class="ty">tuple[float, float]</span>Joint angle limits in radians.</span></div><div><code>motor</code><span><span class="ty">float</span>Gear: torque in N·m at action = 1. Actions are clipped to [-1, 1].</span></div><div><code>damping</code><span><span class="ty">float = 0.1</span>Viscous joint damping.</span></div><div><code>stiffness</code><span><span class="ty">float = 0.0</span>Spring back toward the rest angle.</span></div></div>
+<div class="params"><div><code>name</code><span><span class="ty">str</span>Unique name, used by s.body(name) and s.contact(name).</span></div><div><code>start, end</code><span><span class="ty">tuple[float, float]</span>Endpoints of the capsule axis in metres, at rest pose.</span></div><div><code>radius</code><span><span class="ty">float = 0.05</span>Capsule radius in metres.</span></div><div><code>density</code><span><span class="ty">float = 1000</span>kg/m³. Mass and inertia are derived from the shape.</span></div><div><code>color</code><span><span class="ty">str | None</span>Hex colour for the viewer; defaults to a palette.</span></div></div>
+<h3 id="robot-joint">robot.joint<span class="sig-args">(parent, child, at, limits=(-1.0, 1.0), motor=50.0, damping=0.1, stiffness=0.0, name=None)</span></h3>
+<p>Connects two bodies with a hinge. Returns a <code>JointHandle</code> (<code>.index</code> is its action index). Each joint adds one action dimension.</p>
+<div class="params"><div><code>parent, child</code><span><span class="ty">Body | str</span>Handles returned by robot.body, or body names.</span></div><div><code>at</code><span><span class="ty">tuple[float, float]</span>Hinge location in world coordinates at rest pose.</span></div><div><code>limits</code><span><span class="ty">tuple[float, float] = (-1.0, 1.0)</span>Joint angle limits in radians, relative to rest; lo &lt; hi.</span></div><div><code>motor</code><span><span class="ty">float = 50.0</span>Gear: torque in N·m at action = 1. Actions are clipped to [-1, 1].</span></div><div><code>damping</code><span><span class="ty">float = 0.1</span>Viscous joint damping.</span></div><div><code>stiffness</code><span><span class="ty">float = 0.0</span>Spring back toward the rest angle.</span></div><div><code>name</code><span><span class="ty">str | None</span>Defaults to the child body name.</span></div></div>
 <h3 id="robot-root">robot.set_root<span class="sig-args">(body)</span></h3>
 <p>Selects the body used for <code>s.root</code>, the camera, and distance travelled. Defaults to the first body added.</p>
 
 <h2 id="task">Task</h2>
-<div class="api-entry"><div class="sig"><span class="n">mg.Task</span>(<span class="a">reward, done=None, episode_steps=1000, obs=None</span>)</div>
-<p>What the robot should learn. All callables receive a batched <a class="ln" href="#state">State</a> and return an array of shape <code>(N,)</code>.</p></div>
-<div class="params"><div><code>reward</code><span><span class="ty">Callable[[State], mx.array]</span>Per-step reward.</span></div><div><code>done</code><span><span class="ty">Callable[[State], mx.array] | None</span>Termination mask. Terminated robots auto-reset.</span></div><div><code>episode_steps</code><span><span class="ty">int = 1000</span>Time limit in control steps.</span></div><div><code>obs</code><span><span class="ty">Callable[[State], mx.array] | None</span>Override the automatic observation (root height, angle and velocities, joint q and qd, contacts).</span></div></div>
+<div class="api-entry"><div class="sig"><span class="n">mg.Task</span>(<span class="a">reward, done=None, episode_steps=1000, obs=None, name=None</span>)</div>
+<p>What the robot should learn. All callables receive a batched <a class="ln" href="#state">State</a>. <code>reward</code> returns <code>(N,)</code> floats, <code>done</code> <code>(N,)</code> bools, <code>obs</code> <code>(N, D)</code>. They run inside <code>mx.compile</code>, so use pure <code>mx</code> ops (no Python <code>if</code> on array values).</p></div>
+<div class="params"><div><code>reward</code><span><span class="ty">Callable[[State], mx.array]</span>Per-step reward.</span></div><div><code>done</code><span><span class="ty">Callable[[State], mx.array] | None</span>Termination mask. Terminated robots auto-reset.</span></div><div><code>episode_steps</code><span><span class="ty">int = 1000</span>Time limit in control steps.</span></div><div><code>obs</code><span><span class="ty">Callable[[State], mx.array] | None</span>Override the automatic observation, <code>mg.default_obs(s)</code>: root height, sin/cos of root tilt, root vx/vy/omega, joint q and qd, contact of every body.</span></div><div><code>name</code><span><span class="ty">str | None</span>Env name shown in logs; defaults to the robot name.</span></div></div>
 
 <h2 id="state">State</h2>
 <p>The batched view passed to <code>reward</code>, <code>done</code> and <code>obs</code>. Every field is an MLX array with one entry per robot.</p>
 <table class="t"><thead><tr><th>Field</th><th>Shape</th><th>Meaning</th></tr></thead><tbody>
-<tr><td><code>s.root.x, .y</code></td><td>(N,)</td><td>Root body position. x is relative to the episode start.</td></tr>
+<tr><td><code>s.root.x, .y</code></td><td>(N,)</td><td>Root body centre in world metres (x is not reset-relative; distance is measured from the episode start internally).</td></tr>
 <tr><td><code>s.root.vx, .vy</code></td><td>(N,)</td><td>Root linear velocity, m/s.</td></tr>
-<tr><td><code>s.root.angle, .omega</code></td><td>(N,)</td><td>Root orientation and angular velocity.</td></tr>
-<tr><td><code>s.root.height</code></td><td>(N,)</td><td>Root height above ground.</td></tr>
-<tr><td><code>s.body("name")</code></td><td>(N,) each</td><td>Same fields as root, for any body: <code>x y vx vy angle omega</code>.</td></tr>
+<tr><td><code>s.root.angle, .omega</code></td><td>(N,)</td><td>Rotation relative to the rest pose (rad, CCW positive) and angular velocity (rad/s).</td></tr>
+<tr><td><code>s.root.height</code></td><td>(N,)</td><td>Alias of <code>.y</code>.</td></tr>
+<tr><td><code>s.body("name" | i)</code></td><td>(N,) each</td><td>Same fields as root, for any body: <code>x y vx vy angle omega</code>.</td></tr>
 <tr><td><code>s.joint("name" | i)</code></td><td>(N,) each</td><td><code>.q</code> angle and <code>.qd</code> velocity.</td></tr>
+<tr><td><code>s.q, s.qd</code></td><td>(N, J)</td><td>All joint angles and velocities at once.</td></tr>
 <tr><td><code>s.action</code></td><td>(N, A)</td><td>Actions applied this step, in [-1, 1].</td></tr>
 <tr><td><code>s.action_sq</code></td><td>(N,)</td><td>Sum of squared actions. Handy for effort penalties.</td></tr>
-<tr><td><code>s.contact("name")</code></td><td>(N,)</td><td>1 if the body touches the ground, else 0.</td></tr>
-<tr><td><code>s.t, s.dt</code></td><td>scalar</td><td>Step index within the episode, control timestep.</td></tr>
+<tr><td><code>s.contact("name")</code></td><td>(N,)</td><td>1.0 if the body's lowest point is within 2 cm of the ground, else 0.0. Name or index.</td></tr>
+<tr><td><code>s.contacts</code></td><td>(N, B)</td><td>Contact flags for every body.</td></tr>
+<tr><td><code>s.t</code>, <code>s.dt</code>, <code>s.num_envs</code></td><td>(N,), float, int</td><td>Steps into each episode, control timestep (s), batch size.</td></tr>
 </tbody></table>
 
 <h2 id="make">make</h2>
-<div class="api-entry"><div class="sig"><span class="n">mg.make</span>(<span class="a">robot, task, num_envs=4096, seed=0</span>) -> BatchedEnv</div>
-<p>Compiles the robot to a Metal kernel and allocates <code>num_envs</code> copies. The returned env exposes <code>reset()</code>, <code>step(actions)</code>, <code>render_state()</code> and running <code>metrics</code>, and auto-resets finished episodes.</p></div>
+<div class="api-entry"><div class="sig"><span class="n">mg.make</span>(<span class="a">robot, task=None, num_envs=4096, seed=0, backend=None</span>) -> RobotEnv</div>
+<p>Compiles the robot to a Metal kernel and allocates <code>num_envs</code> copies. The returned <code>RobotEnv</code> exposes <code>reset()</code> -> obs, <code>step(actions)</code> -> <code>(obs, reward, done, info)</code>, <code>obs_dim</code>, <code>act_dim</code>, <code>num_envs</code>, <code>dt</code>, <code>max_episode_steps</code>, <code>render_state(R)</code>, <code>live_dist_mean()</code> and running <code>metrics</code>, and auto-resets finished episodes. Also accepts the <code>(robot, task)</code> pair from <code>mg.robots.*</code> as one argument, or a legacy env name (<code>&quot;walker&quot;</code>, <code>&quot;cheetah&quot;</code>, <code>&quot;arm&quot;</code>, <code>&quot;cartpole&quot;</code>).</p></div>
 
 <h2 id="train">train</h2>
-<div class="api-entry"><div class="sig"><span class="n">mg.train</span>(<span class="a">env, iters=200, hidden=(256, 256), on_iter=None, save=None</span>) -> TrainResult</div>
-<p>Runs PPO on the GPU. Returns <code>TrainResult(policy, history)</code>.</p></div>
-<div class="params"><div><code>iters</code><span><span class="ty">int = 200</span>PPO iterations (rollout + update).</span></div><div><code>hidden</code><span><span class="ty">tuple[int, ...]</span>MLP hidden sizes for actor and critic.</span></div><div><code>on_iter</code><span><span class="ty">Callable[[dict], None] | None</span>Called after each iteration with metrics: distance, return, steps/s, elapsed.</span></div><div><code>save</code><span><span class="ty">str | None</span>Checkpoint path (.npz) written at the end.</span></div></div>
+<div class="api-entry"><div class="sig"><span class="n">mg.train</span>(<span class="a">env, iters=200, hidden=(256, 256), on_iter=None, save=None, lr=3e-4, seed=0, verbose=True, log_every=None, **ppo_kwargs</span>) -> TrainResult</div>
+<p>Runs PPO on the GPU. Returns <code>TrainResult(policy, history, ppo)</code>: <code>policy</code> is a <code>Policy</code>, <code>history</code> a list of per-iteration metric dicts, <code>ppo</code> the underlying trainer; <code>result.final</code> is the last metrics dict. Extra keyword arguments go to the PPO constructor.</p></div>
+<div class="params"><div><code>iters</code><span><span class="ty">int = 200</span>PPO iterations (rollout + update).</span></div><div><code>hidden</code><span><span class="ty">tuple[int, ...]</span>MLP hidden sizes for actor and critic.</span></div><div><code>on_iter</code><span><span class="ty">Callable[[dict], bool | None] | None</span>Called after each iteration with the metrics dict (<code>iter</code>, <code>dist</code>, <code>live_dist</code>, <code>mean_ep_return</code>, <code>mean_ep_len</code>, <code>ep_seconds</code>, <code>sps</code>, <code>env_steps</code>, <code>elapsed</code>, ...). Return <code>False</code> to stop early.</span></div><div><code>save</code><span><span class="ty">str | None</span>Checkpoint path (.npz) written at the end.</span></div><div><code>verbose, log_every</code><span><span class="ty">bool = True, int | None</span>Print a progress line every <code>log_every</code> iterations (default iters // 20).</span></div></div>
+
+<h2 id="evaluate">evaluate</h2>
+<div class="api-entry"><div class="sig"><span class="n">mg.evaluate</span>(<span class="a">env, policy=None, steps=None</span>) -> dict</div>
+<p>Deterministic rollout from a fresh reset for <code>steps</code> control steps (default: episode length, capped at 500). Zero actions if <code>policy</code> is None. Returns <code>{&quot;dist&quot;, &quot;return&quot;, &quot;survived&quot;}</code>: mean root distance (m) before the first episode end, mean return, and the fraction that never terminated.</p></div>
 
 <h2 id="load-policy">load_policy</h2>
-<div class="api-entry"><div class="sig"><span class="n">mg.load_policy</span>(<span class="a">path, env</span>) -> Policy</div>
-<p>Loads a checkpoint. <code>policy.act(obs)</code> returns deterministic actions for a batch of observations.</p></div>
+<div class="api-entry"><div class="sig"><span class="n">mg.load_policy</span>(<span class="a">path, env=None</span>) -> Policy</div>
+<p>Loads a <code>.npz</code> checkpoint. <code>policy.act(obs)</code> takes <code>(N, obs_dim)</code> or <code>(obs_dim,)</code>, MLX or NumPy, and returns deterministic actions of the same kind in [-1, 1]. Also <code>policy.save(path)</code>, <code>policy.weights()</code> (list of <code>(W, b)</code> NumPy arrays), <code>obs_dim</code>, <code>act_dim</code>, <code>hidden</code>, <code>obs_mean</code>, <code>obs_var</code>.</p></div>
 
 <h2 id="export">Policy.export</h2>
-<div class="api-entry"><div class="sig"><span class="n">policy.export</span>(<span class="a">path</span>)</div>
-<p>Format is chosen from the extension: <code>.onnx</code> needs <code>onnx</code>, <code>.mlpackage</code> needs <code>coremltools</code>. Install both with <code>pip install -e ".[export]"</code>. CoreML export is best effort and raises a clear error if coremltools is missing.</p></div>
+<div class="api-entry"><div class="sig"><span class="n">policy.export</span>(<span class="a">path, format=None, verify=True, tol=1e-4</span>) -> dict</div>
+<p>Format is chosen from the extension (<code>.onnx</code>, <code>.mlpackage</code>, <code>.npz</code>) or <code>format</code>. With <code>verify=True</code> the exported model is run against the MLX actor and the result dict includes <code>path</code> and <code>max_abs_err</code> (None if the runtime is unavailable). <code>.onnx</code> needs <code>onnx</code>, <code>.mlpackage</code> needs <code>coremltools</code>. Install both with <code>pip install -e ".[export]"</code>. CoreML export is best effort and raises a clear error if coremltools is missing.</p></div>
 
 <h2 id="view">view</h2>
-<div class="api-entry"><div class="sig"><span class="n">mg.view</span>(<span class="a">env, policy=None, port=8765</span>)</div>
-<p>Starts the local server and opens the browser viewer for a custom env. With no policy it trains live; with a policy it plays it back.</p></div>
+<div class="api-entry"><div class="sig"><span class="n">mg.view</span>(<span class="a">target=None, policy=None, port=8765, num_envs=4096, open_browser=True</span>)</div>
+<p>Starts the local server and opens the browser viewer, then blocks. <code>target</code> is a built-in name (trains live in the viewer), a path to a robot <code>.py</code> file (opens in the Playground and starts training), or None (pick a robot in the browser). It does not take an env object; for a custom robot, save it to a file and pass the path.</p></div>
 
 <h2 id="to-gymnasium">to_gymnasium</h2>
-<div class="api-entry"><div class="sig"><span class="n">mg.to_gymnasium</span>(<span class="a">env</span>) -> gymnasium.vector.VectorEnv</div>
+<div class="api-entry"><div class="sig"><span class="n">mg.to_gymnasium</span>(<span class="a">env</span>) -> MacGymVectorEnv (gymnasium.vector.VectorEnv)</div>
 <p>NumPy in, NumPy out. Use with Stable-Baselines3, CleanRL, or your own trainer. Requires the <code>[gym]</code> extra.</p></div>
 
 <h2 id="robots">robots</h2>
-<p>Built-in <code>(robot, task)</code> pairs, written with the public API above. Read their source as worked examples.</p>
+<p>Built-in <code>(robot, task)</code> pairs, written with the public API above. All are planar (2D). <code>mg.robots.get(name)</code> looks one up by name. Read their source as worked examples.</p>
 <table class="t"><thead><tr><th>Call</th><th>Body plan</th></tr></thead><tbody>
-<tr><td><code>mg.robots.walker()</code></td><td>Planar biped: torso, two legs with knees.</td></tr>
-<tr><td><code>mg.robots.cheetah()</code></td><td>Planar runner with front and back legs.</td></tr>
-<tr><td><code>mg.robots.hopper()</code></td><td>Single leg that has to hop to move.</td></tr>
-<tr><td><code>mg.robots.tripod()</code></td><td>Torso with two stiff legs. The quickstart robot.</td></tr>
-<tr><td><code>mg.robots.worm()</code></td><td>Chain of segments that moves by undulating.</td></tr>
+<tr><td><code>mg.robots.walker()</code></td><td>Planar biped: torso + 2 x (thigh, shin, foot), 6 motors. Same morphology and 24-dim observation as the legacy <code>walker</code> env, so <code>runs/walker.npz</code> loads.</td></tr>
+<tr><td><code>mg.robots.cheetah()</code></td><td>HalfCheetah-like runner: torso + back/front (thigh, shin, foot), 6 motors. 17-dim observation, matches the legacy <code>cheetah</code> env.</td></tr>
+<tr><td><code>mg.robots.hopper()</code></td><td>One-legged hopper (MuJoCo Hopper proportions): torso, thigh, leg, foot; 3 motors.</td></tr>
+<tr><td><code>mg.robots.tripod()</code></td><td>Horizontal torso on three 2-segment legs (front, middle, back); 6 motors.</td></tr>
+<tr><td><code>mg.robots.worm()</code></td><td>5-segment chain lying on the ground that has to crawl forward; 4 motors; 500-step episodes.</td></tr>
 </tbody></table>
 <div class="codeblock"><pre><code data-lang="py">robot, task = mg.robots.cheetah()
 env = mg.make(robot, task, num_envs=16384)</code></pre></div>

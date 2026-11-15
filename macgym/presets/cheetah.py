@@ -1,3 +1,4 @@
+# Robots are planar (2D): bodies move in the x/y plane only (x forward, y up), no 3D.
 """Cheetah: a long body on a back leg and a front leg, three segments each.
 
 It cannot fall over, so the only thing left to learn is speed.

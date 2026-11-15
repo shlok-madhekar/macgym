@@ -800,6 +800,35 @@ def _build_playground_env(ns, num_envs):
     return mg.make(ns["robot"], ns["task"], num_envs=num_envs)
 
 
+BUILD_TIMEOUT_S = 20.0  # playground safeguard: user code + kernel compile must finish within this
+
+
+class BuildTimeout(RuntimeError):
+    pass
+
+
+def _exec_with_timeout(code, timeout):
+    """Run the user's robot file on a daemon thread so an infinite loop can't wedge the trainer.
+    Raises BuildTimeout if it hasn't finished after `timeout` seconds (the stuck thread is abandoned)."""
+    import threading
+    box = {}
+
+    def work():
+        try:
+            box["ns"] = exec_robot_code(code)
+        except BaseException as e:  # re-raised on the trainer thread
+            box["err"] = e
+
+    th = threading.Thread(target=work, name="playground-build", daemon=True)
+    th.start()
+    th.join(timeout)
+    if th.is_alive():
+        raise BuildTimeout(f"robot code still running after {timeout:.0f} s (infinite loop?); build aborted")
+    if "err" in box:
+        raise box["err"]
+    return box["ns"]
+
+
 def trainer_run_code(tr, msg):
     """Trainer-thread handler for {"cmd":"run_code"}: build the env from user code, start training."""
     import mlx.core as mx
@@ -813,7 +842,7 @@ def trainer_run_code(tr, msg):
              "render_envs": tr.render_envs, "checkpoint": False})
     t0 = time.perf_counter()
     try:
-        ns = exec_robot_code(code)
+        ns = _exec_with_timeout(code, BUILD_TIMEOUT_S)
         robot = ns.get("robot")
         nb = nj = None
         if robot is not None:
@@ -827,6 +856,9 @@ def trainer_run_code(tr, msg):
         mx.eval(out[0], out[1])
         nb = nb if nb is not None else getattr(getattr(env, "model", None), "B", "?")
         nj = nj if nj is not None else getattr(getattr(env, "model", None), "J", "?")
+        if time.perf_counter() - t0 > BUILD_TIMEOUT_S:
+            raise BuildTimeout(f"build took {time.perf_counter() - t0:.1f} s (limit {BUILD_TIMEOUT_S:.0f} s): "
+                               "try fewer bodies, fewer copies, or fewer substeps")
         log(f"compiled Metal kernel for {nb} bodies / {nj} joints in {time.perf_counter() - t1:.2f} s", "ok")
     except Exception as e:
         traceback.print_exc()
