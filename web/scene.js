@@ -120,6 +120,10 @@ export class TileRenderer {
     this.camera = new THREE.OrthographicCamera(0, 1, 1, 0, -10, 10);
     this.W = 1; this.H = 1;
     this.hover = -1;
+    this.focus = -1;       // focused tile index (accent border)
+    this.insetRight = 0;   // px reserved on the right of the stage (focus panel)
+    this.fitTop = null;    // smoothed robot height above ground (auto-zoom)
+    this.fitEnv = null;
     this.accent = new THREE.Color("#4FD1FF");
     this.tiles = []; // {x,y,w,h,cx,cy,s}
     this.R = 0; this.K = 0;
@@ -173,12 +177,12 @@ export class TileRenderer {
   }
 
   _layout(R, aspect) {
-    const key = `${R}|${aspect.toFixed(3)}|${this.W}|${this.H}`;
+    const key = `${R}|${aspect.toFixed(3)}|${this.W}|${this.H}|${this.insetRight}`;
     if (key === this.layoutKey) return;
     this.layoutKey = key;
     const W = this.W, H = this.H;
     const marginX = 18, marginTop = 54, marginBottom = 116;
-    const aw = W - 2 * marginX, ah = H - marginTop - marginBottom;
+    const aw = W - 2 * marginX - this.insetRight, ah = H - marginTop - marginBottom;
     const gap = R > 100 ? 4 : R > 36 ? 6 : 10;
     let best = { size: 0, cols: 1, rows: R };
     for (let cols = 1; cols <= R; cols++) {
@@ -190,7 +194,7 @@ export class TileRenderer {
     }
     const tw = best.size, th = tw / aspect;
     const gw = best.cols * tw + (best.cols - 1) * gap, gh = best.rows * th + (best.rows - 1) * gap;
-    const ox = (W - gw) / 2, oyTop = marginTop + (ah - gh) / 2;
+    const ox = marginX + (aw - gw) / 2, oyTop = marginTop + (ah - gh) / 2;
     this.grid = { cols: best.cols, rows: best.rows, tw, th, gap, ox, oyTop };
     this.tiles = [];
     for (let i = 0; i < R; i++) {
@@ -220,6 +224,46 @@ export class TileRenderer {
     return { x: (px - t.cx) / v.s + cam + v.mx, y: (y - t.cy) / v.s + v.my };
   }
 
+  // Per-env view box (relative to camera for follow envs). Ground envs: auto-zoom so the robot
+  // fills ~60% of tile height in a ~16:9 tile. Arm (no ground): world bounds, widened slightly.
+  fitView(frame, aspectOverride) {
+    const wb = frame.world_bounds || [-2, 2, -0.5, 2];
+    const ww = wb[1] - wb[0], wh = wb[3] - wb[2];
+    if (frame.ground == null) {
+      const aspect = aspectOverride || Math.max(1.2, ww / wh);
+      const h = Math.max(wh, ww / aspect);
+      const cx = (wb[0] + wb[1]) / 2, cy = (wb[2] + wb[3]) / 2;
+      return { x0: cx - (h * aspect) / 2, x1: cx + (h * aspect) / 2, y0: cy - h / 2, y1: cy + h / 2, aspect };
+    }
+    const aspect = aspectOverride || 16 / 9;
+    const g = frame.ground;
+    if (this.fitEnv !== frame.env) { this.fitEnv = frame.env; this.fitTop = null; }
+    // robust robot height: 85th percentile of per-env max(y + r) over the rendered envs
+    const caps = frame.capsules, K = frame.K, R = frame.R;
+    const tops = [];
+    for (let i = 0; i < R; i++) {
+      let t = -Infinity;
+      for (let k = 0; k < K; k++) {
+        const o = (i * K + k) * 5, r = caps[o + 4];
+        if (!(r > 0)) continue;
+        t = Math.max(t, caps[o + 1] + r, caps[o + 3] + r);
+      }
+      if (isFinite(t)) tops.push(t - g);
+    }
+    if (tops.length) {
+      tops.sort((a, b) => a - b);
+      const top = Math.max(0.3, Math.min(wb[3] - g, tops[Math.floor(tops.length * 0.85)]));
+      this.fitTop = this.fitTop == null ? top : this.fitTop + (Math.max(top, this.fitTop * 0.97) - this.fitTop) * 0.05;
+    }
+    const top = this.fitTop || wh * 0.6;
+    let h = top / 0.6;
+    const follow = !!frame.camera_x;
+    if (!follow) h = Math.max(h, (ww * 0.8) / aspect); // static envs (cartpole): keep most of the track
+    const y0 = g - h * 0.13;
+    const cx = follow ? 0 : (wb[0] + wb[1]) / 2;
+    return { x0: cx - (h * aspect) / 2, x1: cx + (h * aspect) / 2, y0, y1: y0 + h, aspect };
+  }
+
   _rgb(hex) {
     let c = this.colorCache.get(hex);
     if (!c) { c = hexToRgb(hex); this.colorCache.set(hex, c); }
@@ -232,10 +276,11 @@ export class TileRenderer {
     if (!frame) { this.renderer.render(this.scene, this.camera); return; }
     const R = Math.min(frame.R, this.tileM.max);
     const K = frame.K;
-    const wb = frame.world_bounds || [-2, 2, -0.5, 2];
+    const vb = this.fitView(frame);
+    const wb = [vb.x0, vb.x1, vb.y0, vb.y1];
     const ww = wb[1] - wb[0], wh = wb[3] - wb[2];
-    this._layout(R, Math.max(0.3, Math.min(4, ww / wh)));
-    const pad = Math.max(3, this.grid.tw * 0.04);
+    this._layout(R, Math.max(0.3, Math.min(4, vb.aspect)));
+    const pad = 1;
     const s = Math.min((this.grid.tw - 2 * pad) / ww, (this.grid.th - 2 * pad) / wh);
     const mx = (wb[0] + wb[1]) / 2, my = (wb[2] + wb[3]) / 2;
     this.view = { s, mx, my };
@@ -251,7 +296,7 @@ export class TileRenderer {
       const gy = ground == null ? -1e6 : t.cy + (ground - my) * s;
       tb.aView.array.set([t.cx, s, cam + mx, gy], i * 4);
       const cur = tb.aHover.array[i];
-      const target = i === this.hover ? 1 : 0;
+      const target = i === this.hover || i === this.focus ? 1 : 0;
       tb.aHover.array[i] = cur + (target - cur) * 0.25;
     }
     for (const k in tb) tb[k].needsUpdate = true;

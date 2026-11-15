@@ -49,6 +49,10 @@
         <div class="stage-top">
           <div class="chip env-chip"><span class="chip-k">ENV</span><span id="envName">walker</span></div>
           <div class="chip"><span class="chip-k">VIEW</span><span id="viewInfo">64 of 4,096</span></div>
+          <div class="chip density" id="density" title="Robots shown (?r=)">
+            <span class="chip-k">SHOW</span>
+            <button data-r="16">16</button><button data-r="36">36</button><button data-r="64">64</button><button data-r="144">144</button>
+          </div>
           <div id="modeChip" class="chip mode-chip hidden"><span class="chip-k">MODE</span><span>SHOWCASE · deterministic</span></div>
         </div>
 
@@ -62,6 +66,16 @@
             Click or drag inside a tile to move the target
           </div>
         </div>
+
+        <div id="focusPanel" class="focus-panel hidden">
+          <canvas id="focusCanvas"></canvas>
+          <div class="focus-head">
+            <div class="chip focus-chip"><span class="chip-k">FOCUS</span><span id="focusLabel">robot #1</span></div>
+            <button id="focusClose" class="focus-close" title="Close focus (Esc)">✕</button>
+          </div>
+          <div class="focus-foot" id="focusFoot">ghost trail · last ~1.5 s</div>
+        </div>
+        <div id="tileHint" class="tile-hint hidden">Click any robot to focus</div>
 
         <div id="offline" class="offline hidden">
           <div class="offline-card">
@@ -79,6 +93,8 @@
           <div class="label"><span class="pulse-dot"></span>ENV-STEPS / SEC</div>
           <div class="hero-num"><span id="spsNum">0</span></div>
           <canvas id="spark" class="spark"></canvas>
+          <div class="hero-note" id="spsNote">training throughput (rollout + PPO update)</div>
+          <div class="hero-sim" id="simLine"><span class="chip-k">SIM ONLY</span> <span id="simSps">–</span> <span class="hero-sim-d" id="simDetail">measured at start · random actions</span></div>
           <div class="hero-sub">Apple Silicon GPU · MLX · <span class="accent-cyan">0 NVIDIA GPUs</span></div>
         </div>
 
@@ -108,6 +124,11 @@
           <input id="numEnvs" class="slider" type="range" min="0" max="12" step="1" value="8" />
           <div class="slider-ticks"><span>256</span><span>1K</span><span>4K</span><span>16K</span></div>
 
+          <div class="flow" id="flow">
+            <span class="flow-step" data-step="train">1 · Train</span><span class="flow-arrow">→</span>
+            <span class="flow-step" data-step="showcase">2 · Showcase</span>
+            <span class="flow-hint" id="flowHint">Start training, then Showcase runs the policy deterministically</span>
+          </div>
           <div class="btn-row">
             <button id="btnStart" class="btn btn-primary"><span class="kbd">␣</span><span id="btnStartText">Start</span></button>
             <button id="btnShowcase" class="btn btn-magenta"><span class="kbd">S</span>Showcase</button>
@@ -116,6 +137,10 @@
               Save
             </button>
           </div>
+          <button id="btnLoad" class="btn btn-load hidden" title="Load runs/&lt;env&gt;.npz and showcase it">
+            <svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="btnLoadText">Load trained</span>
+          </button>
         </div>
 
         <div id="benchPanel" class="panel bench hidden">

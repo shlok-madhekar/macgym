@@ -10,17 +10,17 @@ MacGym is a massively parallel robot-learning gym that runs entirely on an Apple
 
 Every serious robot reinforcement-learning simulator right now assumes you own an NVIDIA GPU. Isaac Lab is CUDA. MuJoCo Warp is CUDA. ManiSkill's GPU sim is CUDA. The modern recipe for robot learning is "simulate 4,096 robots in parallel on a GPU, run PPO, get a policy in minutes", and that recipe is locked behind hardware most students do not have.
 
-Macs were supposed to be the escape hatch, and they keep getting closed off. jax-metal, the Apple backend for JAX (which is what MuJoCo's own GPU stack, MJX, runs on), was declared dead by a JAX maintainer in January 2026. The best community port of a GPU robotics sim to the Mac we could find (warp-metal / mjlab) reports about **5.2k env-steps/s on an M3 Max**. For comparison, a single CPU core running plain MuJoCo on our M3 Pro does about 51.5k env-steps/s on a half-cheetah.
+Macs were supposed to be the escape hatch, and they keep getting closed off. jax-metal, the Apple backend for JAX (which is what MuJoCo's own GPU stack, MJX, runs on), was declared dead by a JAX maintainer in January 2026. The best community port of a GPU robotics sim to the Mac we could find (warp-metal / mjlab) reports about **5.2k env-steps/s on an M3 Max**. For comparison, a single CPU core running plain MuJoCo on our M3 Pro does about 52.4k env-steps/s on a half-cheetah.
 
 So there are tens of millions of Apple Silicon laptops with a strong GPU and up to 128 GB of unified memory sitting there, and none of them can do the thing robotics people actually need. That felt like the most "ordinary" piece of hardware we could elevate: the MacBook already in your backpack.
 
 ## What it does
 
 - **Massively parallel physics on the Mac GPU.** MacGym steps thousands of independent robots in a single batched MLX kernel. On an M3 Pro (18 GB):
-  - CartPole: **13.6M env-steps/s** at 16,384 envs
+  - CartPole: **19.3M env-steps/s** at 16,384 envs
   - Planar Walker: **6.3M env-steps/s** at 16,384 envs
-  - Planar Cheetah: **6.7M env-steps/s** at 16,384 envs
-  - That is **24.8x** (cartpole) and **23x** (walker vs MuJoCo half-cheetah) the experience throughput of CPU MuJoCo using every core on the same laptop.
+  - Planar Cheetah: **6.6M env-steps/s** at 16,384 envs
+  - That is **37.4x** (cartpole) and **21.4x** (walker vs MuJoCo half-cheetah) the experience throughput of CPU MuJoCo using every core on the same laptop.
 - **PPO training on the GPU, end to end.** Rollouts, GAE, advantage normalization, observation normalization and the policy update all stay on the GPU in MLX. Robots go from flailing to walking in {{TRAIN_TIME_WALKER}}.
 - **A live browser viewer of the whole swarm.** Open `localhost:8765` and you see a grid of robots learning in real time, rendered with three.js instanced meshes, with a giant env-steps/sec counter, a reward curve, an env picker, and a slider from 256 to 16,384 robots.
 - **Interactive.** Drag in the arm environment to move the target and watch thousands of arms chase it. Flip on showcase mode to run the deterministic policy.
@@ -50,7 +50,7 @@ So there are tens of millions of Apple Silicon laptops with a strong GPU and up 
 
 ## Accomplishments that we're proud of
 
-- 13.6M env-steps/s of CartPole and 6.3M env-steps/s of a planar walker on a base-level M3 Pro laptop, versus about 5.2k env-steps/s reported by the best community Mac port we found.
+- 19.3M env-steps/s of CartPole and 6.3M env-steps/s of a planar walker on a base-level M3 Pro laptop, versus about 5.2k env-steps/s reported by the best community Mac port we found.
 - Robot policies trained from scratch on a laptop GPU, with no NVIDIA hardware involved at any step.
 - A live viewer where you can literally watch thousands of robots learn at once, which makes RL feel real instead of a loss curve in a terminal.
 - A benchmark script anyone with a Mac can run to check our numbers.

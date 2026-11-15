@@ -170,6 +170,39 @@ def make_env(name, num_envs):
     return reg[name](num_envs)
 
 
+def checkpoint_path(name):
+    return os.path.join(RUNS_DIR, f"{name}.npz") if name else None
+
+
+def has_checkpoint(name):
+    p = checkpoint_path(name)
+    return bool(p and os.path.exists(p))
+
+
+def measure_sim_sps(env, steps=200, max_seconds=3.0):
+    """Sim-only throughput: random actions, no policy / no PPO update. Leaves env state dirty."""
+    n, act_dim = int(env.num_envs), int(env.act_dim)
+    if isinstance(env, StubEnv):
+        rand = lambda: np.random.uniform(-1, 1, (n, act_dim)).astype(np.float32)
+        sync = lambda out: None
+    else:
+        import mlx.core as mx
+        rand = lambda: mx.random.uniform(-1.0, 1.0, (n, act_dim))
+        sync = lambda out: mx.eval(out[0], out[1])
+    env.reset()
+    for _ in range(5):  # warm-up / compile
+        sync(env.step(rand()))
+    t0 = time.perf_counter()
+    done = 0
+    for _ in range(steps):
+        sync(env.step(rand()))
+        done += 1
+        if time.perf_counter() - t0 > max_seconds:
+            break
+    dt = max(time.perf_counter() - t0, 1e-9)
+    return done * n / dt, done
+
+
 def make_trainer(env, name):
     hp = hparams_for(name)
     if isinstance(env, StubEnv):
@@ -238,6 +271,7 @@ class Trainer:
         self.env_name = None
         self.num_envs = 0
         self.render_envs = DEFAULT_RENDER_ENVS
+        self.sim_info = None
         self.state = "idle"
         self.obs = None
         self.thread = threading.Thread(target=self._run, name="trainer", daemon=True)
@@ -254,7 +288,8 @@ class Trainer:
         self.cmds.put((cmd, msg))
 
     def status(self):
-        return {"type": "status", "state": self.state, "env": self.env_name, "num_envs": self.num_envs}
+        return {"type": "status", "state": self.state, "env": self.env_name, "num_envs": self.num_envs,
+                "render_envs": self.render_envs, "checkpoint": has_checkpoint(self.env_name)}
 
     # -- command handlers (trainer thread) --
     def _handle(self, cmd, msg):
@@ -266,6 +301,17 @@ class Trainer:
             self.env = self.ppo = None
             self.state = "idle"
             env = make_env(name, n)
+            self.emit({"type": "status", "state": "measuring", "env": name, "num_envs": n,
+                       "render_envs": self.render_envs, "checkpoint": has_checkpoint(name)})
+            try:
+                sim_sps, nsteps = measure_sim_sps(env)
+                self.sim_info = {"type": "info", "sim_sps": round(sim_sps, 1), "env": name, "num_envs": n,
+                                 "steps": nsteps, "note": "sim-only: random actions, no policy, no PPO update"}
+                self.emit(self.sim_info)
+            except Exception as e:
+                traceback.print_exc()
+                self.emit({"type": "info", "sim_sps": None, "message": f"sim benchmark skipped: {e}"})
+            env.reset()
             self.ppo = make_trainer(env, name)
             self.env, self.env_name, self.num_envs = env, name, n
             self.obs = None
@@ -283,6 +329,15 @@ class Trainer:
             if self.state == "showcase":
                 self.obs = self.env.reset()
             self.emit(self.status())
+            if self.state == "showcase" and has_checkpoint(self.env_name):
+                self.emit({"type": "info", "checkpoint": True, "env": self.env_name,
+                           "message": f"Saved policy runs/{self.env_name}.npz available: press Load trained"})
+        elif cmd == "render":
+            n = int(msg.get("render_envs", msg.get("r", DEFAULT_RENDER_ENVS)))
+            self.render_envs = max(1, min(n, MAX_RENDER_ENVS))
+            if self.env is not None:
+                self._push_frame()
+            self.emit(self.status())
         elif cmd == "set_target":
             if self.env is not None and hasattr(self.env, "set_target"):
                 self.env.set_target(float(msg["x"]), float(msg["y"]))
@@ -294,6 +349,7 @@ class Trainer:
             path = os.path.join(RUNS_DIR, f"{self.env_name}.npz")
             self.ppo.save(path)
             self.emit({"type": "saved", "path": os.path.relpath(path, ROOT)})
+            self.emit(self.status())
         elif cmd == "load":
             name = msg.get("env") or self.env_name
             path = os.path.join(RUNS_DIR, f"{name}.npz")
@@ -307,6 +363,8 @@ class Trainer:
                 self.env_name, self.num_envs = name, n
             self.ppo.load(path)
             self.obs = self.env.reset()
+            if hasattr(self.ppo, "obs"):
+                self.ppo.obs = None
             self.state = "showcase"
             self.emit({"type": "loaded", "path": os.path.relpath(path, ROOT)})
             self.emit(self.status())
@@ -411,10 +469,14 @@ class Server:
 
     def list_envs(self):
         out = []
-        for name, cls in env_registry().items():
+        reg = env_registry()
+        if len(reg) > 1:
+            reg.pop("stub", None)
+        for name, cls in reg.items():
             out.append({"name": name, "obs_dim": int(getattr(cls, "obs_dim", 0)),
                         "act_dim": int(getattr(cls, "act_dim", 0)),
-                        "description": getattr(cls, "description", "") or ""})
+                        "description": getattr(cls, "description", "") or "",
+                        "checkpoint": has_checkpoint(name)})
         return {"type": "envs", "envs": out}
 
     async def ws_handler(self, request):
@@ -423,6 +485,8 @@ class Server:
         self.clients.add(ws)
         try:
             await ws.send_str(json.dumps(self.trainer.status()))
+            if self.trainer.sim_info:
+                await ws.send_str(json.dumps(self.trainer.sim_info))
             async for m in ws:
                 if m.type != WSMsgType.TEXT:
                     if m.type == WSMsgType.ERROR:
@@ -448,7 +512,7 @@ class Server:
                     await ws.send_str(json.dumps({"type": "bench", "data": data}))
                 elif cmd == "status":
                     await ws.send_str(json.dumps(self.trainer.status()))
-                elif cmd in ("start", "stop", "showcase", "set_target", "save", "load"):
+                elif cmd in ("start", "stop", "showcase", "set_target", "save", "load", "render"):
                     self.trainer.submit(cmd, msg)
                 else:
                     await ws.send_str(json.dumps({"type": "error", "message": f"unknown cmd {cmd!r}"}))

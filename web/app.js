@@ -4,7 +4,8 @@ import { DemoServer, DEMO_BENCH } from "./demo.js";
 
 const params = new URLSearchParams(location.search);
 const DEMO = params.has("demo") && params.get("demo") !== "0";
-const RENDER_ENVS = Math.max(1, Math.min(1024, parseInt(params.get("r") || "64", 10)));
+const R_STOPS = [16, 36, 64, 144];
+let renderEnvs = Math.max(1, Math.min(256, parseInt(params.get("r") || "36", 10) || 36));
 const N_STOPS = [256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384];
 
 const $ = (id) => document.getElementById(id);
@@ -16,6 +17,9 @@ const el = {
   chart: $("chart"), chartDelta: $("chartDelta"), spark: $("spark"),
   envPicker: $("envPicker"), numEnvs: $("numEnvs"), numEnvsVal: $("numEnvsVal"),
   btnStart: $("btnStart"), btnStartText: $("btnStartText"), btnShowcase: $("btnShowcase"), btnSave: $("btnSave"),
+  btnLoad: $("btnLoad"), btnLoadText: $("btnLoadText"), density: $("density"), simSps: $("simSps"), simDetail: $("simDetail"), spsNote: $("spsNote"),
+  focusPanel: $("focusPanel"), focusCanvas: $("focusCanvas"), focusLabel: $("focusLabel"), focusClose: $("focusClose"), focusFoot: $("focusFoot"),
+  tileHint: $("tileHint"), flowHint: $("flowHint"), flow: $("flow"),
   benchPanel: $("benchPanel"), benchBody: $("benchBody"), benchMachine: $("benchMachine"), stage: $("stage"), gl: $("gl"),
 };
 
@@ -91,9 +95,15 @@ function onMessage(m) {
     case "status": onStatus(m); break;
     case "envs": onEnvs(m.envs || []); break;
     case "bench": if (m.data || m.bench || m.results) renderBench(m.data || m.bench || m); else if (DEMO && !benchLoaded) renderBench(DEMO_BENCH); break;
-    case "saved": toast(`Saved policy${m.path ? " → " + m.path : ""}`); break;
+    case "saved": toast(`Saved policy${m.path ? " → " + m.path : ""}`); markCheckpoint(S.env, true); break;
+    case "loaded": toast(`Loaded trained policy${m.path ? " ← " + m.path : ""} · showcasing`); break;
     case "error": toast(m.message || m.error || "Server error", true); break;
-    case "info": case "toast": toast(m.message || ""); break;
+    case "info":
+      if ("sim_sps" in m) onSimSps(m);
+      if (m.checkpoint) { markCheckpoint(m.env || S.env, true); el.btnLoad.classList.add("pulse"); }
+      if (m.message) toast(m.message);
+      break;
+    case "toast": toast(m.message || ""); break;
   }
 }
 
@@ -139,9 +149,44 @@ function onMetrics(m) {
   if (!S.startedAt && S.runState !== "idle") S.startedAt = performance.now();
 }
 
+function onSimSps(m) {
+  if (m.sim_sps == null) { el.simSps.textContent = "–"; el.simDetail.textContent = "sim benchmark unavailable"; return; }
+  el.simSps.textContent = `${fmtSI(m.sim_sps)} steps/s`;
+  el.simDetail.textContent = `${m.env || S.env} · N=${fmtInt(m.num_envs || S.numEnvs)} · random actions, no policy`;
+}
+
+function markCheckpoint(name, has) {
+  const e = S.envs.find((x) => x.name === name);
+  if (e) e.checkpoint = has;
+  if (name === S.env) S.checkpoint = has;
+  syncLoad();
+}
+function syncLoad() {
+  const e = S.envs.find((x) => x.name === S.env);
+  const has = !!(S.checkpoint || (e && e.checkpoint));
+  el.btnLoad.classList.toggle("hidden", !has);
+  el.btnLoadText.textContent = `Load trained ${S.env} policy`;
+  if (!has || S.runState === "showcase") el.btnLoad.classList.remove("pulse");
+}
+function syncFlow() {
+  const st = S.runState;
+  for (const n of el.flow.querySelectorAll(".flow-step")) {
+    n.classList.toggle("on", n.dataset.step === st || (n.dataset.step === "train" && (st === "training" || st === "measuring")));
+    n.classList.toggle("done", n.dataset.step === "train" && st === "showcase");
+  }
+  el.flowHint.textContent =
+    st === "measuring" ? "Measuring raw sim throughput (200 random steps)…" :
+    st === "training" ? "Learning live. Press Showcase (S) to run the current policy deterministically." :
+    st === "showcase" ? "Deterministic policy, no learning. Press Showcase again to resume training." :
+    "Start trains from scratch live. Showcase runs the current policy deterministically.";
+}
+
 function onStatus(m) {
   const prev = S.runState;
   S.runState = m.state || "idle";
+  if (m.env && m.env !== S.env) S.checkpoint = false;
+  if (typeof m.checkpoint === "boolean") S.checkpoint = m.checkpoint;
+  if (m.render_envs && m.render_envs !== renderEnvs && S.runState !== "idle") { renderEnvs = m.render_envs; syncDensity(); }
   if (m.env) setEnv(m.env, false);
   el.runState.className = "run-state " + S.runState;
   el.runStateText.textContent = S.runState.toUpperCase();
@@ -153,6 +198,9 @@ function onStatus(m) {
   renderer.setAccent(S.runState === "showcase" ? "#FF4FD8" : "#4FD1FF");
   if (running && !S.startedAt) S.startedAt = performance.now();
   if (!running) S.sps = 0;
+  el.spsNote.textContent = S.runState === "showcase" ? "showcase: deterministic policy, not training" : "training throughput (rollout + PPO update)";
+  el.focusPanel.classList.toggle("showcase", S.runState === "showcase");
+  syncFlow(); syncLoad();
   if (!running && prev !== "idle" && S.startedAt) { S.elapsedBase = (performance.now() - S.startedAt) / 1000; S.startedAt = null; }
 }
 
@@ -164,7 +212,7 @@ function onEnvs(envs) {
     b.className = "env-btn"; b.dataset.env = e.name;
     b.innerHTML = `<div class="n"></div><div class="d"></div>`;
     b.querySelector(".n").textContent = e.name;
-    b.querySelector(".d").textContent = e.description || `obs ${e.obs_dim} · act ${e.act_dim}`;
+    b.querySelector(".d").textContent = (e.checkpoint ? "● trained · " : "") + (e.description || `obs ${e.obs_dim} · act ${e.act_dim}`);
     b.title = e.description || "";
     b.onclick = () => { setEnv(e.name, true); };
     el.envPicker.appendChild(b);
@@ -183,6 +231,9 @@ function setEnv(name, user) {
   el.envName.textContent = name;
   for (const b of el.envPicker.children) b.classList.toggle("active", b.dataset.env === name);
   el.hint.classList.toggle("hidden", !isArmEnv());
+  if (changed) { S.checkpoint = false; setFocus(-1); }
+  el.tileHint.classList.toggle("hidden", isArmEnv() || focusIdx >= 0 || S.runState === "idle");
+  syncLoad();
   if (user && changed && S.runState !== "idle") start();
 }
 
@@ -191,7 +242,8 @@ function start() {
   S.retHistory = []; S.spsHistory = []; S.iter = 0; S.totalSteps = 0; S.totalShown = 0; S.meanRet = null;
   S.startedAt = performance.now(); S.elapsedBase = 0; chart.dirty = true;
   el.iter.textContent = "0"; el.ret.textContent = "–";
-  send({ cmd: "start", env: S.env, num_envs: S.numEnvs, render_envs: RENDER_ENVS });
+  el.simSps.textContent = "measuring…";
+  send({ cmd: "start", env: S.env, num_envs: S.numEnvs, render_envs: renderEnvs });
 }
 function stop() { send({ cmd: "stop" }); }
 function toggleRun() { S.runState === "idle" ? start() : stop(); }
@@ -202,6 +254,27 @@ function toggleShowcase() {
 
 el.btnStart.onclick = toggleRun;
 el.btnShowcase.onclick = toggleShowcase;
+el.btnLoad.onclick = () => {
+  if (!S.connected && !DEMO) return toast("Not connected", true);
+  send({ cmd: "load", env: S.env, num_envs: S.numEnvs });
+  el.btnLoad.classList.remove("pulse");
+  toast(`Loading runs/${S.env}.npz…`);
+};
+
+function syncDensity() {
+  for (const b of el.density.querySelectorAll("button")) b.classList.toggle("on", +b.dataset.r === renderEnvs);
+}
+el.density.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  renderEnvs = +b.dataset.r;
+  syncDensity();
+  const u = new URL(location.href); u.searchParams.set("r", renderEnvs); history.replaceState(null, "", u);
+  if (focusIdx >= renderEnvs) setFocus(-1);
+  send({ cmd: "render", render_envs: renderEnvs });
+});
+syncDensity();
+
 el.btnSave.onclick = () => { if (!S.connected && !DEMO) return toast("Not connected", true); send({ cmd: "save" }); toast("Saving policy…"); };
 
 function syncSlider() {
@@ -220,6 +293,7 @@ syncSlider();
 
 window.addEventListener("keydown", (e) => {
   if (e.target && (e.target.tagName === "INPUT" && e.target.type !== "range")) return;
+  if (e.key === "Escape") { setFocus(-1); return; }
   if (e.code === "Space") { e.preventDefault(); toggleRun(); }
   else if (e.key === "s" || e.key === "S") { if (e.metaKey || e.ctrlKey) { e.preventDefault(); send({ cmd: "save" }); toast("Saving policy…"); } else toggleShowcase(); }
 });
@@ -238,6 +312,7 @@ const renderer = new TileRenderer(el.gl);
 function resize() {
   const r = el.stage.getBoundingClientRect();
   renderer.resize(r.width, r.height);
+  layoutFocus();
   chart.resize(); spark.resize();
 }
 
@@ -257,15 +332,121 @@ function sendTargetAt(e, force) {
 el.gl.addEventListener("pointermove", (e) => {
   const [px, py] = pointerPos(e);
   renderer.hover = renderer.tileAt(px, py);
-  el.gl.style.cursor = isArmEnv() && renderer.hover >= 0 ? "crosshair" : "default";
+  el.gl.style.cursor = renderer.hover >= 0 ? (isArmEnv() ? "crosshair" : "zoom-in") : "default";
   if (dragging && isArmEnv()) sendTargetAt(e, false);
 });
 el.gl.addEventListener("pointerleave", () => { renderer.hover = -1; });
 el.gl.addEventListener("pointerdown", (e) => {
-  if (!isArmEnv()) return;
+  if (!isArmEnv()) {
+    const [px, py] = pointerPos(e);
+    const i = renderer.tileAt(px, py);
+    if (i >= 0) setFocus(i === focusIdx ? -1 : i);
+    return;
+  }
   dragging = true; el.gl.setPointerCapture(e.pointerId); sendTargetAt(e, true);
 });
 window.addEventListener("pointerup", () => { dragging = false; });
+
+// ---------------- focus view ----------------
+let focusIdx = -1, focusTrail = [], focusLastSample = 0, focusDist0 = null;
+const fctx = el.focusCanvas.getContext("2d");
+function setFocus(i) {
+  if (i >= 0 && isArmEnv()) i = -1;
+  focusIdx = i; renderer.focus = i;
+  focusTrail = []; focusDist0 = null;
+  el.focusPanel.classList.toggle("hidden", i < 0);
+  el.tileHint.classList.toggle("hidden", isArmEnv() || i >= 0 || S.runState === "idle");
+  layoutFocus();
+}
+function layoutFocus() {
+  const r = el.stage.getBoundingClientRect();
+  if (focusIdx < 0) { renderer.insetRight = 0; renderer.layoutKey = ""; return; }
+  const w = Math.round(r.width * 0.6);
+  el.focusPanel.style.width = w + "px";
+  renderer.insetRight = w + 16; renderer.layoutKey = "";
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cr = el.focusCanvas.getBoundingClientRect();
+  el.focusCanvas.width = Math.max(1, Math.round(cr.width * dpr)); el.focusCanvas.height = Math.max(1, Math.round(cr.height * dpr));
+  fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  focusSize = { w: cr.width, h: cr.height };
+}
+let focusSize = { w: 1, h: 1 };
+el.focusClose.onclick = () => setFocus(-1);
+
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+const FOCUS_PALETTE = ["#4FD1FF", "#A3FF6B", "#7CF2C8", "#A3FF6B", "#7CF2C8", "#FFD36B", "#FFD36B", "#B39CFF", "#FF9F6B"];
+
+function drawFocus(f, now) {
+  if (focusIdx < 0 || !f) return;
+  if (focusIdx >= f.R) { setFocus(-1); return; }
+  const { w, h } = focusSize, ctx = fctx, K = f.K;
+  const cam = f.camera_x ? f.camera_x[focusIdx] || 0 : 0;
+  const pose = f.capsules.slice(focusIdx * K * 5, (focusIdx + 1) * K * 5);
+  // trail sampling (~12 Hz), cleared on teleport (episode reset)
+  if (now - focusLastSample > 85) {
+    focusLastSample = now;
+    const last = focusTrail[focusTrail.length - 1];
+    if (last && Math.abs(last.pose[0] - pose[0]) + Math.abs(last.pose[1] - pose[1]) > 0.8) { focusTrail = []; focusDist0 = null; }
+    focusTrail.push({ pose, cam });
+    if (focusTrail.length > 18) focusTrail.shift();
+  }
+  if (focusDist0 == null) focusDist0 = cam;
+  const vb = renderer.fitView(f, Math.max(0.8, w / Math.max(1, h)) * 0.9);
+  const vw = vb.x1 - vb.x0, vh = vb.y1 - vb.y0;
+  const s = Math.min((w * 0.94) / vw, (h * 0.86) / vh);
+  const vcx = (vb.x0 + vb.x1) / 2;
+  const oy = h - (h - vh * s) / 2 + vb.y0 * s - h * 0.02;
+  const X = (x) => w / 2 + (x - cam - vcx) * s;
+  const Y = (y) => oy - y * s;
+  ctx.clearRect(0, 0, w, h);
+  const accent = S.runState === "showcase" ? "#FF4FD8" : "#4FD1FF";
+  if (f.ground != null) {
+    const gy = Y(f.ground);
+    const gg = ctx.createLinearGradient(0, gy, 0, h);
+    gg.addColorStop(0, "rgba(16,22,32,0.95)"); gg.addColorStop(1, "rgba(8,10,15,0.95)");
+    ctx.fillStyle = gg; ctx.fillRect(0, gy, w, h - gy);
+    ctx.strokeStyle = "rgba(107,242,140,0.7)"; ctx.lineWidth = 2; ctx.shadowColor = "rgba(107,242,140,0.6)"; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); ctx.shadowBlur = 0;
+    // distance ticks every 0.5 m, labels every 1 m
+    const xl = cam + vcx - w / 2 / s, xr = cam + vcx + w / 2 / s;
+    ctx.font = "500 11px JetBrains Mono, ui-monospace, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let m = Math.ceil(xl * 2) / 2; m <= xr; m += 0.5) {
+      const x = X(m), major = Math.abs(m - Math.round(m)) < 1e-6;
+      ctx.strokeStyle = major ? "rgba(140,160,190,0.55)" : "rgba(140,160,190,0.25)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, gy + 1); ctx.lineTo(x, gy + (major ? 12 : 6)); ctx.stroke();
+      if (major) { ctx.fillStyle = "rgba(124,133,153,0.7)"; ctx.fillText(`${Math.round(m)} m`, x, gy + 16); }
+    }
+  }
+  ctx.lineCap = "round";
+  const drawPose = (p, alpha, glow) => {
+    for (let k = 0; k < K; k++) {
+      const o = k * 5, r = p[o + 4];
+      if (!(r > 0)) continue;
+      const col = (f.colors && f.colors[k]) || FOCUS_PALETTE[k % FOCUS_PALETTE.length];
+      ctx.lineWidth = Math.max(2, 2 * r * s * 1.1);
+      ctx.strokeStyle = rgba(col, alpha);
+      if (glow) { ctx.shadowColor = rgba(col, 0.7); ctx.shadowBlur = 22; }
+      ctx.beginPath(); ctx.moveTo(X(p[o]), Y(p[o + 1])); ctx.lineTo(X(p[o + 2]), Y(p[o + 3])); ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+  };
+  const n = focusTrail.length;
+  for (let j = 0; j < n - 1; j++) drawPose(focusTrail[j].pose, 0.05 + 0.22 * (j / n) ** 1.5, false);
+  drawPose(pose, 1, true);
+  // inner highlight
+  for (let k = 0; k < K; k++) {
+    const o = k * 5, r = pose[o + 4];
+    if (!(r > 0)) continue;
+    ctx.lineWidth = Math.max(1, r * s * 0.5); ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.beginPath(); ctx.moveTo(X(pose[o]), Y(pose[o + 1])); ctx.lineTo(X(pose[o + 2]), Y(pose[o + 3])); ctx.stroke();
+  }
+  el.focusLabel.textContent = `robot #${focusIdx + 1} of ${fmtInt(S.numEnvs)} · ${S.env}`;
+  el.focusFoot.textContent = f.camera_x ? `x = ${cam.toFixed(2)} m · ghost trail ~1.5 s` : "ghost trail ~1.5 s";
+  el.focusFoot.style.color = rgba(accent, 0.75);
+}
 
 // ---------------- frame interpolation ----------------
 let interp = null;
@@ -494,7 +675,9 @@ function tick(now) {
   } else el.chartDelta.textContent = "";
   chart.draw(h.map((p) => p[1]));
   spark.dirty = true; spark.draw(S.spsHistory);
-  renderer.draw(interpolatedFrame(now), now / 1000);
+  const fr = interpolatedFrame(now);
+  renderer.draw(fr, now / 1000);
+  drawFocus(fr, now);
   requestAnimationFrame(tick);
 }
 

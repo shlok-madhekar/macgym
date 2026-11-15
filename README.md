@@ -111,21 +111,21 @@ Machine: Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2
 
 | Task | Backend | Envs | Env-steps/s |
 |---|---|---:|---:|
-| cartpole | MLX GPU (Metal) | 1,024 | 1,027,297 |
-| cartpole | MLX GPU (Metal) | 4,096 | 3,868,791 |
-| cartpole | MLX GPU (Metal) | 16,384 | 13,629,563 |
-| walker | MLX GPU (Metal) | 1,024 | 704,170 |
-| walker | MLX GPU (Metal) | 4,096 | 2,862,325 |
-| walker | MLX GPU (Metal) | 16,384 | 6,312,861 |
-| cheetah | MLX GPU (Metal) | 1,024 | 761,179 |
-| cheetah | MLX GPU (Metal) | 4,096 | 3,042,999 |
-| cheetah | MLX GPU (Metal) | 16,384 | 6,705,159 |
-| cartpole | CPU MuJoCo 1 thread | 1 | 89,971 |
-| cartpole | CPU MuJoCo 11 procs | 11 | 550,048 |
-| cheetah | CPU MuJoCo 1 thread | 1 | 51,546 |
-| cheetah | CPU MuJoCo 11 procs | 11 | 274,702 |
+| cartpole | MLX GPU (Metal) | 1,024 | 1,468,760 |
+| cartpole | MLX GPU (Metal) | 4,096 | 6,121,731 |
+| cartpole | MLX GPU (Metal) | 16,384 | 19,256,854 |
+| walker | MLX GPU (Metal) | 1,024 | 752,450 |
+| walker | MLX GPU (Metal) | 4,096 | 3,048,904 |
+| walker | MLX GPU (Metal) | 16,384 | 6,274,760 |
+| cheetah | MLX GPU (Metal) | 1,024 | 746,004 |
+| cheetah | MLX GPU (Metal) | 4,096 | 3,046,077 |
+| cheetah | MLX GPU (Metal) | 16,384 | 6,589,763 |
+| cartpole | CPU MuJoCo 1 thread | 1 | 91,232 |
+| cartpole | CPU MuJoCo 11 procs | 11 | 514,545 |
+| cheetah | CPU MuJoCo 1 thread | 1 | 52,376 |
+| cheetah | CPU MuJoCo 11 procs | 11 | 293,810 |
 
-Best MLX GPU vs best CPU MuJoCo (all cores): cartpole **24.8x**, cheetah **24.4x**, walker **23x** (walker compared against MuJoCo half-cheetah)
+Best MLX GPU vs best CPU MuJoCo (all cores): cartpole **37.4x**, cheetah **22.4x**, walker **21.4x** (walker compared against MuJoCo half-cheetah)
 <!-- BENCH:END -->
 
 **Methodology.** One env-step = one control step of one environment, physics substeps / frame-skip included. MLX: random actions generated on the GPU, full `mx.eval` every step, auto-reset included. MuJoCo: Gymnasium-style InvertedPendulum-like cartpole (timestep 0.02, frame_skip 2) and HalfCheetah-like planar model (timestep 0.01, frame_skip 5), Python `mj_step` loop with random ctrl, single thread and one process per core.

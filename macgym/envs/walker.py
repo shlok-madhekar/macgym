@@ -35,7 +35,7 @@ class Walker2D(LocoEnv):
                 Capsule((0, 0.1), (0.2, 0.1), 0.06, color=col, name=side + "_foot"),
             ]
             joints += [
-                Joint(0, base, (0, 1.05), -0.8, 2.0, gear=100, damping=0.1),         # hip
+                Joint(0, base, (0, 1.05), -0.3, 2.0, gear=100, damping=0.1),         # hip (little hyperextension, like MuJoCo walker2d)
                 Joint(base, base + 1, (0, 0.6), -2.6, 0.0, gear=100, damping=0.1),   # knee
                 Joint(base + 1, base + 2, (0, 0.1), -0.8, 0.8, gear=100, damping=0.1),  # ankle
             ]

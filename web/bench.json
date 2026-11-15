@@ -1,90 +1,90 @@
 {
   "machine": "Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2",
-  "generated_at": "2026-11-15 11:49:41 PST",
+  "generated_at": "2026-11-15 12:02:33 PST",
   "results": [
     {
       "task": "cartpole",
       "backend": "MLX GPU (Metal)",
       "num_envs": 1024,
-      "steps_per_sec": 1027297.1
+      "steps_per_sec": 1468759.5
     },
     {
       "task": "cartpole",
       "backend": "MLX GPU (Metal)",
       "num_envs": 4096,
-      "steps_per_sec": 3868790.6
+      "steps_per_sec": 6121730.6
     },
     {
       "task": "cartpole",
       "backend": "MLX GPU (Metal)",
       "num_envs": 16384,
-      "steps_per_sec": 13629562.8
+      "steps_per_sec": 19256854.0
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal)",
       "num_envs": 1024,
-      "steps_per_sec": 704170.0
+      "steps_per_sec": 752449.9
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal)",
       "num_envs": 4096,
-      "steps_per_sec": 2862325.4
+      "steps_per_sec": 3048904.5
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal)",
       "num_envs": 16384,
-      "steps_per_sec": 6312861.1
+      "steps_per_sec": 6274760.1
     },
     {
       "task": "cheetah",
       "backend": "MLX GPU (Metal)",
       "num_envs": 1024,
-      "steps_per_sec": 761179.3
+      "steps_per_sec": 746003.8
     },
     {
       "task": "cheetah",
       "backend": "MLX GPU (Metal)",
       "num_envs": 4096,
-      "steps_per_sec": 3042999.1
+      "steps_per_sec": 3046077.4
     },
     {
       "task": "cheetah",
       "backend": "MLX GPU (Metal)",
       "num_envs": 16384,
-      "steps_per_sec": 6705158.9
+      "steps_per_sec": 6589762.8
     },
     {
       "task": "cartpole",
       "backend": "CPU MuJoCo 1 thread",
       "num_envs": 1,
-      "steps_per_sec": 89971.3
+      "steps_per_sec": 91232.1
     },
     {
       "task": "cartpole",
       "backend": "CPU MuJoCo 11 procs",
       "num_envs": 11,
-      "steps_per_sec": 550048.5
+      "steps_per_sec": 514545.2
     },
     {
       "task": "cheetah",
       "backend": "CPU MuJoCo 1 thread",
       "num_envs": 1,
-      "steps_per_sec": 51545.6
+      "steps_per_sec": 52375.8
     },
     {
       "task": "cheetah",
       "backend": "CPU MuJoCo 11 procs",
       "num_envs": 11,
-      "steps_per_sec": 274702.0
+      "steps_per_sec": 293809.7
     }
   ],
   "speedup_best_gpu_vs_best_cpu": {
-    "cartpole": 24.8,
-    "cheetah": 24.4,
-    "walker": 23.0
+    "cartpole": 37.4,
+    "cheetah": 22.4,
+    "walker": 21.4
   },
   "notes": "env-steps/s = control steps per second summed over all environments (physics substeps / frame-skip included). MLX: median of 5 timing windows, random actions generated on GPU, full mx.eval every step, auto-reset included, mx.compile on the physics step. MuJoCo: Gymnasium-style models written inline (InvertedPendulum-like cartpole, timestep 0.02 frame_skip 2; HalfCheetah-like planar model, timestep 0.01 frame_skip 5), plain Python mj_step loop with random ctrl, then one process per core (11 processes, spawn, warm). IMPORTANT CAVEAT: this is not an apples-to-apples physics comparison. MacGym's MLX tasks use our own simplified 2D planar maximal-coordinate dynamics (capsule bodies, penalty ground contact, few substeps), while MuJoCo solves full 3D generalized-coordinate dynamics with a constraint-based contact solver. The MuJoCo numbers also include Python loop overhead per step. The MLX walker task is compared against the MuJoCo half-cheetah as the nearest planar locomotion model. Read the speedups as 'how much RL experience per second this laptop can generate for these tasks', not as 'MLX is X times faster than MuJoCo at the same physics'. Numbers vary run to run (roughly +/-30% observed on the GPU side) because the laptop was not otherwise idle during the hackathon (other training jobs share the GPU); MuJoCo multi-process uses all P and E cores. MLX tasks measured via: {'cartpole': 'macgym.envs', 'walker': 'macgym.envs', 'cheetah': 'macgym.envs'}. mlx 0.32.4, mujoco 4.0.1, Python 3.13.12."
 }
