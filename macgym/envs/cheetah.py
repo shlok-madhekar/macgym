@@ -43,7 +43,7 @@ class Cheetah2D(LocoEnv):
             Joint(4, 5, knee_f, -0.87, 1.2, gear=60, damping=3.0, stiffness=120),
             Joint(5, 6, ank_f, -0.5, 0.5, gear=30, damping=1.5, stiffness=60),
         ]
-        return Model(caps, joints, dt=self.dt, substeps=8, iters=4, mu=0.4)
+        return Model(caps, joints, dt=self.dt, substeps=8, iters=4, mu=0.8)
 
     def observe(self, state):
         m = self.model

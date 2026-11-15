@@ -14,11 +14,20 @@ const S = {
   code: "", ranCode: null, dirty: false,
   preview: null, previewPrev: null, previewT: 0, previewErr: null, seq: 0,
   interp: new T.Interp(), hasFrame: false,
-  hist: [], humanValue: null, humanBest: null, unit: "m", label: "average distance per episode",
+  hist: [], humanValue: null, humanBest: null, unit: "m", label: "average distance per finished episode", humanSource: null, robotName: null,
   iter: 0, sps: 0, simSps: null, trainSeconds: 0, runStart: 0, lastProgLog: -99,
   replays: [], avgMarks: [], liveMean: 0, record: 0, cam: { range: 6, targetRange: 6 },
   machine: "Apple Silicon GPU", robotH: 1.0, robotW: 1.0, runClock: 0,
 };
+
+
+// Simulated experience = env steps x control dt (dt from the replay message: replay dt = 2 x control dt).
+function xpText(steps, ctrlDt, secs, noun) {
+  if (!steps || !ctrlDt) return null;
+  const h = steps * ctrlDt / 3600;
+  const v = h >= 48 ? `${(h / 24).toFixed(h >= 240 ? 0 : 1)} days` : h >= 1 ? `${h.toFixed(h >= 10 ? 0 : 1)} hours` : `${Math.round(h * 60)} minutes`;
+  return `<b>${v}</b> of ${noun} experience in ${Math.floor(secs / 60)}:${String(Math.floor(secs % 60)).padStart(2, "0")} of wall time`;
+}
 
 // ======================================================================
 // Editor (CodeMirror 6 via esm.sh, textarea fallback)
@@ -250,16 +259,18 @@ function onFrame(m) {
   const f = { R, K, caps, dist, best: m.best_index ?? 0 };
   if (f.best < 0 || f.best >= R) f.best = 0;
   S.interp.push(f);
+  if (m.robot_name && m.robot_name !== S.robotName) { S.robotName = m.robot_name; renderStageText(); }
   if (!S.hasFrame) { S.hasFrame = true; renderStageText(); }
 }
 function onMetrics(m) {
   if (m.iter != null) S.iter = m.iter;
   if (m.sps != null) S.sps = m.sps;
+  if (m.env_steps != null) S.envSteps = m.env_steps;
   const ts = m.train_seconds ?? (performance.now() - S.runStart) / 1000;
   S.trainSeconds = ts;
   const v = m.human_value;
   if (v != null && isFinite(v)) {
-    S.humanValue = v; S.humanBest = m.human_best;
+    S.humanValue = v; S.humanBest = m.human_best; S.humanSource = m.human_source || "episodes";
     S.unit = m.human_unit || "m";
     const last = S.hist[S.hist.length - 1];
     if (last && ts < last[0] - 1) S.hist = [];
@@ -269,17 +280,23 @@ function onMetrics(m) {
   if (ts - S.lastProgLog >= 5 || S.lastProgLog < 0) {
     S.lastProgLog = ts;
     const parts = [`iter <b>${fmtInt(S.iter)}</b>`];
-    if (v != null && isFinite(v)) parts.push(`avg <b>${fmtM(v)}</b>` + (m.human_source === "live" ? " (so far)" : ""));
+    if (v != null && isFinite(v)) parts.push(m.human_source === "live" ? `avg so far <b>${fmtM(v)}</b> (none finished)` : `avg/finished ep <b>${fmtM(v)}</b>`);
     if (m.human_best != null) parts.push(`best ${fmtM(m.human_best)}`);
-    if (m.sps) parts.push(`${fmtSI(m.sps)} steps/s`);
-    log(parts.join("  ·  "), "prog");
+    if (m.sps) parts.push(`training (sim + PPO) ${fmtSI(m.sps)} steps/s`);
+    log(parts.join(" · "), "prog");
   }
-  renderHeadline(); renderFoot();
+  renderHeadline(); renderFoot(); renderXp();
+}
+function renderXp() {
+  const t = S.hasFrame && xpText(S.envSteps, S.ctrlDt, S.trainSeconds, S.robotName || "robot");
+  const el = $("stageLabel");
+  if (t) el.innerHTML = t; else el.textContent = S.hasFrame ? "Track" : "Rest pose";
 }
 function onReplay(m) {
   if (S.ranCode == null && S.state !== "training") return; // stale replays of a finished run
   const idx = S.replays.findIndex((r) => r.label === m.label);
   const rep = { ...m };
+  if (m.dt) S.ctrlDt = m.dt / 2;
   if (m.label === "now") S.replays = S.replays.filter((r) => r.label !== "now");
   if (idx >= 0) S.replays[idx] = rep; else S.replays.push(rep);
   if (m.label !== "now" && idx < 0 && S.hasFrame) S.avgMarks.push({ label: m.label, x: S.liveMean || 0 });
@@ -297,7 +314,7 @@ function run() {
   S.code = code; S.ranCode = code; S.runClock = performance.now();
   S.interp.clear(); S.hasFrame = false;
   S.hist = []; S.replays = []; S.avgMarks = []; S.humanValue = null; S.humanBest = null; S.record = 0;
-  S.iter = 0; S.sps = 0; S.simSps = null; S.trainSeconds = 0; S.lastProgLog = -99;
+  S.iter = 0; S.sps = 0; S.simSps = null; S.trainSeconds = 0; S.lastProgLog = -99; S.envSteps = 0; S.trail = null; S.dens = null;
   S.cam.range = S.cam.targetRange = 6;
   editor.clearError();
   buildGens(); renderHeadline();
@@ -354,11 +371,11 @@ function renderConn() { $("conn").textContent = S.connected ? "connected · loca
 
 function renderStageText() {
   const training = S.hasFrame;
-  $("stageLabel").textContent = training ? "Track" : "Rest pose";
+  renderXp();
   const p = S.preview;
   if (training) {
     const R = S.interp.frame ? S.interp.frame.R : 256;
-    $("stageNote").textContent = `${fmtInt(R)} of ${fmtInt(S.numEnvs)} copies shown, overlaid · each from its own start`;
+    $("stageNote").textContent = `${fmtInt(R)} of ${fmtInt(S.numEnvs)}${S.robotName ? " " + S.robotName : ""} copies shown, overlaid · each from its own start`;
   } else {
     $("stageNote").textContent = p ? `${p.bodies} bodies · ${p.joints} joints · ${p.joints} motors` : "";
   }
@@ -376,7 +393,7 @@ function renderHeadline() {
   $("hlNum").textContent = v == null ? "–" : v.toFixed(v < 10 ? 2 : 1);
   $("hlNum").parentElement.classList.toggle("empty", v == null);
   $("hlUnit").textContent = S.unit;
-  $("hlLabel").textContent = "average distance per episode";
+  $("hlLabel").textContent = S.humanSource === "live" ? "average distance so far (no episode finished yet)" : "average distance per finished episode";
   let sub = "press Run to train";
   if (S.hist.length > 1) sub = `was ${fmtM(S.hist[0][1])} at ${mmss(S.hist[0][0])}${S.humanBest != null ? ` · best ${fmtM(S.humanBest)}` : ""}`;
   else if (S.state === "training" || S.state === "starting") sub = "first episodes finishing…";
@@ -384,8 +401,8 @@ function renderHeadline() {
 }
 function renderFoot() {
   const parts = [`<b>${fmtInt(S.numEnvs)}</b> copies in parallel`, `${S.machine} (MLX)`,
-    `sim ${S.simSps ? `<b>${fmtSI(S.simSps)}</b> steps/s` : "–"}`,
-    `training ${S.sps ? `<b>${fmtSI(S.sps)}</b> steps/s` : "–"}`,
+    `sim only <b>${S.simSps ? fmtSI(S.simSps) : "–"}</b> steps/s`,
+    `training (sim + PPO) <b>${S.sps ? fmtSI(S.sps) : "–"}</b> steps/s`,
     `iteration ${S.iter ? `<b>${fmtInt(S.iter)}</b>` : "–"}`];
   if (!S.connected) parts.push("server offline");
   $("foot").innerHTML = parts.map((x) => `<span>${x}</span>`).join('<span class="sep">·</span>');
@@ -547,15 +564,18 @@ function buildGens() {
   const lastT = shown.length ? (shown[shown.length - 1].train_seconds ?? 0) : -1;
   const upcoming = REPLAY_AT.filter((t) => t > lastT + 0.5);
   laneT0 = performance.now();
+  const longest = shown.reduce((a, r) => ((r.frames || []).length * (r.dt || 0.04) > (a.frames || []).length * (a.dt || 0.04) ? r : a), {});
+  $("gensNote").textContent = longest.frames ? "up to 8 s each, one start, side by side" : "up to 8 s each, one start, side by side";
   for (let i = 0; i < GEN_SLOTS; i++) {
     const rep = shown[i];
     const cell = document.createElement("div");
     cell.className = "lane";
     if (rep) {
       if (i === shown.length - 1) cell.classList.add("newest");
-      const res = rep.result != null ? fmtM(rep.result) : "";
-      cell.innerHTML = `<span class="lt mono">${rep.label === "now" ? "NOW" : rep.label}</span><div class="lbox"><canvas></canvas></div><div class="lr"><b>${res}</b><span></span></div>`;
-      cell.querySelector(".lr span").textContent = (rep.result_text || "").replace(/^walked [-\d.]+ m in /, "in ").replace(/ · [-\d.]+ m$/, "");
+      const res = rep.result != null ? `walked ${fmtM(rep.result)}` : "";
+      cell.innerHTML = `<span class="lt mono">${rep.label === "now" ? "NOW" : rep.label}</span><div class="lbox"><canvas></canvas></div><div class="lr"><b></b><span></span></div>`;
+      cell.querySelector(".lr b").textContent = res;
+      cell.querySelector(".lr span").textContent = `${replaySecs(rep)} s replay${/fell/.test(rep.result_text || "") ? " · fell" : ""}`;
       cell.title = rep.result_text || "";
       genCells.push({ rep, cv: cell.querySelector("canvas"), isNew: i === shown.length - 1 });
     } else {
@@ -565,6 +585,12 @@ function buildGens() {
     }
     row.appendChild(cell);
   }
+}
+// length of a recorded replay in simulated seconds (frames are captured every rep.dt)
+function replaySecs(rep) {
+  const n = (rep.frames || []).length;
+  const sec = n * (rep.dt || 0.04);
+  return sec >= 2 ? String(Math.round(sec)) : sec.toFixed(1);
 }
 function drawGens(now) {
   if (!genCells.length) return;

@@ -111,13 +111,13 @@
 .pg-gens .gens-row { column-gap: 18px; }
 /* generations as race lanes */
 .pg-gens .gens-row { display: grid; grid-template-columns: none; grid-template-rows: repeat(4, minmax(0, 1fr)); row-gap: 0; margin-top: 10px; }
-.lane { display: grid; grid-template-columns: 44px minmax(0, 1fr) 92px; align-items: stretch; border-top: 1px solid var(--rule); min-height: 0; }
+.lane { display: grid; grid-template-columns: 44px minmax(0, 1fr) 118px; align-items: stretch; border-top: 1px solid var(--rule); min-height: 0; }
 .lane:last-child { border-bottom: 1px solid var(--rule); }
 .lane .lt { display: flex; align-items: center; font-size: 11.5px; color: var(--ink); letter-spacing: 0.04em; }
 .lane .lbox { position: relative; min-height: 0; }
 .lane .lbox canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .lane .lr { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; gap: 2px; }
-.lane .lr b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lane .lr b { font-size: 14px; white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
 .lane .lr span { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .lane.newest .lt, .lane.newest .lr b { color: var(--accent); }
 .lane.newest .lbox { box-shadow: inset 2px 0 0 var(--accent); }
@@ -125,3 +125,8 @@
 .lane.empty .lbox span { position: absolute; inset: 0; display: flex; align-items: center; padding-left: 12px; color: #B4AD9F; font-size: 10.5px; }
 .pg-gens .gens-head { min-width: 0; }
 .pg-gens .gens-head .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+.stage-head { align-items: baseline; }
+.stage-head #stageNote { font-family: var(--sans); font-size: 12.5px; letter-spacing: 0; text-transform: none; }
+.stage-hint { top: 52px; }
+.console-head > span:first-child { font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; }

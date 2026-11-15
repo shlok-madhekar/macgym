@@ -463,6 +463,7 @@ class Trainer:
         self.env = None
         self.ppo = None
         self.env_name = None
+        self.robot_name = None     # display name of the robot being trained (playground: robot.name)
         self.num_envs = 0
         self.render_envs = DEFAULT_RENDER_ENVS
         self.sim_info = None
@@ -497,6 +498,7 @@ class Trainer:
             return trainer_run_code(self, msg)
         if cmd == "start":
             name = msg.get("env", "cartpole")
+            self.robot_name = name
             n = int(msg.get("num_envs", 4096))
             n = max(1, min(n, 65536))
             self.render_envs = max(1, min(int(msg.get("render_envs", DEFAULT_RENDER_ENVS)), MAX_RENDER_ENVS, n))
@@ -631,7 +633,9 @@ class Trainer:
         self.last_frame_t = now
         try:
             rs = self.env.render_state(min(self.render_envs, self.num_envs))
-            self.emit(frame_message(self.env_name, rs))
+            fm = frame_message(self.env_name, rs)
+            fm["robot_name"] = self.robot_name or self.env_name
+            self.emit(fm)
         except Exception as e:
             traceback.print_exc()
             self.emit({"type": "error", "message": f"render_state failed: {e}"})
@@ -642,6 +646,7 @@ class Trainer:
         out["type"] = "metrics"
         out["env"] = self.env_name
         out["num_envs"] = self.num_envs
+        out["robot_name"] = self.robot_name or self.env_name
         out.update(human_fields(self.env_name, self.env, dict(m), self._train_seconds()))
         self.emit(out)
         self._push_frame()
@@ -879,6 +884,7 @@ def trainer_run_code(tr, msg):
     env.reset()
     tr.ppo = make_trainer(env, PLAYGROUND_ENV)
     tr.env, tr.env_name, tr.num_envs = env, PLAYGROUND_ENV, n
+    tr.robot_name = getattr(robot, "name", None) or PLAYGROUND_ENV
     tr.obs = None
     tr._new_run()
     try:
@@ -1031,7 +1037,8 @@ class Server:
 
     def make_app(self):
         app = web.Application()
-        app.router.add_get("/", self.index)
+        app.router.add_get("/", lambda r: web.HTTPFound("/playground"))
+        app.router.add_get("/viewer", self.index)
         app.router.add_get("/ws", self.ws_handler)
         app.router.add_get("/playground", self.playground)
         app.router.add_get("/presets/{name}", self.preset)
@@ -1055,7 +1062,7 @@ def view(target=None, policy=None, port=8765, num_envs=4096, open_browser=True, 
     A robot file opens in the Playground and starts training immediately; a builtin trains in the viewer.
     """
     srv = Server()
-    page = "/"
+    page = "/viewer"
     if isinstance(target, str) and target.endswith(".py"):
         with open(target) as f:
             srv.trainer.submit("run_code", {"code": f.read(), "num_envs": num_envs})

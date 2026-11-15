@@ -4,10 +4,17 @@
   const T = window.MacGymTrack; // shared drawing (track.js)
   const { C, fit, strokeRobots, strokeOne, mono, tracked, dashed, label } = T;
   const REPLAY_AT = [0, 10, 30, 60, 120, 240];
-  const LOCO = new Set(["walker", "cheetah"]);
+  const LOCO = new Set(["walker", "cheetah", "hopper", "tripod", "worm"]);
+  // Framework built-ins in display order; tabs show whichever of these the server lists (+ any others it adds).
+  const TAB_ORDER = ["walker", "cheetah", "hopper", "tripod", "worm", "arm", "cartpole"];
+  const LOCO_LABEL = "average distance per finished episode";
+  const LIVE_LABEL = "average distance so far (no episode finished yet)";
   const META = {
-    walker: { unit: "m", label: "average distance per episode", hib: true },
-    cheetah: { unit: "m", label: "average distance per episode", hib: true },
+    walker: { unit: "m", label: LOCO_LABEL, hib: true },
+    cheetah: { unit: "m", label: LOCO_LABEL, hib: true },
+    hopper: { unit: "m", label: LOCO_LABEL, hib: true },
+    tripod: { unit: "m", label: LOCO_LABEL, hib: true },
+    worm: { unit: "m", label: LOCO_LABEL, hib: true },
     arm: { unit: "cm", label: "average miss distance", hib: false },
     cartpole: { unit: "s", label: "average time balanced", hib: true },
   };
@@ -16,7 +23,7 @@
   function metaFor(env, robot) {
     if (META[env]) return META[env];
     const name = robot || (env === "playground" ? "playground robot" : env);
-    return { unit: "m", label: `average distance per episode · ${name}`, hib: true, custom: true };
+    return { unit: "m", label: `${LOCO_LABEL} · ${name}`, hib: true, custom: true };
   }
   const isLoco = (env) => LOCO.has(env) || (!!env && !META[env]);
   const params = new URLSearchParams(location.search);
@@ -68,7 +75,7 @@
       case "status": onStatus(m); break;
       case "replay": onReplay(m); break;
       case "info": if ("sim_sps" in m) { S.simSps = m.sim_sps; renderFoot(); } break;
-      case "envs": break;
+      case "envs": buildTabs(m.envs || []); break;
       case "error": console.warn("server:", m.message); break;
     }
   }
@@ -78,14 +85,16 @@
     const prevState = S.state;
     S.state = m.state || "idle";
     if (m.num_envs) { S.numEnvs = m.num_envs; $("count").value = String(m.num_envs); }
-    if (m.env && m.env !== S.env) setEnv(m.env, false);
+    // a finished Playground run is not a viewer env: keep the current tab so Train starts a built-in
+    const adopt = m.env && m.env !== S.env && !(m.env === "playground" && S.state === "idle");
+    if (adopt) setEnv(m.env, false);
     if (S.state !== "idle" && prevState === "idle" && !S.localStart) S.localStart = performance.now();
     if (S.state === "idle") S.sps = 0;
     renderControls(); renderFoot(); renderReady();
   }
 
   function onFrame(m) {
-    if (m.env && m.env !== S.env) setEnv(m.env, false, m.robot);
+    if (m.env && m.env !== S.env) setEnv(m.env, false, m.robot_name || m.robot);
     const R = m.R | 0, K = m.K | 0;
     const caps = Float32Array.from(m.capsules || []);
     let dist = m.dist ? Float32Array.from(m.dist) : null;
@@ -124,7 +133,18 @@
     return bi;
   }
 
+  function xpText(steps, ctrlDt, secs, noun) {
+    if (!steps || !ctrlDt) return null;
+    const h = steps * ctrlDt / 3600;
+    const v = h >= 48 ? `${(h / 24).toFixed(h >= 240 ? 0 : 1)} days` : h >= 1 ? `${h.toFixed(h >= 10 ? 0 : 1)} hours` : `${Math.round(h * 60)} minutes`;
+    return `<b>${v}</b> of ${noun} experience in ${mmss(secs)} of wall time`;
+  }
+  function renderXp() {
+    const t = S.frame && xpText(S.envSteps, S.ctrlDt, S.trainSeconds, S.env);
+    if (t) $("heroLabel").innerHTML = t; else $("heroLabel").textContent = "Track";
+  }
   function onMetrics(m) {
+    if (m.env_steps != null) S.envSteps = m.env_steps;
     if (m.iter != null) S.iter = m.iter;
     if (m.sps != null) S.sps = m.sps;
     if (m.num_envs) S.numEnvs = m.num_envs;
@@ -143,15 +163,18 @@
     if (v == null || !isFinite(v)) { renderFoot(); return; }
     S.humanValue = v; S.humanBest = best;
     S.unit = unit != null ? unit : meta.unit; S.label = label || meta.label; S.hib = hib != null ? hib : meta.hib;
+    // one headline number per screen: locomotion always reads "average distance per finished episode"
+    if (isLoco(S.env) && S.unit === "m") S.label = m.human_source === "live" ? LIVE_LABEL : meta.label;
     const last = S.hist[S.hist.length - 1];
     if (last && ts < last[0] - 1) S.hist = [];
     S.hist.push([ts, v]);
     if (S.hist.length > 2000) S.hist = S.hist.filter((_, i) => i % 2 === 0);
-    renderHeadline(); renderFoot();
+    renderHeadline(); renderFoot(); renderXp();
   }
 
   function onReplay(m) {
     if (m.env && m.env !== S.env) return;
+    if (m.dt) S.ctrlDt = m.dt / 2;
     const idx = S.replays.findIndex((r) => r.label === m.label);
     const rep = { ...m, born: performance.now() };
     if (m.label === "now") S.replays = S.replays.filter((r) => r.label !== "now");
@@ -162,20 +185,39 @@
   }
 
   // ---------------- controls ----------------
-  for (const b of document.querySelectorAll("#tabs button")) {
-    b.addEventListener("click", () => {
-      const env = b.dataset.env;
-      if (env === S.env) return;
-      setEnv(env, true);
-      if (S.state !== "idle") startRun();
+  $("tabs").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-env]");
+    if (!b) return;
+    const env = b.dataset.env;
+    if (env === S.env) return;
+    setEnv(env, true);
+    if (S.state !== "idle") startRun();
+  });
+  const titleCase = (n) => n.charAt(0).toUpperCase() + n.slice(1);
+  function buildTabs(envs) {
+    const names = envs.map((e) => e.name).filter((n) => n && n !== "stub" && n !== "playground");
+    if (!names.length) return;
+    names.sort((a, b) => {
+      const ia = TAB_ORDER.indexOf(a), ib = TAB_ORDER.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
     });
+    const nav = $("tabs");
+    nav.innerHTML = "";
+    for (const n of names) {
+      const b = document.createElement("button");
+      b.dataset.env = n; b.textContent = titleCase(n);
+      const e = envs.find((x) => x.name === n);
+      if (e && e.description) b.title = e.description;
+      b.classList.toggle("on", n === S.env);
+      nav.appendChild(b);
+    }
   }
   $("count").addEventListener("change", (e) => { S.numEnvs = +e.target.value; renderReady(); renderFoot(); });
   $("train").addEventListener("click", () => { if (S.state === "idle") startRun(); else send({ cmd: "stop" }); });
   $("load").addEventListener("click", () => { resetRun(); send({ cmd: "load", env: S.env, num_envs: S.numEnvs }); send({ cmd: "render", render_envs: 256 }); });
 
   function resetRun() {
-    S.hist = []; S.replays = []; S.avgMarks = []; S.humanValue = null; S.humanBest = null; S.record = 0; S.iter = 0; S.sps = 0;
+    S.hist = []; S.replays = []; S.avgMarks = []; S.humanValue = null; S.humanBest = null; S.record = 0; S.iter = 0; S.sps = 0; S.envSteps = 0; S.trail = null; S.dens = null;
     S.frame = null; S.prev = null; S.localStart = performance.now(); S.trainSeconds = 0;
     S.cam.range = S.cam.targetRange = 6;
     buildGens(); renderHeadline();
@@ -191,7 +233,7 @@
     S.env = env;
     for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.env === env);
     if (changed) {
-      S.frame = null; S.prev = null; S.hist = []; S.replays = []; S.avgMarks = []; S.humanValue = null; S.record = 0;
+      S.frame = null; S.prev = null; S.hist = []; S.replays = []; S.avgMarks = []; S.humanValue = null; S.record = 0; S.trail = null; S.dens = null;
       S.unit = meta.unit; S.label = meta.label; S.hib = meta.hib;
       S.cam.range = S.cam.targetRange = 6;
       buildGens(); renderHeadline();
@@ -216,7 +258,7 @@
       cartpole: "Every cart starts upright. As they learn, the poles stay up longer.",
     }[S.env];
     const R = S.frame ? S.frame.R : 256;
-    $("heroLabel").textContent = "Track";
+    renderXp();
     $("heroNote").textContent = S.frame
       ? `${fmtInt(R)} of ${fmtInt(S.numEnvs)} robots shown, overlaid${isLoco(S.env) ? " · each from its own start" : ""}`
       : "";
@@ -243,8 +285,8 @@
     const parts = [];
     parts.push(`<b>${fmtInt(S.numEnvs)}</b> robots in parallel`);
     parts.push(`${S.machine} (MLX)`);
-    parts.push(`sim ${S.simSps ? `<b>${fmtSI(S.simSps)}</b> steps/s` : "–"}`);
-    parts.push(`training ${S.sps ? `<b>${fmtSI(S.sps)}</b> steps/s` : "–"}`);
+    parts.push(`sim only <b>${S.simSps ? fmtSI(S.simSps) : "–"}</b> steps/s`);
+    parts.push(`training (sim + PPO) <b>${S.sps ? fmtSI(S.sps) : "–"}</b> steps/s`);
     parts.push(`iteration ${S.iter ? `<b>${fmtInt(S.iter)}</b>` : "–"}`);
     if (DEMO) parts.push("demo data");
     else if (!S.connected) parts.push("server offline, reconnecting");
@@ -371,15 +413,23 @@
     const shown = pickReplays();
     const lastT = shown.length ? (shown[shown.length - 1].train_seconds ?? 0) : -1;
     const upcoming = REPLAY_AT.filter((t) => t > lastT + 0.5);
+    const longest = shown.reduce((a, r) => Math.max(a, (r.frames || []).length * (r.dt || 0.04)), 0);
+    $("gensNote").textContent = "saved policy replayed for up to 8 s, ends early on a fall";
+    void longest;
     for (let i = 0; i < 5; i++) {
       const rep = shown[i];
       const cell = document.createElement("div");
       cell.className = "gen";
       if (rep) {
         if (i === shown.length - 1) cell.classList.add("newest");
+        const loco = isLoco(rep.env || S.env);
         const resTxt = rep.result != null ? fmtResult(rep.result) : "";
-        cell.innerHTML = `<div class="gen-top"><span class="t">${rep.label === "now" ? "NOW" : rep.label}</span><span class="r">${resTxt}</span></div><div class="gen-box"><canvas></canvas></div><div class="gen-cap"></div>`;
-        cell.querySelector(".gen-cap").textContent = rep.result_text || "";
+        cell.innerHTML = `<div class="gen-top"><span class="t">${rep.label === "now" ? "NOW" : rep.label}</span><span class="r"></span></div><div class="gen-box"><canvas></canvas></div><div class="gen-cap"></div>`;
+        cell.querySelector(".gen-top .r").textContent = loco ? "" : resTxt;
+        cell.querySelector(".gen-cap").textContent = loco
+          ? `${replaySecs(rep)} s replay · walked ${resTxt || "–"}${/fell/.test(rep.result_text || "") ? " · fell" : ""}`
+          : rep.result_text || "";
+        cell.title = rep.result_text || "";
         genCells.push({ rep, cv: cell.querySelector("canvas"), start: performance.now() + i * 180 });
       } else {
         const t = upcoming[i - shown.length];
@@ -389,6 +439,10 @@
       }
       row.appendChild(cell);
     }
+  }
+  function replaySecs(rep) {
+    const sec = (rep.frames || []).length * (rep.dt || 0.04);
+    return sec >= 2 ? String(Math.round(sec)) : sec.toFixed(1);
   }
   function fmtResult(v) {
     const u = metaFor(S.env).unit;

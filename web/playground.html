@@ -19,7 +19,8 @@
     </div>
     <nav class="tabs">
       <a class="on" href="/playground">Playground</a>
-      <a href="/">Viewer</a>
+      <a href="/viewer">Viewer</a>
+      <a href="/docs/">Docs</a>
     </nav>
     <div class="controls pg-machine mono muted" id="machine">Apple Silicon · MLX</div>
   </header>
@@ -67,7 +68,7 @@
     <section class="pg-right">
       <div class="pg-stage">
         <div class="stage-head">
-          <span class="mono" id="stageLabel">Rest pose</span>
+          <span class="xp" id="stageLabel">Rest pose</span>
           <span class="mono muted" id="stageNote"></span>
         </div>
         <canvas id="stage"></canvas>
@@ -87,7 +88,7 @@
         <div class="gens pg-gens">
           <div class="gens-head">
             <span class="mono">Generations</span>
-            <span class="mono muted">same start, policy saved at each moment, racing</span>
+            <span class="mono muted" id="gensNote">up to 8 s each, one start, side by side</span>
           </div>
           <div class="gens-row" id="gens"></div>
         </div>

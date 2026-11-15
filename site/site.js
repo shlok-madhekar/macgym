@@ -153,7 +153,9 @@
   }
 
   let camMax = 4, t0 = performance.now();
+  let real = null; // recorded replays from /docs/replay.json once available
   function frame(now) {
+    if (real) { drawReal(now); requestAnimationFrame(frame); return; }
     const T = Math.max(0, (now - t0) / 1000);
     const total = GEN_SECONDS * GENS.length;
     const loopT = T % total;
@@ -211,9 +213,119 @@
     // labels
     ctx.textAlign = "left"; ctx.font = "500 10px 'JetBrains Mono', monospace";
     ctx.fillStyle = "#6B665C"; ctx.fillText("AVG " + avg.toFixed(1) + " M", X(avg) + 6, 22);
-    if (label) label.textContent = g.name + "  ·  " + N + " of 4,096 shown";
+    if (label) label.textContent = "illustration · " + g.name;
     if (best) best.textContent = "best " + poses[bi].dist.toFixed(1) + " m";
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+
+  // ---------- real recorded replays (site/replay.json) ----------
+  // Accepts [rep...] or {replays|generations:[rep...], machine?, env?}. rep = server "replay" message:
+  // {label, frames:[[K*5 floats]], K, dt, result, result_text}. Missing file: the illustration stays, labelled as such.
+  const WANT = ["0:00", "0:10", "0:30", "1:00"];
+  function pickGens(list) {
+    const byLabel = new Map(list.filter((r) => r && r.frames && r.frames.length).map((r) => [r.label, r]));
+    let out = WANT.map((l) => byLabel.get(l)).filter(Boolean);
+    if (out.length < 2) out = list.filter((r) => r && r.frames && r.frames.length && r.label !== "now").slice(0, 4);
+    return out;
+  }
+  function useReplays(j) {
+    const list = Array.isArray(j) ? j : (j && (j.replays || j.generations)) || [];
+    const gens = pickGens(list);
+    if (gens.length < 2) return false;
+    const lanes = gens.map((r) => {
+      const K = r.K || (j && j.K) || r.frames[0].length / 5;
+      const x0 = r.frames[0][0];
+      let maxX = 0;
+      for (const f of r.frames) maxX = Math.max(maxX, f[0] - x0, f[2] - x0);
+      let top = 0;
+      for (let q = 0; q < K; q++) top = Math.max(top, r.frames[0][q * 5 + 1], r.frames[0][q * 5 + 3]);
+      return { r, K, x0, maxX, top, dt: r.dt || (j && j.dt) || 0.04 };
+    });
+    const dur = Math.max(...lanes.map((l) => l.r.frames.length * l.dt));
+    real = { lanes, dur, maxX: Math.max(2, ...lanes.map((l) => l.maxX)), robotH: Math.max(0.3, ...lanes.map((l) => l.top)), t0: performance.now(), env: (j && (j.robot || j.env)) || gens[0].env || "walker" };
+    cv.closest(".track").classList.add("real");
+    cv.setAttribute("aria-label", "Recorded replays of one robot's policy at four moments of a real training run");
+    const cap = document.getElementById("swarm-cap");
+    if (cap) cap.textContent = "Recorded from a real training run on an M3 Pro.";
+    if (label) label.textContent = `${real.env} · same start · policy saved at ${lanes.length} moments`;
+    resize();
+    return true;
+  }
+  function laneLabel(r) { return r.label === "0:00" ? "0:00 untrained" : r.label === "now" ? "now" : r.label; }
+
+  function drawReal(now) {
+    const { lanes, dur, maxX, robotH } = real;
+    const hold = 1.4; // pause on the final pose before looping
+    const t = ((now - real.t0) / 1000) % (dur + hold);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const padL = 56, padR = 56, labW = 150, resW = 230;
+    const x0 = padL + labW, x1 = W - padR - resW;
+    const top = 14, laneH = (H - top - 34) / lanes.length;
+    const sx = (x1 - x0) / (maxX + 0.6);
+    const step = sx > 40 ? 1 : sx > 14 ? 5 : sx > 6 ? 10 : 25;
+    const MONO = "'JetBrains Mono', monospace", SANS = "'Inter Tight', 'Helvetica Neue', Arial, sans-serif";
+    // shared metre scale under the last lane
+    const baseY = top + laneH * lanes.length;
+    ctx.font = `500 10px ${MONO}`; ctx.textAlign = "center";
+    for (let m = 0; m <= maxX + 0.6; m += step) {
+      const px = Math.round(x0 + m * sx) + 0.5;
+      ctx.strokeStyle = "#E4DFD4"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, baseY); ctx.stroke();
+      ctx.fillStyle = "#6B665C"; ctx.fillText(m + " m", px, baseY + 18);
+    }
+    let bestNow = 0;
+    lanes.forEach((L, i) => {
+      const fr = L.r.frames, n = fr.length;
+      const fi = Math.min(n - 1, Math.floor(Math.min(t, dur) / L.dt));
+      const gy = Math.round(top + laneH * (i + 1) - 6) + 0.5;
+      const newest = i === lanes.length - 1;
+      const col = newest ? "#FF4D00" : "#121212";
+      // lane ground
+      ctx.strokeStyle = "#121212"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x0 - 8, gy); ctx.lineTo(x1 + 8, gy); ctx.stroke();
+      // figure scale: legible even when the runway is long; drawn about its own torso
+      const sf = Math.max(sx, Math.min((laneH - 16) / (robotH * 1.05), 120));
+      const pose = (f, color, alpha, width) => {
+        const ax = f[0], bx = x0 + (ax - L.x0) * sx;
+        ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineCap = "round";
+        for (let q = 0; q < L.K; q++) {
+          const o = q * 5;
+          ctx.lineWidth = Math.max(1.2, Math.min(width, f[o + 4] * 2 * sf * 0.6));
+          ctx.beginPath();
+          ctx.moveTo(bx + (f[o] - ax) * sf, gy - Math.max(0, f[o + 1]) * sf);
+          ctx.lineTo(bx + (f[o + 2] - ax) * sf, gy - Math.max(0, f[o + 3]) * sf);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      };
+      const ghostEvery = Math.max(1, Math.round(1 / L.dt)); // chronophotograph: one faint pose per simulated second
+      for (let k = 0; k < fi; k += ghostEvery) pose(fr[k], "#121212", 0.09, 3);
+      pose(fr[fi], col, 1, newest ? 4.5 : 3.5);
+      const d = Math.max(0, fr[fi][0] - L.x0);
+      bestNow = Math.max(bestNow, d);
+      // left label + right result
+      ctx.textAlign = "left"; ctx.font = `500 11px ${MONO}`; ctx.fillStyle = newest ? "#FF4D00" : "#121212";
+      ctx.fillText(laneLabel(L.r).toUpperCase(), padL, gy - laneH / 2 + 10);
+      const done = t >= n * L.dt;
+      // once finished, show the recorded result (same number as result_text), never a second estimate
+      const recM = L.r.result != null ? +L.r.result : parseFloat((/(-?[\d.]+) m/.exec(L.r.result_text || "") || [])[1]);
+      const shown = done && isFinite(recM) ? recM : d;
+      ctx.font = `600 15px ${SANS}`; ctx.textAlign = "left";
+      ctx.fillText(`${shown.toFixed(1)} m`, x1 + 28, gy - laneH / 2 + 4);
+      ctx.font = `500 10px ${MONO}`; ctx.fillStyle = "#6B665C";
+      ctx.fillText(done ? (L.r.result_text || "") : `replaying… ${(fi * L.dt).toFixed(1)} s`, x1 + 28, gy - laneH / 2 + 22);
+    });
+    if (best) best.textContent = `replay t = ${Math.min(t, dur).toFixed(1)} s of ${dur.toFixed(0)} s`;
+  }
+
+  let tries = 0;
+  function poll() {
+    fetch("replay.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!(j && useReplays(j)) && ++tries < 40) setTimeout(poll, 15000); })
+      .catch(() => { if (++tries < 40) setTimeout(poll, 15000); });
+  }
+  poll();
 })();

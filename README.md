@@ -96,21 +96,45 @@ All robots are planar (2D: x forward, y up). MacGym does not simulate 3D bodies.
 
 ## Benchmarks
 
-Measured with `macgym bench` (`scripts/bench.py`) on an Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E). Env-steps per second, summed over all environments, physics substeps and auto-reset included.
+Measured with `macgym bench` (`scripts/bench.py`) on an Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2. Env-steps per second, summed over all environments, random actions, physics substeps and auto-reset included. Generated 2026-11-15 14:04:50 PST.
 
 | Task | Backend | Envs | Env-steps/s |
 |------|---------|-----:|------------:|
-| walker | MLX GPU (Metal) | 4,096 | 3,048,904 |
-| walker | MLX GPU (Metal) | 16,384 | 6,274,760 |
-| cheetah | MLX GPU (Metal) | 16,384 | 6,589,763 |
-| cartpole | MLX GPU (Metal) | 16,384 | 19,256,854 |
-| cheetah | CPU MuJoCo, 1 thread | 1 | 52,376 |
-| cheetah | CPU MuJoCo, 11 processes | 11 | 293,810 |
-| cartpole | CPU MuJoCo, 11 processes | 11 | 514,545 |
+| walker | MLX GPU, public API (`mg.make`) | 1,024 | 892,199 |
+| walker | MLX GPU, public API (`mg.make`) | 4,096 | 3,193,891 |
+| walker | MLX GPU, public API (`mg.make`) | 16,384 | 2,995,792 |
+| tripod | MLX GPU, public API (`mg.make`) | 1,024 | 725,503 |
+| tripod | MLX GPU, public API (`mg.make`) | 4,096 | 2,764,401 |
+| tripod | MLX GPU, public API (`mg.make`) | 16,384 | 8,106,502 |
+| hopper | MLX GPU, public API (`mg.make`) | 1,024 | 1,085,328 |
+| hopper | MLX GPU, public API (`mg.make`) | 4,096 | 2,854,852 |
+| hopper | MLX GPU, public API (`mg.make`) | 16,384 | 10,217,217 |
+| walker | MLX GPU, **training: sim + PPO** (`mg.train`) | 4,096 | 271,589 |
+| walker | MLX GPU, hand-written env (sim only) | 1,024 | 1,224,240 |
+| walker | MLX GPU, hand-written env (sim only) | 4,096 | 4,610,621 |
+| walker | MLX GPU, hand-written env (sim only) | 16,384 | 13,202,073 |
+| cheetah | MLX GPU, hand-written env (sim only) | 1,024 | 2,110,874 |
+| cheetah | MLX GPU, hand-written env (sim only) | 4,096 | 2,037,532 |
+| cheetah | MLX GPU, hand-written env (sim only) | 16,384 | 11,128,162 |
+| cartpole | MLX GPU, hand-written env (sim only) | 1,024 | 3,617,662 |
+| cartpole | MLX GPU, hand-written env (sim only) | 4,096 | 14,066,870 |
+| cartpole | MLX GPU, hand-written env (sim only) | 16,384 | 42,858,271 |
+| cheetah | CPU MuJoCo, 1 thread | 1 | 35,601 |
+| cheetah | CPU MuJoCo, 11 processes | 11 | 135,887 |
+| cartpole | CPU MuJoCo, 1 thread | 1 | 53,244 |
+| cartpole | CPU MuJoCo, 11 processes | 11 | 238,231 |
 
-Best GPU vs best CPU: walker 21.4x, cheetah 22.4x, cartpole 37.4x.
+The public-API rows build the env exactly like a user does (`mg.make(mg.robots.walker())`). The training row is end-to-end `mg.train` (rollout + GAE + PPO updates), which is what actually decides how long training takes.
 
-**Read the caveat.** MacGym uses its own simplified 2D planar dynamics (capsule bodies, maximal coordinates, penalty ground contact, a few substeps). MuJoCo solves full 3D generalized-coordinate dynamics with a constraint-based contact solver, driven here from a Python `mj_step` loop. That is not the same physics, so read the ratios as "how much RL experience per second this laptop can generate for these tasks", not "MLX beats MuJoCo at identical simulation". The walker is compared against MuJoCo's half-cheetah as the nearest planar locomotion model. GPU numbers varied by roughly ±30% run to run because other jobs shared the GPU. Full methodology is in `web/bench.json`.
+At 1,024 envs the numbers don't track how heavy the robot is (an earlier run had walker and cheetah at 752K vs 746K): the step is bound by fixed Python and MLX dispatch overhead, not the GPU. With more envs that overhead is amortized, the GPU saturates, and throughput reflects the real physics cost.
+
+**Limitations.** Both sides are planar for locomotion (MuJoCo HalfCheetah is constrained to the x-z plane too). The difference is the solver: MuJoCo uses generalized coordinates and a convex, constraint-based contact solver; MacGym uses maximal coordinates and a simpler impulse solver, and the MuJoCo baseline runs from a Python `mj_step` loop. Best GPU vs best CPU on this run: walker 97.2x, cheetah 81.9x, cartpole 179.9x (a quieter run earlier the same day gave 21.4x, 22.4x, 37.4x, so the CPU side is very load-sensitive), but read that as "RL experience per second this laptop generates for these tasks", not "MLX beats MuJoCo at the same physics". The laptop was not idle (1-minute load average 16.4 at the end of the run), so GPU numbers move about ±30% and CPU rows can drop up to 2x. Full method in `web/bench.json`.
+
+## Who it's for
+
+- **Students and hackers on MacBooks.** The MacBook is the most common laptop in CS classrooms and at hackathons, and most of those people can't get an NVIDIA GPU.
+- **RL education.** Watch 4,096 robots learn in a minute, change one line, see what happens.
+- **Quick morphology and reward iteration.** Try body plans and reward shapes locally in minutes, then scale the winner on cloud GPUs.
 
 ## How it works
 

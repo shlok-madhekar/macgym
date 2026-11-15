@@ -110,13 +110,21 @@ def _get_make():
         return None
 
 
-def bench_mlx(task, num_envs, seconds):
+def _framework_env(robot_name, num_envs):
+    import macgym as mg
+    return mg.make(getattr(mg.robots, robot_name)(), num_envs=num_envs)
+
+
+def bench_mlx(task, num_envs, seconds, framework=False):
     import mlx.core as mx
 
     make = _get_make()
     source = "macgym.envs"
     env = None
-    if make is not None:
+    if framework:
+        env = _framework_env(task, num_envs)
+        source = f"mg.make(mg.robots.{task}())"
+    elif make is not None:
         try:
             env = make(task, num_envs)
         except Exception as ex:  # env not written yet
@@ -159,6 +167,16 @@ def bench_mlx(task, num_envs, seconds):
         rates.append(steps * num_envs / el)
     rates.sort()
     return rates[len(rates) // 2], source
+
+
+def bench_train(robot_name, num_envs, iters):
+    """End-to-end PPO throughput: env-steps consumed per wall-clock second including rollout,
+    GAE and gradient updates. First iteration (compile/warmup) is excluded."""
+    import macgym as mg
+    env = _framework_env(robot_name, num_envs)
+    res = mg.train(env, iters=iters, verbose=False)
+    h = res.history
+    return (h[-1]["env_steps"] - h[0]["env_steps"]) / (h[-1]["elapsed"] - h[0]["elapsed"])
 
 
 # --------------------------------------------------------------------------
@@ -354,6 +372,23 @@ def main():
                             "steps_per_sec": round(sps, 1)})
             print(f"  {task:9s} N={n:6d}  {fmt(sps):>8s} env-steps/s  [{src}]", flush=True)
 
+    print("== MLX GPU, public framework path: mg.make(mg.robots.X()) ==", flush=True)
+    for robot in ["walker", "tripod", "hopper"]:
+        for n in sizes:
+            sps, src = bench_mlx(robot, n, sec, framework=True)
+            results.append({"task": robot, "backend": "MLX GPU (Metal), framework path", "num_envs": n,
+                            "steps_per_sec": round(sps, 1), "path": src})
+            print(f"  {robot:9s} N={n:6d}  {fmt(sps):>8s} env-steps/s  [{src}]", flush=True)
+
+    print("== Training throughput: sim + PPO (mg.train) ==", flush=True)
+    train_n = 4096
+    train_iters = 6 if args.quick else 12
+    tps = bench_train("walker", train_n, train_iters)
+    results.append({"task": "walker", "backend": "MLX GPU (Metal), training (sim + PPO)", "num_envs": train_n,
+                    "steps_per_sec": round(tps, 1),
+                    "path": f"mg.train(mg.make(mg.robots.walker()), iters={train_iters})"})
+    print(f"  walker    N={train_n:6d}  {fmt(tps):>8s} env-steps/s  [sim + PPO update]", flush=True)
+
     print("== CPU MuJoCo ==", flush=True)
     import mujoco
     for task in ["cartpole", "cheetah"]:
@@ -373,31 +408,44 @@ def main():
 
     speedups = {}
     for task, ref in [("cartpole", "cartpole"), ("cheetah", "cheetah"), ("walker", "cheetah")]:
-        g, c = best(task, "MLX"), best(ref, "CPU MuJoCo")
+        g = max([r["steps_per_sec"] for r in results
+                 if r["task"] == task and r["backend"] == "MLX GPU (Metal)"] or [0]) or None
+        c = best(ref, "CPU MuJoCo")
         if g and c:
             speedups[task] = round(g / c, 1)
 
     import mlx.core as mx
     notes = (
         "env-steps/s = control steps per second summed over all environments (physics substeps / frame-skip included). "
-        "MLX: median of 5 timing windows, random actions generated on GPU, full mx.eval every step, auto-reset included, mx.compile on the physics step. "
+        "MLX sim rows: median of 5 timing windows, random actions generated on GPU, full mx.eval every step, auto-reset "
+        "included, mx.compile on the physics step. Rows marked 'framework path' build the env exactly the way a user does "
+        "(mg.make(mg.robots.walker()), mg.robots.tripod(), mg.robots.hopper()), so they include the generic Robot/Task "
+        "layer, reward and obs functions. The 'training (sim + PPO)' row is end-to-end mg.train: rollout, GAE and gradient "
+        "updates, first (compile) iteration excluded; this is the number that decides how long training actually takes. "
+        "Why walker is about the same speed as cheetah at small N: at 1024 envs the GPU is not the bottleneck. Each step "
+        "pays a roughly fixed cost for Python and MLX graph dispatch, so per-step time barely depends on how heavy the "
+        "robot is. As N grows that fixed cost is amortized, the GPU saturates, and throughput starts to reflect the actual "
+        "physics work (more bodies and contacts means fewer steps/s). "
         "MuJoCo: Gymnasium-style models written inline (InvertedPendulum-like cartpole, timestep 0.02 frame_skip 2; "
-        "HalfCheetah-like planar model, timestep 0.01 frame_skip 5), plain Python mj_step loop with random ctrl, "
+        "HalfCheetah-like model, timestep 0.01 frame_skip 5), plain Python mj_step loop with random ctrl, "
         f"then one process per core ({procs} processes, spawn, warm). "
-        "IMPORTANT CAVEAT: this is not an apples-to-apples physics comparison. MacGym's MLX tasks use our own simplified 2D "
-        "planar maximal-coordinate dynamics (capsule bodies, penalty ground contact, few substeps), while MuJoCo solves full "
-        "3D generalized-coordinate dynamics with a constraint-based contact solver. The MuJoCo numbers also include Python "
-        "loop overhead per step. The MLX walker task is compared against the MuJoCo half-cheetah as the nearest planar "
-        "locomotion model. Read the speedups as 'how much RL experience per second this laptop can generate for these "
-        "tasks', not as 'MLX is X times faster than MuJoCo at the same physics'. "
-        "Numbers vary run to run (roughly +/-30% observed on the GPU side) because the laptop was not otherwise idle "
-        "during the hackathon (other training jobs share the GPU); MuJoCo multi-process uses all P and E cores. "
-        f"MLX tasks measured via: {mlx_sources}. mlx {mx.__version__}, mujoco {mujoco.__version__}, "
+        "CAVEAT: not an apples-to-apples physics comparison. Both sides are planar for locomotion (MuJoCo HalfCheetah is "
+        "also constrained to the x-z plane). The real difference is the solver: MuJoCo integrates generalized "
+        "coordinates with a convex, constraint-based contact solver, while MacGym uses maximal coordinates (each body "
+        "has its own position and angle, joints held together by constraints) with a simpler impulse-based contact "
+        "solver and few substeps. MuJoCo numbers also include Python loop overhead per step. Walker is compared against "
+        "MuJoCo HalfCheetah as the nearest planar locomotion model. Read speedups as 'how much RL experience per second "
+        "this laptop can generate for these tasks', not 'MLX is X times faster than MuJoCo at the same physics'. "
+        "Numbers vary run to run (roughly +/-30% on the GPU side, and the CPU MuJoCo rows drop by up to 2x when other "
+        "jobs are using the cores) because the laptop was not idle during the hackathon; load_avg_1m_at_end records how "
+        "busy it was. "
+        f"MLX sim rows measured via: {mlx_sources}. mlx {mx.__version__}, mujoco {mujoco.__version__}, "
         f"Python {platform.python_version()}."
     )
     out = {
         "machine": machine_info(),
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S %Z"),
+        "load_avg_1m_at_end": round(os.getloadavg()[0], 1),
         "results": results,
         "speedup_best_gpu_vs_best_cpu": speedups,
         "notes": notes,

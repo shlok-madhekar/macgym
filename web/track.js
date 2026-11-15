@@ -61,6 +61,13 @@
   function label(ctx, text, x, y, color, align, weight, size) {
     ctx.font = `${weight || 600} ${size || 14}px ${SANS}`; ctx.fillStyle = color; ctx.textAlign = align || "left"; ctx.fillText(text, x, y);
   }
+  function median(a, n) {
+    if (!n) return 0;
+    const b = Array.prototype.slice.call(a, 0, n).sort((x, y) => x - y);
+    return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2;
+  }
+  // y-axis title per display unit (spelled out so "M" can never be misread as minutes)
+  const Y_TITLE = { m: "METRES", cm: "CENTIMETRES", s: "SECONDS", "": "REWARD" };
   function niceStep(range, target) {
     const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
     return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p;
@@ -107,8 +114,10 @@
     const groundY = Math.round(h - 64) + 0.5;
     let mean = 0, max = 0, bi = f ? f.best : -1;
     if (f && f.dist) {
-      for (let i = 0; i < f.R; i++) { mean += dist[i]; if (dist[i] > max) max = dist[i]; }
-      mean /= f.R;
+      // "pack median now": where the middle robot of the shown pack is right now (in-progress episodes).
+      // Deliberately a median, not a mean, so it never reads as the headline "average per finished episode".
+      for (let i = 0; i < f.R; i++) if (dist[i] > max) max = dist[i];
+      mean = median(dist, f.R);
       if (bi >= 0) max = Math.max(max, dist[bi]);
       st.record = Math.max(st.record, max);
     }
@@ -150,9 +159,55 @@
         }
       }
     }
-    strokeRobots(ctx, f, buf, X, Y, s, opts.alpha || (f.R > 128 ? 0.13 : 0.22), C.ink, bi);
-
     const mTop = Math.max(58, groundY - robotH * sb - 64);
+
+    // --- where the whole pack is: smoothed distance histogram over the runway (real per-robot dist) ---
+    if (f.dist) {
+      const bandBot = Math.round(mTop - 34), bandTop = Math.max(52, bandBot - 54);
+      if (bandBot - bandTop >= 22) {
+        const nb = Math.max(24, Math.min(160, Math.floor((w - pad - x0) / 7)));
+        const span = visibleM / nb;
+        if (!st.dens || st.dens.length !== nb) st.dens = new Float32Array(nb);
+        const raw = new Float32Array(nb);
+        for (let i = 0; i < f.R; i++) {
+          const b = Math.floor(clamp(dist[i], 0, visibleM - 1e-6) / span);
+          raw[b] += 1;
+        }
+        let peak = 1e-6;
+        for (let b = 0; b < nb; b++) {
+          const v = (raw[b] * 2 + (raw[b - 1] || 0) + (raw[b + 1] || 0)) / 4;
+          st.dens[b] += (v - st.dens[b]) * Math.min(1, dt * 6);
+          peak = Math.max(peak, st.dens[b]);
+        }
+        const hh = bandBot - bandTop;
+        ctx.beginPath(); ctx.moveTo(X(0), bandBot);
+        for (let b = 0; b < nb; b++) ctx.lineTo(X((b + 0.5) * span), bandBot - (st.dens[b] / peak) * hh);
+        ctx.lineTo(X(visibleM), bandBot); ctx.closePath();
+        ctx.fillStyle = "rgba(18,18,18,0.07)"; ctx.fill();
+        ctx.strokeStyle = C.ink; ctx.lineWidth = 1.1; ctx.lineJoin = "round"; ctx.stroke();
+        ctx.strokeStyle = C.rule; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pad, bandBot + 0.5); ctx.lineTo(w - pad, bandBot + 0.5); ctx.stroke();
+        ctx.font = `500 12px ${SANS}`; ctx.fillStyle = C.muted; ctx.textAlign = "left";
+        ctx.fillText(`where all ${f.R} shown robots are right now`, pad, bandTop - 6);
+      }
+    }
+
+    // --- chronophotograph of the leading robot: its last ~1.5 s, fading ---
+    if (bi >= 0) {
+      const per = f.K * 5, o = bi * per, bd = f.dist ? dist[bi] : 0;
+      const tr = st.trail || (st.trail = { bi: -1, last: 0, poses: [], d: 0 });
+      const nowMs = performance.now();
+      if (tr.bi !== bi || bd < tr.d - 0.5) { tr.poses = []; tr.bi = bi; }
+      tr.d = bd;
+      if (nowMs - tr.last > 200) { tr.poses.push(buf.slice(o, o + per)); tr.last = nowMs; if (tr.poses.length > 7) tr.poses.shift(); }
+      tr.poses.forEach((pz, i) => {
+        ctx.globalAlpha = 0.07 + 0.22 * (i / tr.poses.length);
+        strokeOne(ctx, pz, 0, f.K, X, Y, s, C.accent, false, 0.45);
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    strokeRobots(ctx, f, buf, X, Y, s, opts.alpha || (f.R > 128 ? 0.13 : 0.22), C.ink, bi);
     for (const mk of st.avgMarks) {
       const x = Math.round(X(mk.x)) + 0.5;
       ctx.strokeStyle = C.old; ctx.lineWidth = 1;
@@ -174,11 +229,15 @@
       const xa = X(mean), xb = X(dist[bi] ?? max);
       dashed(ctx, xa, mTop + 8, groundY, C.ink, [4, 4]);
       dashed(ctx, xb, mTop - 14, groundY, C.accent, []);
-      const avgTxt = `avg now ${mean.toFixed(1)} m`, bestTxt = `best ${(dist[bi] ?? max).toFixed(1)} m`;
+      const avgTxt = `pack median now ${mean.toFixed(1)} m`, bestTxt = `best ${(dist[bi] ?? max).toFixed(1)} m`;
       ctx.font = `600 14px ${SANS}`;
-      const close = Math.abs(xb - xa) < ctx.measureText(avgTxt).width + 20;
-      label(ctx, avgTxt, close ? xa - 6 : xa + 6, mTop + 18, C.ink, close ? "right" : "left");
-      label(ctx, bestTxt, xb + 6, mTop - 4, C.accent, "left");
+      const aw = ctx.measureText(avgTxt).width;
+      let close = Math.abs(xb - xa) < aw + 20;
+      if (close && xa - 6 - aw < 4) close = false; // no room on the left: keep it on screen
+      label(ctx, avgTxt, close ? xa - 6 : xa + 6, close ? mTop + 18 : (Math.abs(xb - xa) < aw + 20 ? mTop + 40 : mTop + 18), C.ink, close ? "right" : "left");
+      ctx.font = `600 14px ${SANS}`;
+      const bestFlip = xb + 6 + ctx.measureText(bestTxt).width > w - 4; // keep the label on screen
+      label(ctx, bestTxt, bestFlip ? xb - 6 : xb + 6, mTop - 4, C.accent, bestFlip ? "right" : "left");
     }
     if (bi >= 0) strokeOne(ctx, buf, bi * f.K * 5, f.K, X, Y, s, C.accent, true);
   }
@@ -189,11 +248,14 @@
     opts = opts || {};
     const { ctx, w, h } = fit(cv);
     ctx.clearRect(0, 0, w, h);
-    const L = opts.left || 44, R = 18, T = 14, B = 26;
+    const L = opts.left || 44, R = 18, T = 26, B = 40;
     const pw = w - L - R, ph = h - T - B;
     const hist = st.hist;
     const tMin = opts.tMin || 60;
-    const tMax = Math.max(tMin, hist.length ? hist[hist.length - 1][0] * 1.08 : tMin);
+    // x-range snaps to 1:00, 2:00, 4:00, 8:00 … and auto-extends as training continues
+    const tLast = hist.length ? hist[hist.length - 1][0] : 0;
+    let tMax = tMin;
+    while (tLast > tMax * 0.96) tMax *= 2;
     let vMin = 0, vMax = opts.vMin || 1;
     for (const [, v] of hist) { vMax = Math.max(vMax, v); vMin = Math.min(vMin, v); }
     vMax *= 1.12;
@@ -207,7 +269,9 @@
       const txt = vStep < 1 ? v.toFixed(1) : String(Math.round(v));
       mono(ctx, 10.5, C.muted); tracked(ctx, txt, L - 8, y + 3.5, "right", 0.2);
     }
-    mono(ctx, 10.5, C.muted); tracked(ctx, (st.unit || "").toUpperCase(), L - 8, T - 2, "right");
+    // y title sits above the plot, left-aligned, clear of every tick label
+    const yTitle = opts.yTitle || Y_TITLE[st.unit || ""] || String(st.unit || "").toUpperCase();
+    mono(ctx, 10, C.muted); tracked(ctx, `\u2191 ${yTitle}`, 2, 11, "left", 0.8);
     const tStep = [10, 15, 30, 60, 120, 300, 600].find((sp) => tMax / sp <= 7) || 1200;
     for (let t = 0; t <= tMax; t += tStep) {
       const x = Math.round(xs(t)) + 0.5;
@@ -215,6 +279,7 @@
       ctx.beginPath(); ctx.moveTo(x, T + ph); ctx.lineTo(x, T + ph + 4); ctx.stroke();
       mono(ctx, 10.5, C.muted); tracked(ctx, mmss(t), x, T + ph + 18, "center", 0.2);
     }
+    mono(ctx, 10, C.muted); tracked(ctx, "TRAINING TIME (MIN:SEC) \u2192", L + pw, T + ph + 34, "right", 0.8);
     ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.moveTo(L + 0.5, T); ctx.lineTo(L + 0.5, T + ph + 0.5); ctx.lineTo(L + pw, T + ph + 0.5); ctx.stroke();
     for (const r of st.replays || []) {
       if (r.train_seconds == null || r.label === "now") continue;
@@ -271,7 +336,6 @@
       }
       if (m0 <= 0) { ctx.fillStyle = C.muted; ctx.fillRect(Math.round(X(0)), gy - 6, 1, 6); }
       strokeOne(ctx, fr, 0, K, X, Y, s, col, false);
-      mono(ctx, 9.5, C.muted); tracked(ctx, `${Math.max(0, camX).toFixed(1)} M`, w - 6, 14, "right", 0.4);
     } else if (kind === "arm") {
       const s = Math.min(w, h) / 2.4;
       const cx = w / 2, cy = h / 2 + 4;
@@ -337,5 +401,5 @@
     ctx.fillRect(Math.round(xNow) - 0.5, gy - 1, 2, 3);
   }
 
-  window.MacGymTrack = { C, SANS, MONO, clamp, mmss, fit, strokeRobots, strokeOne, mono, tracked, dashed, label, niceStep, Interp, drawLoco, drawChart, drawReplay, drawLane };
+  window.MacGymTrack = { C, SANS, MONO, clamp, mmss, fit, strokeRobots, strokeOne, mono, tracked, dashed, label, niceStep, median, Interp, drawLoco, drawChart, drawReplay, drawLane };
 })();

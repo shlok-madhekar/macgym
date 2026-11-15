@@ -45,7 +45,7 @@ def cheetah():
     """HalfCheetah-like runner: torso + back/front (thigh, shin, foot), 6 motors.
     Same morphology and observation layout (17) as the legacy `cheetah` env."""
     H, r = 0.7, 0.046
-    robot = Robot("cheetah", friction=0.4)
+    robot = Robot("cheetah", friction=0.8)
     hip_b, knee_b, ank_b, toe_b = (-0.5, H), (-0.34, H - 0.25), (-0.62, H - 0.39), (-0.56, H - 0.58)
     hip_f, knee_f, ank_f, toe_f = (0.5, H), (0.36, H - 0.24), (0.49, H - 0.42), (0.58, H - 0.56)
     torso = robot.body("torso", start=(-0.5, H), end=(0.5, H), radius=r, color=INK)

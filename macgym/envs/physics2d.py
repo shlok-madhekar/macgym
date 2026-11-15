@@ -45,7 +45,7 @@ class Joint:
 class Model:
     def __init__(self, capsules, joints, dt=0.02, substeps=8, iters=4, mu=0.9,
                  joint_beta=0.2, contact_beta=0.2, slop=0.002, limit_beta=0.2,
-                 max_v=30.0, max_w=60.0):
+                 max_v=30.0, max_w=60.0, motor_max_speed=10.0):
         self.capsules = capsules
         self.joints = joints
         self.B = len(capsules)
@@ -60,6 +60,9 @@ class Model:
         self.slop = slop
         self.max_v = max_v
         self.max_w = max_w
+        # DC-motor torque-speed curve: full torque at rest, zero when the joint already spins
+        # at motor_max_speed (rad/s) in the commanded direction. Stops unbounded joint speeds.
+        self.motor_max_speed = motor_max_speed
 
         # per-body static params + initial pose
         self.half, self.rad, self.inv_m, self.inv_i = [], [], [], []
@@ -138,10 +141,21 @@ class Model:
         # motor torques (constant over the control step)
         tau = [None] * B
         for jn, j in enumerate(self.joints):
-            t = self.gears[jn] * action[:, jn]
+            a_ = action[:, jn]
+            qd = w[j.b] - w[j.a]
+            t = self.gears[jn] * a_ * mx.clip(1.0 - mx.where(a_ >= 0, qd, -qd) / self.motor_max_speed, 0.0, 1.0)
             tau[j.b] = t if tau[j.b] is None else tau[j.b] + t
             tau[j.a] = -t if tau[j.a] is None else tau[j.a] - t
 
+        # accumulated impulses, warm-started across substeps (Box2D style): the solver starts
+        # each substep from last substep's contact/joint forces, so the normal force carried by a
+        # light foot under a heavy torso converges in a few iterations and the Coulomb friction
+        # bound mu*N is the real one (without it N is underestimated and feet skate).
+        nC = 2 * B
+        jacc = [[0.0, 0.0] for _ in range(J)]
+        lim_acc = [[0.0, 0.0] for _ in range(J)]
+        cn_acc = [0.0] * nC
+        ct_acc = [0.0] * nC
         for _ in range(self.substeps):
             # ---- external forces: gravity, motors, passive joint damping
             for k in range(B):
@@ -187,7 +201,6 @@ class Model:
                 ang_m = 1.0 / (ii[a] + ii[b])
                 jdat.append((a, b, rax, ray, rbx, rby, k11 * idet, k22 * idet, k12 * idet,
                              bx, by, lo_bias, hi_bias, ang_m))
-            lim_acc = [[0.0, 0.0] for _ in range(J)]
 
             # ---- contact setup: two endpoint spheres per capsule (speculative)
             cdat = []
@@ -202,8 +215,23 @@ class Model:
                     kn = 1.0 / (im[k] + ii[k] * ox * ox)
                     kt = 1.0 / (im[k] + ii[k] * oy * oy)
                     cdat.append((k, ox, oy, bias, kn, kt))
-            cn_acc = [0.0] * len(cdat)
-            ct_acc = [0.0] * len(cdat)
+
+            # ---- warm start: re-apply last substep's accumulated impulses
+            for jn in range(J):
+                a, b, rax, ray, rbx, rby = jdat[jn][:6]
+                lx, ly = jacc[jn]
+                dl = lim_acc[jn][0] - lim_acc[jn][1]
+                vx[a] = vx[a] - im[a] * lx
+                vy[a] = vy[a] - im[a] * ly
+                w[a] = w[a] - ii[a] * (rax * ly - ray * lx) - ii[a] * dl
+                vx[b] = vx[b] + im[b] * lx
+                vy[b] = vy[b] + im[b] * ly
+                w[b] = w[b] + ii[b] * (rbx * ly - rby * lx) + ii[b] * dl
+            for ci, (k, ox, oy, bias, kn, kt) in enumerate(cdat):
+                dn, dt_ = cn_acc[ci], ct_acc[ci]
+                vy[k] = vy[k] + im[k] * dn
+                vx[k] = vx[k] + im[k] * dt_
+                w[k] = w[k] + ii[k] * (ox * dn - oy * dt_)
 
             # ---- sequential impulse iterations
             for _it in range(self.iters):
@@ -216,6 +244,8 @@ class Model:
                     # lambda = -K^-1 dv ; K^-1 = [[k22,-k12],[-k12,k11]]/det
                     lx = -(i22 * dvx - i12 * dvy)
                     ly = -(-i12 * dvx + i11 * dvy)
+                    jacc[jn][0] = jacc[jn][0] + lx
+                    jacc[jn][1] = jacc[jn][1] + ly
                     vx[a] = vx[a] - im[a] * lx
                     vy[a] = vy[a] - im[a] * ly
                     w[a] = w[a] - ii[a] * (rax * ly - ray * lx)
@@ -287,7 +317,7 @@ class Model:
                       INVH="%.9ef" % (1.0 / h), G="%.9ef" % GRAVITY, MU="%.9ef" % self.mu,
                       JBETA="%.9ef" % self.joint_beta, CBETA="%.9ef" % self.contact_beta,
                       LBETA="%.9ef" % self.limit_beta, SLOP="%.9ef" % self.slop,
-                      MAXV="%.9ef" % self.max_v, MAXW="%.9ef" % self.max_w)
+                      MAXV="%.9ef" % self.max_v, QDMAX="%.9ef" % self.motor_max_speed, MAXW="%.9ef" % self.max_w)
         for k, v in consts.items():
             hdr += "#define %s %s\n" % (k, v)
         src = r"""
@@ -300,9 +330,14 @@ class Model:
             tau[k] = 0.0f;
         }
         for (int j = 0; j < J; j++) {
-            float t = GEAR[j] * clamp((float)action[e * J + j], -1.0f, 1.0f);
+            float a_ = clamp((float)action[e * J + j], -1.0f, 1.0f);
+            float qd = w[JB[j]] - w[JA[j]];
+            float t = GEAR[j] * a_ * clamp(1.0f - (a_ >= 0.0f ? qd : -qd) / QDMAX, 0.0f, 1.0f);
             tau[JB[j]] += t; tau[JA[j]] -= t;
         }
+        float jlx[J], jly[J], la0[J], la1[J], cn[C], ct[C];
+        for (int j = 0; j < J; j++) { jlx[j] = 0.0f; jly[j] = 0.0f; la0[j] = 0.0f; la1[j] = 0.0f; }
+        for (int c = 0; c < C; c++) { cn[c] = 0.0f; ct[c] = 0.0f; }
         for (int s = 0; s < SUB; s++) {
             for (int k = 0; k < B; k++) { vy[k] += H * G; w[k] += H * II[k] * tau[k]; }
             for (int j = 0; j < J; j++) {
@@ -311,8 +346,8 @@ class Model:
                 w[b] += H * II[b] * d; w[a] -= H * II[a] * d;
             }
             float cs[B], sn[B];
-            for (int k = 0; k < B; k++) { cs[k] = metal::precise::cos(th[k]); sn[k] = metal::precise::sin(th[k]); }
-            float rax[J], ray[J], rbx[J], rby[J], i11[J], i22[J], i12[J], bx[J], by[J], lob[J], hib[J], angm[J], la0[J], la1[J];
+            for (int k = 0; k < B; k++) { sn[k] = metal::sincos(th[k], cs[k]); }
+            float rax[J], ray[J], rbx[J], rby[J], i11[J], i22[J], i12[J], bx[J], by[J], lob[J], hib[J], angm[J];
             for (int j = 0; j < J; j++) {
                 int a = JA[j], b = JB[j];
                 rax[j] = cs[a] * LAX[j] - sn[a] * LAY[j]; ray[j] = sn[a] * LAX[j] + cs[a] * LAY[j];
@@ -331,9 +366,8 @@ class Model:
                 lob[j] = loc < 0.0f ? LBETA * INVH * loc : loc * INVH;
                 hib[j] = hic < 0.0f ? LBETA * INVH * hic : hic * INVH;
                 angm[j] = 1.0f / (II[a] + II[b]);
-                la0[j] = 0.0f; la1[j] = 0.0f;
             }
-            float ox[C], oy[C], cb[C], kn[C], kt[C], cn[C], ct[C];
+            float ox[C], oy[C], cb[C], kn[C], kt[C];
             for (int c = 0; c < C; c++) {
                 int k = c >> 1; float sg = (c & 1) ? 1.0f : -1.0f;
                 ox[c] = sg * HALF[k] * cs[k];
@@ -342,7 +376,17 @@ class Model:
                 cb[c] = pen > SLOP ? CBETA * INVH * (pen - SLOP) : min(pen, 0.0f) * INVH;
                 kn[c] = 1.0f / (IM[k] + II[k] * ox[c] * ox[c]);
                 kt[c] = 1.0f / (IM[k] + II[k] * oy[c] * oy[c]);
-                cn[c] = 0.0f; ct[c] = 0.0f;
+            }
+            for (int j = 0; j < J; j++) {
+                int a = JA[j], b = JB[j];
+                float lx = jlx[j], ly = jly[j], dl = la0[j] - la1[j];
+                vx[a] -= IM[a] * lx; vy[a] -= IM[a] * ly; w[a] = w[a] - II[a] * (rax[j] * ly - ray[j] * lx) - II[a] * dl;
+                vx[b] += IM[b] * lx; vy[b] += IM[b] * ly; w[b] = w[b] + II[b] * (rbx[j] * ly - rby[j] * lx) + II[b] * dl;
+            }
+            for (int c = 0; c < C; c++) {
+                int k = c >> 1;
+                vy[k] += IM[k] * cn[c]; vx[k] += IM[k] * ct[c];
+                w[k] += II[k] * (ox[c] * cn[c] - oy[c] * ct[c]);
             }
             for (int it = 0; it < ITERS; it++) {
                 for (int j = 0; j < J; j++) {
@@ -351,6 +395,7 @@ class Model:
                     float dvy = (vy[b] + w[b] * rbx[j]) - (vy[a] + w[a] * rax[j]) + by[j];
                     float lx = -(i22[j] * dvx - i12[j] * dvy);
                     float ly = -(-i12[j] * dvx + i11[j] * dvy);
+                    jlx[j] += lx; jly[j] += ly;
                     vx[a] -= IM[a] * lx; vy[a] -= IM[a] * ly; w[a] -= II[a] * (rax[j] * ly - ray[j] * lx);
                     vx[b] += IM[b] * lx; vy[b] += IM[b] * ly; w[b] += II[b] * (rbx[j] * ly - rby[j] * lx);
                     float rel = w[b] - w[a];
