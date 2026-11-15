@@ -74,6 +74,9 @@ def _gaussian_logp(x, mu, log_std):
     return mx.sum(-0.5 * mx.square((x - mu) / mx.exp(log_std)) - log_std - 0.5 * LOG2PI, axis=-1)
 
 
+EXTRA_EPISODE_KEYS = ("episode_dist", "episode_err")
+
+
 class PPO:
     def __init__(self, env, hidden=(128, 128), lr=3e-4, rollout_len=24, epochs=4, minibatches=4,
                  gamma=0.99, lam=0.95, clip=0.2, ent_coef=0.0, vf_coef=0.5, seed=0,
@@ -111,6 +114,10 @@ class PPO:
 
         self.ep_returns = deque(maxlen=window)
         self.ep_lens = deque(maxlen=window)
+        # optional per-episode env stats (e.g. "episode_dist", "episode_err"), same window
+        self.buf_extra = {}
+        self.ep_extra = {}
+        self.window = window
         self.iter = 0
         self.env_steps = 0
         self.obs = None
@@ -219,6 +226,12 @@ class PPO:
                 self.buf_epret[t] = info["episode_return"]
             if "episode_len" in info:
                 self.buf_eplen[t] = info["episode_len"]
+            for k in EXTRA_EPISODE_KEYS:
+                if k in info:
+                    if k not in self.buf_extra:
+                        self.buf_extra[k] = mx.zeros((T, N))
+                        self.ep_extra[k] = deque(maxlen=self.window)
+                    self.buf_extra[k][t] = info[k]
             mx.eval(obs, rew, done, logp, value)
         self.obs = obs
         last_val = self._value_fn(obs, mean, var)
@@ -269,6 +282,8 @@ class PPO:
             el = np.array(self.buf_eplen)[mask]
             self.ep_returns.extend(er.tolist())
             self.ep_lens.extend(el.tolist())
+            for k, buf in self.buf_extra.items():
+                self.ep_extra[k].extend(np.array(buf)[mask].tolist())
         mx.eval(self.obs_rms.mean, self.obs_rms.var, self.ret_rms.var, self.ret_acc)
 
         self.iter += 1
@@ -285,7 +300,18 @@ class PPO:
             "value_loss": float(last[1]),
             "entropy": float(last[2]),
             "time": dt,
+            "max_ep_len": float(np.max(self.ep_lens)) if self.ep_lens else None,
+            "episodes_in_window": len(self.ep_lens),
+            **self._extra_stats(),
         }
+
+    def _extra_stats(self):
+        out = {}
+        for k, d in self.ep_extra.items():
+            out[f"mean_{k}"] = float(np.mean(d)) if d else None
+            out[f"max_{k}"] = float(np.max(d)) if d else None
+            out[f"min_{k}"] = float(np.min(d)) if d else None
+        return out
 
     def save(self, path):
         flat = dict(tree_flatten(self.model.parameters()))

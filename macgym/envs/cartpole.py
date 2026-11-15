@@ -108,4 +108,8 @@ class CartPole(BatchedEnv):
             "colors": ["#4F8CFF", "#FFB547"],
             "ground": 0.0,
             "world_bounds": [-2.8, 2.8, -0.3, 1.5],
+            "dist": np.array(self.t[:R], dtype=np.float32) * DT,  # seconds balanced so far
         }
+
+    def live_balance_mean(self) -> float:
+        return float(mx.mean(self.t)) * DT

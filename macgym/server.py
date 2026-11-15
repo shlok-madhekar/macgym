@@ -242,19 +242,213 @@ def _num(v):
     return v
 
 
+LOCO_ENVS = ("walker", "cheetah", "hopper")
+REPLAY_SCHEDULE = (10.0, 30.0, 60.0, 120.0, 240.0)  # training wall seconds
+REPLAY_MAX_STEPS = 400
+REPLAY_EVERY = 2
+ARM_REPLAY_TARGETS = ((0.55, 0.45), (-0.45, 0.55))  # fixed target sequence, 200 steps each
+
+
+def fmt_clock(sec):
+    sec = int(round(sec))
+    return f"{sec // 60}:{sec % 60:02d}"
+
+
+def start_relative(rs):
+    """Shift capsule / camera x so each robot's episode start is x=0 (locomotion)."""
+    caps = np.array(rs["capsules"], np.float32)
+    sx = rs.get("start_x")
+    cam = rs.get("camera_x")
+    if sx is not None:
+        sx = np.asarray(sx, np.float32)[:, None]
+        caps[:, :, 0] -= sx
+        caps[:, :, 2] -= sx
+        if cam is not None:
+            cam = np.asarray(cam, np.float32) - sx[:, 0]
+    return caps, cam
+
+
 def frame_message(env_name, rs):
-    caps = np.asarray(rs["capsules"], np.float32)
+    caps, cam = start_relative(rs)
+    caps = np.nan_to_num(caps, nan=0.0, posinf=0.0, neginf=0.0)
     R, K = int(caps.shape[0]), int(caps.shape[1])
     wb = rs.get("world_bounds")
-    return {
+    msg = {
         "type": "frame", "env": env_name, "R": R, "K": K,
         "capsules": _flat(caps),
         "targets": _flat(rs.get("targets")),
         "colors": list(rs["colors"]) if rs.get("colors") is not None else None,
         "ground": float(rs["ground"]) if rs.get("ground") is not None else None,
         "world_bounds": [round(float(v), 3) for v in wb] if wb is not None else None,
-        "camera_x": _flat(rs.get("camera_x")),
+        "camera_x": _flat(cam),
+        "start_relative": rs.get("start_x") is not None,
     }
+    d = rs.get("dist")
+    if d is not None:
+        d = np.nan_to_num(np.asarray(d, np.float32), nan=0.0)
+        hib = bool(rs.get("higher_is_better", True))
+        msg["dist"] = _flat(d)
+        msg["best_index"] = int(np.argmax(d) if hib else np.argmin(d))
+        msg["dist_higher_is_better"] = hib
+    else:
+        msg["dist"] = None
+        msg["best_index"] = 0
+    return msg
+
+
+def human_fields(env_name, env, m, train_seconds):
+    """Human-unit headline metrics (REDESIGN.md section 1). Window = PPO's last ~100 episodes;
+    falls back to the live mean of in-progress episodes before any episode finished."""
+    out = {"train_seconds": round(train_seconds, 2)}
+    dt = float(getattr(env, "dt", 0.02))
+    n_eps = m.get("episodes_in_window") or 0
+    try:
+        if env_name in LOCO_ENVS:
+            verb = "run" if env_name == "cheetah" else "walked"
+            mean, best = m.get("mean_episode_dist"), m.get("max_episode_dist")
+            src = "episodes"
+            if mean is None and hasattr(env, "live_dist_mean"):
+                mean, best, src = env.live_dist_mean(), None, "live"
+            out.update({"dist_mean": mean, "dist_best": best, "unit": "m",
+                        "headline_label": f"distance {verb}",
+                        "human_value": mean, "human_best": best, "human_unit": "m",
+                        "human_label": f"average distance {verb}", "higher_is_better": True,
+                        "human_source": src})
+        elif env_name == "arm":
+            mean, best = m.get("mean_episode_err"), m.get("min_episode_err")
+            src = "episodes"
+            if mean is None and hasattr(env, "live_err_mean"):
+                mean, best, src = env.live_err_mean(), None, "live"
+            out.update({"err_mean": mean, "err_best": best, "unit": "cm",
+                        "headline_label": "miss distance",
+                        "human_value": None if mean is None else mean * 100.0,
+                        "human_best": None if best is None else best * 100.0, "human_unit": "cm",
+                        "human_label": "average miss distance", "higher_is_better": False,
+                        "human_source": src})
+        elif env_name == "cartpole":
+            if n_eps:
+                mean, best, src = m.get("mean_ep_len", 0.0) * dt, (m.get("max_ep_len") or 0.0) * dt, "episodes"
+            else:
+                mean, best, src = (env.live_balance_mean() if hasattr(env, "live_balance_mean") else None), None, "live"
+            out.update({"balance_mean": mean, "balance_best": best, "unit": "s",
+                        "headline_label": "time balanced",
+                        "human_value": mean, "human_best": best, "human_unit": "s",
+                        "human_label": "average time balanced", "higher_is_better": True,
+                        "human_source": src})
+        else:
+            v = m.get("mean_ep_return")
+            out.update({"human_value": v, "human_best": None, "human_unit": "",
+                        "human_label": "average episode return", "higher_is_better": True,
+                        "human_source": "episodes"})
+    except Exception:
+        traceback.print_exc()
+    return {k: _num(v) for k, v in out.items()}
+
+
+def run_replay(env_name, renv, ppo):
+    """Run the current policy deterministically on a separate small env; returns replay payload.
+    States are captured lazily (mx references) and converted in one sync at the end, so the
+    rollout costs ~one GPU dispatch per step instead of a CPU round trip per frame."""
+    import mlx.core as mx
+    renv.key = mx.random.key(1234)  # same start state for every replay of this env
+    is_arm = env_name == "arm" and hasattr(renv, "q")
+    is_loco = env_name in LOCO_ENVS and hasattr(renv, "model")
+    if is_arm:
+        renv.reset()
+        renv.set_target(*ARM_REPLAY_TARGETS[0])
+        obs = renv.obs
+    else:
+        obs = renv.reset()
+    dt = float(renv.dt)
+    lazy = []   # (step, payload)
+    fell, steps, result = False, 0, None
+
+    def capture(step):
+        if is_loco:
+            lazy.append((step, renv.state[0]))
+        elif is_arm:
+            lazy.append((step, mx.concatenate([renv.q[0], renv.target[0]])))
+        else:
+            lazy.append((step, renv.render_state(1)))
+
+    capture(0)
+    max_ep = getattr(renv, "max_episode_steps", 10 ** 9)
+    pending = []  # (step, done, ep_dist) not yet synced
+    for i in range(REPLAY_MAX_STEPS):
+        if is_arm and i == REPLAY_MAX_STEPS // 2 and len(ARM_REPLAY_TARGETS) > 1:
+            renv.set_target(*ARM_REPLAY_TARGETS[1])
+            obs = renv.obs
+        act = ppo.act(obs, deterministic=True)
+        obs, rew, done, info = renv.step(act)
+        steps = i + 1
+        if not is_arm:
+            pending.append((steps, done, info.get("episode_dist")))
+        if steps % REPLAY_EVERY == 0:
+            capture(steps)
+        if pending and (steps % 20 == 0 or steps == REPLAY_MAX_STEPS):
+            dn = np.asarray(mx.stack([p[1].reshape(-1)[0] for p in pending]))
+            hit = np.nonzero(dn > 0.5)[0]
+            if len(hit):
+                st, _, ed = pending[int(hit[0])]
+                steps = st
+                fell = st < max_ep
+                result = float(np.asarray(ed).reshape(-1)[0]) if (is_loco and ed is not None) else st * dt
+                break
+            pending = []
+    lazy = [(st, p) for st, p in lazy if st < steps or (st == steps and not fell)]
+    targets = None
+    if is_loco:
+        S = np.array(mx.stack([p for _, p in lazy]), dtype=np.float32)
+        caps = renv.model.capsules_np(S)
+        sx = getattr(renv, "start_x0", 0.0)
+        caps[:, :, 0] -= sx
+        caps[:, :, 2] -= sx
+        last_rs = {"colors": list(renv.colors), "ground": 0.0,
+                   "dist": np.array([S[-1, renv.torso] - sx], np.float32)}
+    elif is_arm:
+        from macgym.envs import arm as arm_mod
+        Q = np.array(mx.stack([p for _, p in lazy]), dtype=np.float64)
+        q, tgt = Q[:, :3], Q[:, 3:5]
+        ang = np.cumsum(q, axis=1)
+        pts = [np.zeros((len(Q), 2))]
+        for j, L in enumerate(arm_mod.LINK_LEN):
+            pts.append(pts[-1] + L * np.stack([np.cos(ang[:, j]), np.sin(ang[:, j])], 1))
+        caps = np.zeros((len(Q), 3, 5), np.float32)
+        for j, rad in enumerate((0.045, 0.038, 0.03)):
+            caps[:, j, 0:2], caps[:, j, 2:4], caps[:, j, 4] = pts[j], pts[j + 1], rad
+        targets = np.round(tgt, 3).tolist()
+        last_rs = {"colors": ["#4F8CFF", "#7C5CFF", "#22D3A6"], "ground": None,
+                   "dist": np.array([np.linalg.norm(pts[3][-1] - tgt[-1])], np.float32)}
+    else:
+        caps = np.stack([start_relative(p)[0][0] for _, p in lazy])
+        last_rs = lazy[-1][1]
+        if last_rs.get("targets") is not None:
+            targets = [np.round(np.asarray(p["targets"][0][0], np.float64), 3).tolist() for _, p in lazy]
+    caps = np.nan_to_num(caps, nan=0.0)
+    K = int(caps.shape[1])
+    frames = [np.round(c.ravel().astype(np.float64), 3).tolist() for c in caps]
+    T = steps * dt
+    if is_loco:
+        if result is None:
+            result = float(np.asarray(last_rs["dist"]).reshape(-1)[0])
+        result = float(np.nan_to_num(result))
+        verb = "ran" if env_name == "cheetah" else "walked"
+        text = f"fell after {T:.1f} s · {result:.1f} m" if fell else f"{verb} {result:.1f} m in {T:.0f} s"
+    elif env_name == "cartpole":
+        result = T
+        text = f"fell after {T:.1f} s" if fell else f"balanced {T:.0f} s, never fell"
+    elif is_arm:
+        err = float(np.asarray(last_rs["dist"]).reshape(-1)[0])
+        result = err * 100.0
+        text = f"missed by {result:.1f} cm"
+    else:
+        result = None
+        text = f"{T:.1f} s"
+    return {"K": K, "frames": frames, "targets": targets,
+            "colors": list(last_rs["colors"]) if last_rs and last_rs.get("colors") is not None else None,
+            "ground": last_rs.get("ground") if last_rs else None,
+            "result": _num(result), "result_text": text, "dt": dt * REPLAY_EVERY,
+            "steps": steps, "fell": fell}
 
 
 # ---------------------------------------------------------------------------
@@ -274,6 +468,12 @@ class Trainer:
         self.sim_info = None
         self.state = "idle"
         self.obs = None
+        self.run_id = 0
+        self.run_t0 = None          # wall time training started
+        self.replays = []           # replay messages of the current run (re-sent on connect)
+        self.replay_env = None
+        self.replay_next = 0        # index into REPLAY_SCHEDULE
+        self.last_frame_t = 0.0
         self.thread = threading.Thread(target=self._run, name="trainer", daemon=True)
         self._alive = True
 
@@ -315,12 +515,18 @@ class Trainer:
             self.ppo = make_trainer(env, name)
             self.env, self.env_name, self.num_envs = env, name, n
             self.obs = None
+            self._new_run()
+            self._push_frame(force=True)
+            self._replay("0:00", 0.0)  # untrained policy, BEFORE any update
+            self.run_t0 = time.time()
             self.state = "training"
             self.emit(self.status())
-            self._push_frame()
         elif cmd == "stop":
+            was = self.state
             self.state = "idle"
             self.emit(self.status())
+            if self.ppo is not None and was != "idle":
+                self._replay("now", self._train_seconds())
         elif cmd == "showcase":
             if self.env is None:
                 self.emit({"type": "error", "message": "no active run"})
@@ -329,6 +535,8 @@ class Trainer:
             if self.state == "showcase":
                 self.obs = self.env.reset()
             self.emit(self.status())
+            if self.state == "showcase":
+                self._replay("now", self._train_seconds())
             if self.state == "showcase" and has_checkpoint(self.env_name):
                 self.emit({"type": "info", "checkpoint": True, "env": self.env_name,
                            "message": f"Saved policy runs/{self.env_name}.npz available: press Load trained"})
@@ -336,7 +544,7 @@ class Trainer:
             n = int(msg.get("render_envs", msg.get("r", DEFAULT_RENDER_ENVS)))
             self.render_envs = max(1, min(n, MAX_RENDER_ENVS))
             if self.env is not None:
-                self._push_frame()
+                self._push_frame(force=True)
             self.emit(self.status())
         elif cmd == "set_target":
             if self.env is not None and hasattr(self.env, "set_target"):
@@ -361,6 +569,7 @@ class Trainer:
                 self.env = make_env(name, n)
                 self.ppo = make_trainer(self.env, name)
                 self.env_name, self.num_envs = name, n
+                self._new_run()
             self.ppo.load(path)
             self.obs = self.env.reset()
             if hasattr(self.ppo, "obs"):
@@ -368,8 +577,56 @@ class Trainer:
             self.state = "showcase"
             self.emit({"type": "loaded", "path": os.path.relpath(path, ROOT)})
             self.emit(self.status())
+            self._replay("now", self._train_seconds())
 
-    def _push_frame(self):
+    def _new_run(self):
+        self.run_id += 1
+        self.replays = []
+        self.replay_next = 0
+        self.run_t0 = None
+        self.replay_env = None
+        try:
+            if not isinstance(self.env, StubEnv):
+                self.replay_env = make_env(self.env_name, 1)
+        except Exception:
+            traceback.print_exc()
+
+    def _train_seconds(self):
+        return (time.time() - self.run_t0) if self.run_t0 else 0.0
+
+    def _replay(self, label, train_seconds):
+        if self.replay_env is None or self.ppo is None:
+            return
+        t0 = time.perf_counter()
+        try:
+            r = run_replay(self.env_name, self.replay_env, self.ppo)
+        except Exception as e:
+            traceback.print_exc()
+            self.emit({"type": "error", "message": f"replay failed: {e}"})
+            return
+        msg = {"type": "replay", "env": self.env_name, "run_id": self.run_id, "label": label,
+               "train_seconds": round(train_seconds, 2), "iter": int(getattr(self.ppo, "iter", 0)),
+               **r, "cost_ms": round((time.perf_counter() - t0) * 1000.0, 1)}
+        if label == "now":
+            self.replays = [x for x in self.replays if x["label"] != "now"]
+        self.replays.append(msg)
+        self.emit(msg)
+
+    def _maybe_scheduled_replay(self):
+        if self.replay_next >= len(REPLAY_SCHEDULE) or self.run_t0 is None:
+            return
+        ts = self._train_seconds()
+        if ts >= REPLAY_SCHEDULE[self.replay_next]:
+            while self.replay_next < len(REPLAY_SCHEDULE) and ts >= REPLAY_SCHEDULE[self.replay_next]:
+                label = fmt_clock(REPLAY_SCHEDULE[self.replay_next])
+                self.replay_next += 1
+            self._replay(label, ts)
+
+    def _push_frame(self, force=False):
+        now = time.time()
+        if not force and now - self.last_frame_t < 1.0 / FRAME_HZ:
+            return
+        self.last_frame_t = now
         try:
             rs = self.env.render_state(min(self.render_envs, self.num_envs))
             self.emit(frame_message(self.env_name, rs))
@@ -383,8 +640,10 @@ class Trainer:
         out["type"] = "metrics"
         out["env"] = self.env_name
         out["num_envs"] = self.num_envs
+        out.update(human_fields(self.env_name, self.env, dict(m), self._train_seconds()))
         self.emit(out)
         self._push_frame()
+        self._maybe_scheduled_replay()
 
     def _showcase_step(self):
         t0 = time.time()
@@ -487,6 +746,8 @@ class Server:
             await ws.send_str(json.dumps(self.trainer.status()))
             if self.trainer.sim_info:
                 await ws.send_str(json.dumps(self.trainer.sim_info))
+            for rp in list(self.trainer.replays):
+                await ws.send_str(json.dumps(rp, separators=(",", ":")))
             async for m in ws:
                 if m.type != WSMsgType.TEXT:
                     if m.type == WSMsgType.ERROR:

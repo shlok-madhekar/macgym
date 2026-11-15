@@ -1,159 +1,74 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MacGym · Train thousands of robots on your Mac</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
-  <script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.170.0/build/three.module.js" } }
-  </script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MacGym</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <header class="topbar">
-      <div class="brand">
-        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
-          <defs>
-            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#4FD1FF" />
-              <stop offset="1" stop-color="#A3FF6B" />
-            </linearGradient>
-          </defs>
-          <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="none" stroke="url(#lg)" stroke-width="2" />
-          <line x1="9" y1="22" x2="14" y2="12" stroke="url(#lg)" stroke-width="3.4" stroke-linecap="round" />
-          <line x1="14" y1="12" x2="22" y2="17" stroke="url(#lg)" stroke-width="3.4" stroke-linecap="round" />
-          <circle cx="23.5" cy="9" r="2.3" fill="#FF4FD8" />
-        </svg>
-        <div class="brand-text">
-          <span class="brand-name">MacGym</span>
-          <span class="brand-tag">Massively parallel robot RL on Apple Silicon · MLX</span>
+<div class="page">
+  <header class="top">
+    <div class="brand">
+      <span class="wordmark">MacGym</span>
+      <span class="subtitle">Train robots on a Mac GPU</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-env="walker" class="on">Walker</button>
+      <button data-env="cheetah">Cheetah</button>
+      <button data-env="arm">Arm</button>
+      <button data-env="cartpole">Cartpole</button>
+    </nav>
+    <div class="controls">
+      <label class="count">
+        <span class="mono">Robots</span>
+        <select id="count">
+          <option value="1024">1,024</option>
+          <option value="4096" selected>4,096</option>
+          <option value="16384">16,384</option>
+        </select>
+      </label>
+      <button id="load" class="textbtn">Load trained</button>
+      <button id="train" class="primary">Train</button>
+    </div>
+  </header>
+
+  <section class="hero" id="hero">
+    <div class="hero-label mono" id="heroLabel">Track</div>
+    <div class="hero-note mono" id="heroNote"></div>
+    <canvas id="track"></canvas>
+    <div class="ready" id="ready">
+      <div class="ready-main" id="readyMain">4,096 robots ready. Press Train.</div>
+      <div class="ready-sub mono" id="readySub">Every robot starts at 0 m. Watch the crowd move right as it learns.</div>
+    </div>
+  </section>
+
+  <section class="lower">
+    <div class="progress">
+      <div class="headline">
+        <div class="hl-value"><span id="hlNum">–</span><span class="hl-unit" id="hlUnit">m</span></div>
+        <div class="hl-label">
+          <span id="hlLabel">average distance walked</span>
+          <span class="mono muted" id="hlSub">no run yet</span>
         </div>
       </div>
-      <div class="topbar-right">
-        <div id="runState" class="run-state idle"><span class="rs-dot"></span><span id="runStateText">IDLE</span></div>
-        <div id="conn" class="conn connecting" title="Connection status">
-          <span class="conn-dot"></span><span id="connText">CONNECTING</span>
-        </div>
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="gens">
+      <div class="gens-head">
+        <span class="mono">Generations</span>
+        <span class="mono muted">same policy, replayed at each moment of training</span>
       </div>
-    </header>
+      <div class="gens-row" id="gens"></div>
+    </div>
+  </section>
 
-    <main class="layout">
-      <section id="stage" class="stage">
-        <canvas id="gl"></canvas>
-        <div class="stage-vignette"></div>
-
-        <div class="stage-top">
-          <div class="chip env-chip"><span class="chip-k">ENV</span><span id="envName">walker</span></div>
-          <div class="chip"><span class="chip-k">VIEW</span><span id="viewInfo">64 of 4,096</span></div>
-          <div class="chip density" id="density" title="Robots shown (?r=)">
-            <span class="chip-k">SHOW</span>
-            <button data-r="16">16</button><button data-r="36">36</button><button data-r="64">64</button><button data-r="144">144</button>
-          </div>
-          <div id="modeChip" class="chip mode-chip hidden"><span class="chip-k">MODE</span><span>SHOWCASE · deterministic</span></div>
-        </div>
-
-        <div class="stage-bottom">
-          <div class="robots">
-            <div class="robots-num"><span id="robotsNum">4,096</span><span class="robots-word">robots</span></div>
-            <div class="robots-sub">training in parallel on one Mac GPU · <span class="accent-lime">no NVIDIA required</span></div>
-          </div>
-          <div id="hint" class="hint hidden">
-            <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            Click or drag inside a tile to move the target
-          </div>
-        </div>
-
-        <div id="focusPanel" class="focus-panel hidden">
-          <canvas id="focusCanvas"></canvas>
-          <div class="focus-head">
-            <div class="chip focus-chip"><span class="chip-k">FOCUS</span><span id="focusLabel">robot #1</span></div>
-            <button id="focusClose" class="focus-close" title="Close focus (Esc)">✕</button>
-          </div>
-          <div class="focus-foot" id="focusFoot">ghost trail · last ~1.5 s</div>
-        </div>
-        <div id="tileHint" class="tile-hint hidden">Click any robot to focus</div>
-
-        <div id="offline" class="offline hidden">
-          <div class="offline-card">
-            <div class="offline-title">Waiting for the MacGym server…</div>
-            <div class="offline-sub">Run <code>python3 -m macgym.server --port 8765</code> and open it from there.</div>
-            <a class="btn btn-ghost" href="?demo=1">Open demo mode</a>
-          </div>
-        </div>
-
-        <div id="toast" class="toast"></div>
-      </section>
-
-      <aside class="hud">
-        <div class="panel hero">
-          <div class="label"><span class="pulse-dot"></span>ENV-STEPS / SEC</div>
-          <div class="hero-num"><span id="spsNum">0</span></div>
-          <canvas id="spark" class="spark"></canvas>
-          <div class="hero-note" id="spsNote">training throughput (rollout + PPO update)</div>
-          <div class="hero-sim" id="simLine"><span class="chip-k">SIM ONLY</span> <span id="simSps">–</span> <span class="hero-sim-d" id="simDetail">measured at start · random actions</span></div>
-          <div class="hero-sub">Apple Silicon GPU · MLX · <span class="accent-cyan">0 NVIDIA GPUs</span></div>
-        </div>
-
-        <div class="stats">
-          <div class="stat"><div class="stat-k">TOTAL STEPS</div><div class="stat-v" id="totalSteps">0</div></div>
-          <div class="stat"><div class="stat-k">ITERATION</div><div class="stat-v" id="iterNum">0</div></div>
-          <div class="stat"><div class="stat-k">MEAN RETURN</div><div class="stat-v accent-lime-text" id="meanRet">–</div></div>
-          <div class="stat"><div class="stat-k">ELAPSED</div><div class="stat-v" id="elapsed">0:00</div></div>
-        </div>
-
-        <div class="panel chart-panel">
-          <div class="panel-head">
-            <div class="label">MEAN EPISODE RETURN</div>
-            <div class="panel-aside" id="chartDelta"></div>
-          </div>
-          <canvas id="chart" class="chart"></canvas>
-        </div>
-
-        <div class="panel controls">
-          <div class="label">ENVIRONMENT</div>
-          <div id="envPicker" class="env-picker"></div>
-
-          <div class="slider-row">
-            <div class="label">PARALLEL ROBOTS</div>
-            <div class="slider-val" id="numEnvsVal">4,096</div>
-          </div>
-          <input id="numEnvs" class="slider" type="range" min="0" max="12" step="1" value="8" />
-          <div class="slider-ticks"><span>256</span><span>1K</span><span>4K</span><span>16K</span></div>
-
-          <div class="flow" id="flow">
-            <span class="flow-step" data-step="train">1 · Train</span><span class="flow-arrow">→</span>
-            <span class="flow-step" data-step="showcase">2 · Showcase</span>
-            <span class="flow-hint" id="flowHint">Start training, then Showcase runs the policy deterministically</span>
-          </div>
-          <div class="btn-row">
-            <button id="btnStart" class="btn btn-primary"><span class="kbd">␣</span><span id="btnStartText">Start</span></button>
-            <button id="btnShowcase" class="btn btn-magenta"><span class="kbd">S</span>Showcase</button>
-            <button id="btnSave" class="btn btn-ghost" title="Save policy">
-              <svg viewBox="0 0 24 24" width="15" height="15"><path d="M5 3h11l3 3v15H5z M8 3v6h8V3 M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-              Save
-            </button>
-          </div>
-          <button id="btnLoad" class="btn btn-load hidden" title="Load runs/&lt;env&gt;.npz and showcase it">
-            <svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span id="btnLoadText">Load trained</span>
-          </button>
-        </div>
-
-        <div id="benchPanel" class="panel bench hidden">
-          <div class="panel-head">
-            <div class="label">BENCHMARK · ENV-STEPS / SEC</div>
-            <div class="panel-aside">GPU vs CPU</div>
-          </div>
-          <div class="bench-machine" id="benchMachine"></div>
-          <div id="benchBody"></div>
-        </div>
-      </aside>
-    </main>
-  </div>
-  <script type="module" src="app.js"></script>
+  <footer class="foot mono" id="foot">connecting…</footer>
+</div>
+<script src="demo.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

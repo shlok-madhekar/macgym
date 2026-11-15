@@ -1,235 +1,281 @@
-// Fake server for ?demo=1. Emits the exact same message shapes as macgym/server.py (CONTRACT §3).
+// MacGym demo mode (?demo=1): a fake server that speaks the same websocket protocol
+// (frame / metrics / status / info / replay) with fake but plausible learning.
+(function () {
+  "use strict";
+  const TIME_SCALE = 2;              // demo "training seconds" per real second
+  const REPLAY_AT = [0, 10, 30, 60, 120, 240];
+  const R = 256;
 
-const ENVS = [
-  { name: "walker", obs_dim: 17, act_dim: 6, description: "Planar biped learns to walk" },
-  { name: "cheetah", obs_dim: 17, act_dim: 6, description: "Planar quadruped sprints" },
-  { name: "arm", obs_dim: 10, act_dim: 2, description: "2-link arm reaches target" },
-  { name: "cartpole", obs_dim: 4, act_dim: 1, description: "Balance a pole on a cart" },
-];
+  const rand = mulberry(7);
+  function mulberry(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const gauss = () => Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(2 * Math.PI * rand());
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const label = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const skillAt = (ts) => 1 - Math.exp(-ts / 75);
 
-const COLORS = {
-  walker: ["#4FD1FF", "#A3FF6B", "#A3FF6B", "#7CF2C8", "#7CF2C8", "#FFD36B", "#FFD36B"],
-  cheetah: ["#4FD1FF", "#A3FF6B", "#7CF2C8", "#FFD36B", "#A3FF6B", "#7CF2C8", "#FFD36B"],
-  arm: ["#5A6378", "#4FD1FF", "#A3FF6B"],
-  cartpole: ["#4FD1FF", "#A3FF6B"],
-};
-const MAX_RET = { walker: 3200, cheetah: 4800, arm: -2, cartpole: 500 };
-const MIN_RET = { walker: -120, cheetah: -300, arm: -95, cartpole: 12 };
-
-function rand(seed) { const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
-
-export class DemoServer {
-  constructor(onMessage) {
-    this.emit = onMessage;
-    this.state = "idle";
-    this.env = "walker";
-    this.N = 4096; this.R = 64;
-    this.iter = 0; this.steps = 0; this.t0 = 0;
-    this.target = [0.55, 0.65];
-    this.sim = 0; // sim time
-    this.envT = new Float32Array(1024);
-    this.envX = new Float32Array(1024);
-    this.timers = [];
-    this.lastFrame = performance.now();
-    setTimeout(() => this.emit({ type: "status", state: "idle", env: this.env }), 50);
-    this._frameLoop();
-  }
-
-  send(msg) {
-    switch (msg.cmd) {
-      case "list": setTimeout(() => this.emit({ type: "envs", envs: ENVS }), 30); break;
-      case "bench": setTimeout(() => this.emit({ type: "bench", data: null }), 30); break;
-      case "start": this.start(msg); break;
-      case "stop": this.stop(); break;
-      case "showcase": if (this.state !== "idle") { this.state = msg.on ? "showcase" : "training"; this._status(); } break;
-      case "set_target": this.target = [msg.x, msg.y]; break;
-      case "save": setTimeout(() => this.emit({ type: "saved", path: `checkpoints/${this.env}_${this.iter}.npz` }), 200); break;
+  // ---------- poses ----------
+  function rot(px, py, cx, cy, a) { const c = Math.cos(a), s = Math.sin(a); const dx = px - cx, dy = py - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; }
+  function walkerPose(out, o, x, phase, gaitAmp, fall) {
+    const hip = [x, 0.98 - 0.04 * Math.abs(Math.sin(phase)) * gaitAmp];
+    const sh = [x + 0.06 * gaitAmp, hip[1] + 0.5];
+    const segs = [[hip[0], hip[1], sh[0], sh[1], 0.055]];
+    for (const side of [0, Math.PI]) {
+      const ph = phase + side;
+      const th = -0.55 * gaitAmp * Math.sin(ph) + 0.05;
+      const kn = [hip[0] + 0.45 * Math.sin(th), hip[1] - 0.45 * Math.cos(th)];
+      const knee = 0.9 * gaitAmp * Math.max(0, Math.sin(ph + 1.2)) + 0.05;
+      const sa = th - knee;
+      const an = [kn[0] + 0.43 * Math.sin(sa), kn[1] - 0.43 * Math.cos(sa)];
+      segs.push([hip[0], hip[1], kn[0], kn[1], 0.042]);
+      segs.push([kn[0], kn[1], an[0], an[1], 0.036]);
+      segs.push([an[0] - 0.03, an[1], an[0] + 0.16, an[1], 0.028]);
+    }
+    // order: torso, thighL, shinL, footL, thighR, shinR, footR
+    const pivot = [x + 0.05, 0];
+    for (let k = 0; k < 7; k++) {
+      let [x1, y1, x2, y2, r] = segs[k];
+      if (fall) { [x1, y1] = rot(x1, y1, pivot[0], pivot[1], -fall); [x2, y2] = rot(x2, y2, pivot[0], pivot[1], -fall); }
+      out[o + k * 5] = x1; out[o + k * 5 + 1] = Math.max(r, y1); out[o + k * 5 + 2] = x2; out[o + k * 5 + 3] = Math.max(r, y2); out[o + k * 5 + 4] = r;
     }
   }
-
-  _status() { this.emit({ type: "status", state: this.state, env: this.env }); }
-
-  start(msg) {
-    this.env = msg.env || this.env; this.N = msg.num_envs || this.N; this.R = Math.min(msg.render_envs || 64, 1024);
-    this.iter = 0; this.steps = 0; this.t0 = performance.now(); this.sim = 0;
-    for (let i = 0; i < this.R; i++) { this.envT[i] = rand(i) * 4; this.envX[i] = 0; }
-    this.state = "training"; this._status();
-    clearInterval(this.metricTimer);
-    this.metricTimer = setInterval(() => this._metrics(), 280);
+  function cheetahPose(out, o, x, phase, gaitAmp, fall) {
+    const y = 0.62 + 0.03 * Math.sin(phase * 2) * gaitAmp;
+    const pitch = 0.08 * Math.sin(phase) * gaitAmp - (fall ? fall * 0.9 : 0);
+    const b = rot(x - 0.5, y, x, y, pitch), f = rot(x + 0.5, y, x, y, pitch);
+    const head = [f[0] + 0.18, f[1] + 0.16];
+    const segs = [[b[0], b[1], f[0], f[1], 0.06], [f[0], f[1], head[0], head[1], 0.05]];
+    for (const [hp, ph0] of [[b, 0], [f, Math.PI * 0.8]]) {
+      const ph = phase + ph0;
+      const th = 0.6 * gaitAmp * Math.sin(ph);
+      const kn = [hp[0] + 0.3 * Math.sin(th), hp[1] - 0.3 * Math.cos(th)];
+      const sa = th - 0.5 - 0.6 * gaitAmp * Math.max(0, Math.sin(ph + 1));
+      const ft = [kn[0] + 0.3 * Math.sin(sa), kn[1] - 0.3 * Math.cos(sa)];
+      segs.push([hp[0], hp[1], kn[0], kn[1], 0.045], [kn[0], kn[1], ft[0], ft[1], 0.038]);
+    }
+    segs.push([b[0], b[1], b[0] - 0.22, b[1] + 0.12, 0.03]);
+    for (let k = 0; k < 7; k++) {
+      const s = segs[k];
+      out[o + k * 5] = s[0]; out[o + k * 5 + 1] = Math.max(s[4], s[1]); out[o + k * 5 + 2] = s[2]; out[o + k * 5 + 3] = Math.max(s[4], s[3]); out[o + k * 5 + 4] = s[4];
+    }
+  }
+  const L = [0.42, 0.34, 0.24];
+  function armPose(out, o, angles) {
+    let x = 0, y = 0, a = 0;
+    for (let k = 0; k < 3; k++) {
+      a += angles[k];
+      const nx = x + L[k] * Math.cos(a), ny = y + L[k] * Math.sin(a);
+      out[o + k * 5] = x; out[o + k * 5 + 1] = y; out[o + k * 5 + 2] = nx; out[o + k * 5 + 3] = ny; out[o + k * 5 + 4] = [0.045, 0.036, 0.028][k];
+      x = nx; y = ny;
+    }
+    return [x, y];
+  }
+  function armIK(tx, ty) {
+    const d = Math.hypot(tx, ty), dir = Math.atan2(ty, tx);
+    const wx = tx - L[2] * Math.cos(dir), wy = ty - L[2] * Math.sin(dir);
+    const r = clamp(Math.hypot(wx, wy), 0.09, L[0] + L[1] - 1e-3);
+    const c2 = clamp((r * r - L[0] * L[0] - L[1] * L[1]) / (2 * L[0] * L[1]), -1, 1);
+    const a2 = Math.acos(c2);
+    const a1 = Math.atan2(wy, wx) - Math.atan2(L[1] * Math.sin(a2), L[0] + L[1] * Math.cos(a2));
+    return [a1, a2, dir - a1 - a2, d];
+  }
+  function cartPose(out, o, x, theta) {
+    out[o] = x - 0.22; out[o + 1] = 0.08; out[o + 2] = x + 0.22; out[o + 3] = 0.08; out[o + 4] = 0.08;
+    out[o + 5] = x; out[o + 6] = 0.08; out[o + 7] = x + Math.sin(theta) * 1.0; out[o + 8] = 0.08 + Math.cos(theta) * 1.0; out[o + 9] = 0.025;
   }
 
-  stop() { clearInterval(this.metricTimer); this.state = "idle"; this._status(); }
-
-  progress() { return 1 - Math.exp(-this.iter / 90); }
-
-  _metrics() {
-    if (this.state === "idle") return;
-    this.iter++;
-    const sps = this.N * 449 * (0.96 + 0.08 * Math.random()) * (this.env === "cartpole" ? 6 : this.env === "arm" ? 2.2 : 1);
-    this.steps += this.N * 32;
-    const p = this.progress();
-    const lo = MIN_RET[this.env], hi = MAX_RET[this.env];
-    const noise = (Math.random() - 0.5) * Math.abs(hi - lo) * 0.06 * (1 - p * 0.6);
-    this.emit({
-      type: "metrics", iter: this.iter, env_steps: this.steps, sps,
-      mean_reward: (lo + (hi - lo) * p) / 1000, mean_ep_return: lo + (hi - lo) * p + noise,
-      mean_ep_len: 1000 * p, policy_loss: 0.01, value_loss: 0.1, entropy: 1 - p,
-      time: (performance.now() - this.t0) / 1000, num_envs: this.N,
-    });
+  // ---------- episode models ----------
+  function newLocoEp(r, skill, env) {
+    const top = env === "cheetah" ? 2.6 : 1.7;
+    r.x = 0; r.t = 0; r.phase = rand() * 6.28;
+    r.speed = Math.max(0, top * skill * (0.55 + 0.45 * rand()) + 0.08 * gauss());
+    r.fallAt = clamp(0.5 + 0.6 * rand() + 18 * Math.pow(skill, 1.4) * Math.sqrt(rand()), 0.4, 20);
+    r.gait = clamp(0.25 + 0.8 * skill + 0.15 * gauss(), 0.1, 1.1);
+    r.fall = 0; r.done = false;
+  }
+  function newArmEp(r, skill) {
+    const ang = rand() * Math.PI * 1.6 - 0.3, rad = 0.35 + 0.55 * rand();
+    r.tx = rad * Math.cos(ang); r.ty = rad * Math.sin(ang);
+    r.noise = [0, 1, 2].map(() => gauss() * (1.3 * (1 - skill) + 0.03));
+    if (!r.ang) r.ang = [Math.PI / 2 + gauss() * 0.3, gauss() * 0.3, gauss() * 0.3];
+    r.t = 0; r.dur = 3;
+  }
+  function newCartEp(r, skill) {
+    r.x = gauss() * 0.1; r.v = 0; r.t = 0; r.th = gauss() * 0.05;
+    r.fallAt = clamp(0.4 + 0.4 * rand() + 11 * Math.pow(skill, 1.6) * Math.sqrt(rand()), 0.3, 10);
+    r.dir = rand() < 0.5 ? -1 : 1; r.wob = 0.25 * (1 - skill) + 0.02;
   }
 
-  _frameLoop() {
-    setInterval(() => {
-      const now = performance.now();
-      const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
-      this.lastFrame = now;
-      if (this.state === "idle" && this.iter === 0) { this._frame(dt, 0.02); return; }
-      this._frame(this.state === "idle" ? 0 : dt, this.state === "showcase" ? Math.max(0.9, this.progress()) : this.progress());
-    }, 33);
+  function Demo(onMessage) {
+    this.emit = (m) => setTimeout(() => onMessage(JSON.parse(JSON.stringify(m))), 0);
+    this.state = "idle"; this.env = "walker"; this.num = 4096;
+    this.timer = null; this.robots = []; this.done = [];
+    this.replays = []; this.nextReplay = 0;
   }
-
-  _frame(dt, p) {
-    const R = this.R, env = this.env;
-    this.sim += dt;
-    const gen = { walker: walkerPose, cheetah: cheetahPose, arm: armPose, cartpole: cartPose }[env];
-    const K = { walker: 7, cheetah: 7, arm: 3, cartpole: 2 }[env];
-    const caps = new Array(R * K * 5);
-    const cam = env === "walker" || env === "cheetah" ? new Array(R) : null;
-    const targets = env === "arm" ? new Array(R * 2) : null;
+  Demo.prototype.send = function (m) {
+    if (m.cmd === "list") this.emit({ type: "envs", envs: [
+      { name: "walker", obs_dim: 17, act_dim: 6, description: "planar biped" },
+      { name: "cheetah", obs_dim: 17, act_dim: 6, description: "planar quadruped" },
+      { name: "arm", obs_dim: 10, act_dim: 3, description: "3-link reacher" },
+      { name: "cartpole", obs_dim: 4, act_dim: 1, description: "balance a pole" }] });
+    if (m.cmd === "status") this.emit(this.status());
+    if (m.cmd === "start") this.start(m.env || "walker", m.num_envs || 4096, false);
+    if (m.cmd === "load") this.start(m.env || this.env, m.num_envs || this.num, true);
+    if (m.cmd === "stop") this.stop();
+  };
+  Demo.prototype.status = function () { return { type: "status", state: this.state, env: this.env, num_envs: this.num, render_envs: R, checkpoint: true }; };
+  Demo.prototype.stop = function () {
+    if (this.state !== "idle") this.pushReplay("now");
+    clearInterval(this.timer); this.timer = null; this.state = "idle"; this.emit(this.status());
+  };
+  Demo.prototype.start = function (env, num, trained) {
+    clearInterval(this.timer);
+    this.env = env; this.num = num; this.state = "training";
+    this.offset = trained ? 300 : 0;
+    this.t0 = performance.now(); this.lastTick = this.t0; this.lastMetric = 0; this.iter = 0;
+    this.done = []; this.best = 0; this.replays = []; this.nextReplay = 0;
+    this.robots = [];
     for (let i = 0; i < R; i++) {
-      const pi = Math.min(1, Math.max(0, p * (0.75 + 0.5 * rand(i + 9))));
-      this.envT[i] += dt;
-      const out = gen(this, i, this.envT[i], pi, dt);
-      for (let k = 0; k < K * 5; k++) caps[i * K * 5 + k] = Math.round(out.caps[k] * 1000) / 1000;
-      if (cam) cam[i] = out.cam;
-      if (targets) { targets[i * 2] = out.target[0]; targets[i * 2 + 1] = out.target[1]; }
+      const r = {};
+      if (env === "arm") newArmEp(r, this.skill());
+      else if (env === "cartpole") newCartEp(r, this.skill());
+      else newLocoEp(r, this.skill(), env);
+      this.robots.push(r);
     }
-    const bounds = {
-      walker: [-1.6, 1.6, -0.25, 1.75], cheetah: [-1.8, 1.8, -0.25, 1.35],
-      arm: [-1.1, 1.1, -1.1, 1.1], cartpole: [-2.6, 2.6, -0.4, 1.4],
-    }[env];
-    this.emit({
-      type: "frame", env, R, K, capsules: caps, targets, colors: COLORS[env],
-      ground: env === "arm" ? null : 0, world_bounds: bounds, camera_x: cam,
-    });
-  }
-}
+    this.emit(this.status());
+    this.emit({ type: "info", sim_sps: { walker: 3.05e6, cheetah: 2.9e6, arm: 5.1e6, cartpole: 6.1e6 }[env] * num / 4096, env, num_envs: num });
+    this.timer = setInterval(() => this.tick(), 1000 / 30);
+    this.tick();
+  };
+  Demo.prototype.ts = function () { return this.offset + (performance.now() - this.t0) / 1000 * TIME_SCALE; };
+  Demo.prototype.skill = function () { return skillAt(this.ts()); };
 
-function seg(out, x1, y1, x2, y2, r) { out.push(x1, y1, x2, y2, r); }
+  Demo.prototype.tick = function () {
+    const now = performance.now();
+    const dt = Math.min(0.1, (now - this.lastTick) / 1000); this.lastTick = now;
+    const env = this.env, skill = this.skill();
+    const K = env === "arm" ? 3 : env === "cartpole" ? 2 : 7;
+    const caps = new Float32Array(R * K * 5);
+    const dist = new Float32Array(R);
+    const targets = env === "arm" ? new Float32Array(R * 2) : null;
+    let bestI = 0, bestV = -Infinity;
+    for (let i = 0; i < R; i++) {
+      const r = this.robots[i];
+      if (env === "arm") {
+        r.t += dt;
+        if (r.t > r.dur) { this.done.push(Math.hypot(r.ex - r.tx, r.ey - r.ty) * 100); newArmEp(r, skill); }
+        const ik = armIK(r.tx, r.ty);
+        for (let k = 0; k < 3; k++) {
+          const goal = ik[k] + r.noise[k] + 0.04 * (1 - skill) * Math.sin(now / 300 + i + k);
+          r.ang[k] += (goal - r.ang[k]) * Math.min(1, dt * 4);
+        }
+        const [ex, ey] = armPose(caps, i * K * 5, r.ang); r.ex = ex; r.ey = ey;
+        targets[i * 2] = r.tx; targets[i * 2 + 1] = r.ty;
+        const err = Math.hypot(ex - r.tx, ey - r.ty);
+        dist[i] = err;
+        if (-err > bestV) { bestV = -err; bestI = i; }
+      } else if (env === "cartpole") {
+        r.t += dt;
+        if (r.t < r.fallAt) r.th = r.wob * Math.sin(r.t * 3 + i) * 0.5;
+        else r.th += r.dir * (0.4 + Math.abs(r.th) * 6) * dt;
+        r.x += Math.sin(r.t * 0.8 + i) * 0.3 * dt;
+        if (Math.abs(r.th) > 1.45 || r.t >= 10) { this.done.push(Math.min(r.t, r.fallAt)); newCartEp(r, skill); }
+        cartPose(caps, i * K * 5, r.x, r.th);
+        dist[i] = r.t;
+        const v = r.t - Math.abs(r.th) * 5;
+        if (v > bestV) { bestV = v; bestI = i; }
+      } else {
+        r.t += dt;
+        if (!r.done) {
+          r.x += r.speed * dt; r.phase += dt * (3 + r.speed * 3.2);
+          if (r.t >= r.fallAt) {
+            if (r.fallAt >= 20) { this.done.push(r.x); newLocoEp(r, skill, env); }
+            else r.done = true;
+          }
+        } else {
+          r.fall = Math.min(1.45, r.fall + dt * (1 + r.fall * 4));
+          r.x += r.speed * dt * 0.3;
+          if (r.fall >= 1.45) { r.dead = (r.dead || 0) + dt; if (r.dead > 0.5) { r.dead = 0; this.done.push(r.x); newLocoEp(r, skill, env); } }
+        }
+        (env === "cheetah" ? cheetahPose : walkerPose)(caps, i * K * 5, r.x, r.phase, r.gait, r.fall);
+        dist[i] = r.x;
+        if (r.x > bestV) { bestV = r.x; bestI = i; }
+      }
+    }
+    if (this.done.length > 400) this.done.splice(0, this.done.length - 400);
+    const wb = env === "arm" ? [-1.1, 1.1, -1.1, 1.1] : env === "cartpole" ? [-2.4, 2.4, -0.3, 1.3] : [-1, 4, -0.2, 1.8];
+    this.emit({ type: "frame", env, R, K, capsules: Array.from(caps, (v) => Math.round(v * 1000) / 1000),
+      targets: targets ? Array.from(targets) : null, colors: null, ground: env === "arm" ? null : 0,
+      world_bounds: wb, camera_x: null, dist: Array.from(dist), best_index: bestI });
 
-function leg(out, hx, hy, a1, a2, a3, L1, L2, L3, r) {
-  const kx = hx + Math.sin(a1) * L1, ky = hy - Math.cos(a1) * L1;
-  const fx = kx + Math.sin(a1 + a2) * L2, fy = ky - Math.cos(a1 + a2) * L2;
-  return { kx, ky, fx, fy, toe: [fx + Math.cos(a1 + a2 + a3) * L3, fy + Math.sin(a1 + a2 + a3) * L3] };
-}
+    const ts = this.ts();
+    if (now - this.lastMetric > 450) { this.lastMetric = now; this.metrics(ts); }
+    if (this.nextReplay < REPLAY_AT.length && ts - this.offset >= REPLAY_AT[this.nextReplay]) {
+      this.pushReplay(label(REPLAY_AT[this.nextReplay])); this.nextReplay++;
+    }
+  };
 
-function walkerPose(sv, i, t, p, dt) {
-  const ep = 5 + 6 * p; // episode length seconds
-  if (t > ep) { sv.envT[i] = 0; sv.envX[i] = 0; t = 0; }
-  const speed = 1.6 * p * p;
-  sv.envX[i] += speed * dt;
-  const x = sv.envX[i];
-  const ph = t * (4 + 3 * p) + rand(i) * 6.28;
-  const chaos = 1 - p;
-  const jitter = (k) => Math.sin(t * (7 + k) + i * (1.3 + k)) * chaos;
-  // falling for untrained policies
-  const fall = Math.min(1, Math.max(0, (t - 1.2 - 3 * p) / 1.4)) * chaos;
-  const tilt = jitter(1) * 0.5 + fall * 1.3 * (rand(i) > 0.5 ? 1 : -1) + 0.12 * p;
-  const hipY = 1.0 - 0.06 * Math.abs(Math.sin(ph)) * p - fall * 0.75;
-  const out = [];
-  const sx = x - Math.sin(tilt) * 0.0, shx = x + Math.sin(tilt) * 0.55, shy = hipY + Math.cos(tilt) * 0.55;
-  seg(out, sx, hipY, shx, shy, 0.07);
-  const amp = 0.25 + 0.4 * p;
-  const legs = [];
-  for (const side of [0, 1]) {
-    const q = ph + side * Math.PI;
-    const a1 = Math.sin(q) * amp + jitter(2 + side) * 0.7 + fall * 0.6;
-    const a2 = -Math.max(0, Math.sin(q + 1.2)) * (0.3 + 0.7 * p) - jitter(4 + side) * 0.5 - 0.1;
-    const a3 = -Math.PI / 2 + Math.PI / 2 + 0.1 * Math.sin(q);
-    legs.push(leg([], x, hipY, a1, a2, a3, 0.45, 0.45, 0.18, 0.05));
-  }
-  // thighs (back leg first so front draws over)
-  for (const l of legs) seg(out, x, hipY, l.kx, l.ky, 0.055);
-  for (const l of legs) seg(out, l.kx, l.ky, l.fx, l.fy, 0.045);
-  for (const l of legs) seg(out, l.fx, l.fy, l.toe[0] + 0.0, l.toe[1], 0.04);
-  // keep above ground roughly
-  let minY = 1e9; for (let k = 1; k < out.length; k += 5) minY = Math.min(minY, out[k] - out[k + 3] * 0, out[k + 2] - 0);
-  for (let k = 0; k < out.length; k += 5) minY = Math.min(minY, out[k + 1] - out[k + 4], out[k + 3] - out[k + 4]);
-  const lift = minY < 0 ? -minY : 0;
-  for (let k = 0; k < out.length; k += 5) { out[k + 1] += lift; out[k + 3] += lift; }
-  return { caps: out, cam: x };
-}
+  Demo.prototype.metrics = function (ts) {
+    this.iter++;
+    const env = this.env, w = this.done.slice(-100);
+    const mean = w.length ? w.reduce((a, b) => a + b, 0) / w.length : (env === "arm" ? 60 : 0);
+    const best = w.length ? (env === "arm" ? Math.min(...w) : Math.max(...w)) : mean;
+    const meta = env === "arm" ? { human_unit: "cm", human_label: "average miss distance", higher_is_better: false, err_mean: mean / 100, unit: "cm" }
+      : env === "cartpole" ? { human_unit: "s", human_label: "average time balanced", higher_is_better: true, balance_mean: mean, unit: "s" }
+      : { human_unit: "m", human_label: "average distance walked", higher_is_better: true, dist_mean: mean, dist_best: best, unit: "m", headline_label: "distance walked" };
+    const sps = (env === "cartpole" ? 4.2e6 : env === "arm" ? 1.9e6 : 0.284e6 * 4) * this.num / 16384 * (0.95 + 0.1 * rand());
+    this.emit(Object.assign({ type: "metrics", iter: this.iter, env_steps: Math.round(this.iter * this.num * 32), sps,
+      mean_ep_return: mean * 10, num_envs: this.num, train_seconds: ts - this.offset, time: ts - this.offset,
+      human_value: mean, human_best: best }, meta));
+  };
 
-function cheetahPose(sv, i, t, p, dt) {
-  const ep = 6;
-  if (t > ep) { sv.envT[i] = 0; sv.envX[i] = 0; t = 0; }
-  const speed = 3.2 * p * p;
-  sv.envX[i] += speed * dt;
-  const x = sv.envX[i];
-  const chaos = 1 - p;
-  const ph = t * (6 + 6 * p) + rand(i) * 6.28;
-  const flip = Math.min(1, Math.max(0, (t - 1.5) / 2)) * chaos * (rand(i + 3) > 0.6 ? 1 : 0);
-  const pitch = Math.sin(ph) * 0.12 * p + Math.sin(t * 5 + i) * 0.3 * chaos + flip * 2.6;
-  const cy = 0.62 + 0.05 * Math.sin(ph * 2) * p;
-  const hl = 0.5;
-  const bx = x - Math.cos(pitch) * hl, by = cy - Math.sin(pitch) * hl;
-  const fx = x + Math.cos(pitch) * hl, fy = cy + Math.sin(pitch) * hl;
-  const out = [];
-  seg(out, bx, by, fx, fy, 0.065);
-  const amp = 0.3 + 0.5 * p;
-  const jit = (k) => Math.sin(t * (8 + k) + i * 2.1 + k) * chaos * 0.8;
-  const back = leg([], bx, by, Math.sin(ph) * amp + jit(1), -0.6 - 0.4 * Math.sin(ph + 1) * p + jit(2), 0, 0.3, 0.28, 0.16, 0.045);
-  const front = leg([], fx, fy, Math.sin(ph + 2.2) * amp + jit(3), 0.5 + 0.4 * Math.sin(ph + 3) * p + jit(4), 0, 0.27, 0.25, 0.13, 0.045);
-  seg(out, bx, by, back.kx, back.ky, 0.05); seg(out, back.kx, back.ky, back.fx, back.fy, 0.042); seg(out, back.fx, back.fy, back.fx + 0.12, back.fy - 0.04, 0.035);
-  seg(out, fx, fy, front.kx, front.ky, 0.05); seg(out, front.kx, front.ky, front.fx, front.fy, 0.042); seg(out, front.fx, front.fy, front.fx + 0.1, front.fy - 0.05, 0.035);
-  let minY = 1e9;
-  for (let k = 0; k < out.length; k += 5) minY = Math.min(minY, out[k + 1] - out[k + 4], out[k + 3] - out[k + 4]);
-  const lift = -minY;
-  for (let k = 0; k < out.length; k += 5) { out[k + 1] += lift; out[k + 3] += lift; }
-  return { caps: out, cam: x };
-}
+  Demo.prototype.pushReplay = function (lab) {
+    const env = this.env, ts = this.ts(), skill = skillAt(ts);
+    const K = env === "arm" ? 3 : env === "cartpole" ? 2 : 7;
+    const frames = [], tg = [];
+    const dtr = 0.04; let result = 0, text = "";
+    if (env === "arm") {
+      const targetsSeq = [[0.55, 0.5], [-0.4, 0.62], [0.7, -0.1]];
+      const ang = [Math.PI / 2, 0, 0], noise = [0, 1, 2].map((k) => (1.2 * (1 - skill) + 0.02) * [0.8, -0.6, 0.9][k]);
+      let err = 0;
+      for (let f = 0; f < 200; f++) {
+        const [tx, ty] = targetsSeq[Math.floor(f / 67)];
+        const ik = armIK(tx, ty);
+        for (let k = 0; k < 3; k++) ang[k] += (ik[k] + noise[k] - ang[k]) * 0.12;
+        const c = new Float32Array(K * 5); const [ex, ey] = armPose(c, 0, ang);
+        frames.push(Array.from(c)); tg.push([tx, ty]); err = Math.hypot(ex - tx, ey - ty) * 100;
+      }
+      result = err; text = err < 3 ? `touches target · ${err.toFixed(1)} cm off` : `misses by ${err.toFixed(1)} cm`;
+    } else if (env === "cartpole") {
+      const fallAt = clamp(0.5 + 10 * Math.pow(skill, 1.6), 0.4, 8.5);
+      let th = 0, x = 0, t = 0, end = 200;
+      for (let f = 0; f < 200; f++) {
+        t = f * dtr;
+        if (t < fallAt) th = (0.25 * (1 - skill) + 0.02) * Math.sin(t * 3); else th += (0.4 + Math.abs(th) * 6) * dtr;
+        x = 0.4 * Math.sin(t * 0.7);
+        const c = new Float32Array(K * 5); cartPose(c, 0, x, th); frames.push(Array.from(c));
+        if (Math.abs(th) > 1.45) { end = f; break; }
+      }
+      result = Math.min(fallAt, 8); text = fallAt >= 8 ? `balanced the full 8 s` : `pole fell after ${fallAt.toFixed(1)} s`;
+    } else {
+      const top = env === "cheetah" ? 2.6 : 1.7;
+      const speed = top * Math.max(0, skill - 0.03) * 0.95;
+      const fallAt = clamp(0.6 + 9 * Math.pow(skill, 1.5), 0.5, 9);
+      const gait = clamp(0.25 + 0.8 * skill, 0.1, 1.1);
+      let x = 0, phase = 0, fall = 0, t = 0;
+      for (let f = 0; f < 200; f++) {
+        t = f * dtr;
+        if (t < fallAt) { x += speed * dtr; phase += dtr * (3 + speed * 3.2); }
+        else { fall = Math.min(1.45, fall + dtr * (1 + fall * 4)); x += speed * dtr * 0.3; }
+        const c = new Float32Array(K * 5); (env === "cheetah" ? cheetahPose : walkerPose)(c, 0, x, phase, gait, fall);
+        frames.push(Array.from(c, (v) => Math.round(v * 1000) / 1000));
+        if (fall >= 1.45 && t > fallAt + 0.6) break;
+      }
+      result = x;
+      text = fallAt >= 8 ? `${env === "cheetah" ? "ran" : "walked"} ${x.toFixed(1)} m in 8 s` : `fell after ${fallAt.toFixed(1)} s · ${x.toFixed(1)} m`;
+    }
+    const msg = { type: "replay", env, label: lab, train_seconds: ts - this.offset, iter: this.iter, K, frames, targets: env === "arm" ? tg : null, result, result_text: text, dt: dtr };
+    this.replays.push(msg); this.emit(msg);
+  };
 
-function armPose(sv, i, t, p) {
-  const [tx0, ty0] = sv.target;
-  // per-env target jitter when untrained so the grid feels alive; trained arms all lock onto the shared target
-  const tx = tx0, ty = ty0;
-  const L1 = 0.5, L2 = 0.42;
-  const d = Math.min(L1 + L2 - 0.01, Math.max(0.1, Math.hypot(tx, ty)));
-  const c2 = (d * d - L1 * L1 - L2 * L2) / (2 * L1 * L2);
-  const q2 = Math.acos(Math.max(-1, Math.min(1, c2)));
-  const q1 = Math.atan2(ty, tx) - Math.atan2(L2 * Math.sin(q2), L1 + L2 * Math.cos(q2));
-  const chaos = 1 - p;
-  const w1 = Math.sin(t * 1.7 + i * 1.9) * 2.4 * chaos + Math.sin(t * 9 + i) * 0.08 * chaos;
-  const w2 = Math.sin(t * 2.3 + i * 2.7) * 2.0 * chaos;
-  const k = sv._armSmooth || (sv._armSmooth = new Float32Array(2048));
-  const goal1 = q1 * p + w1, goal2 = q2 * p + w2;
-  k[i * 2] += (goal1 - k[i * 2]) * 0.18; k[i * 2 + 1] += (goal2 - k[i * 2 + 1]) * 0.18;
-  const a1 = k[i * 2], a2 = k[i * 2 + 1];
-  const ex = Math.cos(a1) * L1, ey = Math.sin(a1) * L1;
-  const hx = ex + Math.cos(a1 + a2) * L2, hy = ey + Math.sin(a1 + a2) * L2;
-  return { caps: [-0.12, 0, 0.12, 0, 0.09, 0, 0, ex, ey, 0.055, ex, ey, hx, hy, 0.045], target: [tx, ty] };
-}
-
-function cartPose(sv, i, t, p) {
-  const ep = 2 + 10 * p;
-  if (t > ep) { sv.envT[i] = 0; t = 0; }
-  const chaos = 1 - p;
-  const x = Math.sin(t * 0.9 + i) * (0.4 + 0.8 * chaos);
-  const dir = rand(i + 1) > 0.5 ? 1 : -1;
-  const fall = chaos * Math.min(1.45, 0.05 * Math.exp(t * 1.4)) * dir;
-  const th = fall + Math.sin(t * 3 + i) * 0.05 * p;
-  const cy = 0.12, L = 1.0;
-  return { caps: [x - 0.22, cy, x + 0.22, cy, 0.11, x, cy, x + Math.sin(th) * L, cy + Math.cos(th) * L, 0.035] };
-}
-
-export const DEMO_BENCH = {
-  machine: "Apple M3 Pro · 18 GB (demo data)",
-  results: [
-    { task: "cartpole", backend: "MLX GPU (N=16384)", sps: 222000000 },
-    { task: "cartpole", backend: "MuJoCo CPU ×1", sps: 1150000 },
-    { task: "cartpole", backend: "MuJoCo CPU ×11 proc", sps: 9800000 },
-    { task: "walker", backend: "MLX GPU (N=16384)", sps: 18400000 },
-    { task: "walker", backend: "MuJoCo CPU ×1", sps: 92000 },
-    { task: "walker", backend: "MuJoCo CPU ×11 proc", sps: 760000 },
-  ],
-};
+  window.MacGymDemo = { create: (onMessage) => new Demo(onMessage) };
+})();

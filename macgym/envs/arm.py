@@ -32,6 +32,7 @@ H = DT / SUBSTEPS
 MAX_STEPS = 200
 SUCCESS_DIST = 0.05
 SUCCESS_BONUS = 1.0
+ERR_TAIL = 20  # steps at episode end averaged for the reported miss distance
 
 
 def _sample_targets(key, n):
@@ -103,7 +104,7 @@ def _obs(q, qd, target):
     return mx.concatenate([mx.cos(q), mx.sin(q), 0.1 * qd, target, ee, target - ee], axis=1)
 
 
-def _physics(q, qd, target, t, ret, action, key, fixed_flag, fixed_xy):
+def _physics(q, qd, target, t, ret, err_acc, action, key, fixed_flag, fixed_xy):
     n = q.shape[0]
     a = mx.clip(action, -1.0, 1.0)
     tau = [a[:, i] * TORQUE_GAIN[i] for i in range(3)]
@@ -126,6 +127,8 @@ def _physics(q, qd, target, t, ret, action, key, fixed_flag, fixed_xy):
     ret = ret + reward
     ep_return = ret * done
     ep_len = t * done
+    err_acc = err_acc + dist * (t > MAX_STEPS - ERR_TAIL)
+    ep_err = err_acc * (1.0 / ERR_TAIL) * done
 
     k1, k2 = mx.random.split(key)
     fq, fqd = _sample_joints(k1, n)
@@ -140,8 +143,9 @@ def _physics(q, qd, target, t, ret, action, key, fixed_flag, fixed_xy):
     target = mx.where(fixed_flag > 0.5, mx.broadcast_to(fixed_xy, target.shape), target)
     t = mx.where(d1, 0.0, t)
     ret = mx.where(d1, 0.0, ret)
+    err_acc = mx.where(d1, 0.0, err_acc)
     obs = _obs(q, qd, target)
-    return q, qd, target, t, ret, obs, reward, done, ep_return, ep_len
+    return q, qd, target, t, ret, err_acc, obs, reward, done, ep_return, ep_len, ep_err
 
 
 class ArmReach(BatchedEnv):
@@ -165,18 +169,20 @@ class ArmReach(BatchedEnv):
         self.target = _sample_targets(self._split(), n)
         self.t = mx.zeros((n,), dtype=mx.float32)
         self.ret = mx.zeros((n,), dtype=mx.float32)
+        self.err_acc = mx.zeros((n,), dtype=mx.float32)
         self.obs = _obs(self.q, self.qd, self.target)
-        mx.eval(self.q, self.qd, self.target, self.t, self.ret, self.obs)
+        mx.eval(self.q, self.qd, self.target, self.t, self.ret, self.err_acc, self.obs)
         return self.obs
 
     def step(self, action: mx.array):
         action = action.astype(mx.float32).reshape(self.num_envs, self.act_dim)
-        (self.q, self.qd, self.target, self.t, self.ret, self.obs,
-         reward, done, ep_ret, ep_len) = self._step_fn(
-            self.q, self.qd, self.target, self.t, self.ret, action, self._split(),
+        (self.q, self.qd, self.target, self.t, self.ret, self.err_acc, self.obs,
+         reward, done, ep_ret, ep_len, ep_err) = self._step_fn(
+            self.q, self.qd, self.target, self.t, self.ret, self.err_acc, action, self._split(),
             self.fixed_flag, self.fixed_xy,
         )
-        info = {"episode_return": ep_ret, "episode_len": ep_len}
+        # episode_err: mean |ee - target| (m) over the last ERR_TAIL steps, valid where done
+        info = {"episode_return": ep_ret, "episode_len": ep_len, "episode_err": ep_err}
         return self.obs, reward, done, info
 
     def set_target(self, x=None, y=None) -> None:
@@ -206,10 +212,17 @@ class ArmReach(BatchedEnv):
         caps[:, :, 2:4] = p[:, 1:]
         caps[:, :, 4] = np.array([0.045, 0.038, 0.03], dtype=np.float32)
         targets = np.array(self.target[:R], dtype=np.float32)[:, None, :]
+        err = np.linalg.norm(p[:, 3] - targets[:, 0], axis=1).astype(np.float32)
         return {
+            "dist": err,  # current end-effector miss distance (m), lower is better
+            "higher_is_better": False,
             "capsules": caps,
             "targets": targets,
             "colors": ["#4F8CFF", "#7C5CFF", "#22D3A6"],
             "ground": None,
             "world_bounds": [-1.1, 1.1, -1.1, 1.1],
         }
+
+    def live_err_mean(self) -> float:
+        ee = _kinematics(self.q)[3]
+        return float(mx.mean(mx.sqrt(mx.sum(mx.square(ee - self.target), axis=1))))

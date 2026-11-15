@@ -438,6 +438,8 @@ class LocoEnv(BatchedEnv):
         self.model = self.build_model()
         self.dt = self.model.dt
         self.init_state = mx.array(self.model.init_state)
+        # torso start x (reset noise is velocity-only, so every episode starts here)
+        self.start_x0 = float(np.asarray(self.model.init_state)[self.torso])
         self.colors = [c.color for c in self.model.capsules]
         self._step_fn = mx.compile(self._env_step)
         self._sim_fn = mx.compile(self.model.step_metal if self.backend == "metal" else self.model.step)
@@ -476,11 +478,13 @@ class LocoEnv(BatchedEnv):
         ret = ret + reward
         ep_ret = ret * donef
         ep_len = t * donef
+        # torso x travelled this episode (start-relative), valid where done
+        ep_dist = mx.where(bad, 0.0, new_state[:, self.torso] - self.start_x0) * donef
         new_state = mx.where(done[:, None], self._fresh(key, n), new_state)
         t = mx.where(done, 0.0, t)
         ret = mx.where(done, 0.0, ret)
         obs = self.observe(new_state)
-        return new_state, t, ret, obs, reward, donef, ep_ret, ep_len
+        return new_state, t, ret, obs, reward, donef, ep_ret, ep_len, ep_dist
 
     def reset(self) -> mx.array:
         n = self.num_envs
@@ -493,9 +497,9 @@ class LocoEnv(BatchedEnv):
 
     def step(self, action: mx.array):
         action = action.astype(mx.float32).reshape(self.num_envs, self.act_dim)
-        (self.state, self.t, self.ret, self.obs, reward, done, ep_ret, ep_len) = self._step_fn(
+        (self.state, self.t, self.ret, self.obs, reward, done, ep_ret, ep_len, ep_dist) = self._step_fn(
             self.state, self.t, self.ret, action, self._split())
-        info = {"episode_return": ep_ret, "episode_len": ep_len}
+        info = {"episode_return": ep_ret, "episode_len": ep_len, "episode_dist": ep_dist}
         return self.obs, reward, done, info
 
     def render_state(self, R: int) -> dict:
@@ -512,4 +516,12 @@ class LocoEnv(BatchedEnv):
             "ground": 0.0,
             "world_bounds": [-hw, hw, self.view_y[0], self.view_y[1]],
             "camera_x": cam,
+            "start_x": np.full((R,), self.start_x0, np.float32),  # per-env episode start x
+            "dist": cam - self.start_x0,  # current start-relative distance (m)
         }
+
+    def live_dist_mean(self) -> float:
+        """Mean start-relative torso x over all envs (in-progress episodes)."""
+        d = self.state[:, self.torso] - self.start_x0
+        d = mx.where(mx.isnan(d), 0.0, d)
+        return float(mx.mean(d))
