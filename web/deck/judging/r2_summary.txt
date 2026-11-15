@@ -1,0 +1,347 @@
+r2: 32 judges
+  creativity     7.12  min 6
+  technical      7.53  min 7
+  functionality  7.97  min 7
+  uiux           8.06  min 7
+  theme          6.88  min 5
+  pitch          7.91  min 7
+  TOTAL /60     45.47  min 39 max 50
+  rank guesses Counter({'top3': 16, 'top10': 11, '1st': 5})
+  best slide [(9, 14), (5, 6), (8, 4), (11, 2)]  worst [(14, 9), (11, 8), (13, 4), (6, 4)]
+
+LOWEST 6 judges:
+  #58 seed-stage VC who asks who pays and why now = 39: Impressive solo build, but who pays? Students with free MacBooks and free Colab is not a market.
+  #38 product manager at a developer platform = 41: Clear problem, real demo, students as users. Slide text is tiny though, and I am tired.
+  #39 startup accelerator program manager who has seen 1,000 pitch = 41: Polished, honest, strong cheating story. But the market is students on MacBooks, which is small, and theme fit is a stretch.
+  #50 NVIDIA developer-relations engineer, skeptical of non-CUDA c = 41: Another RL gym, framed as anti-NVIDIA. 90x is a straw man baseline; I want real comparisons.
+  #64 open-source maintainer of a popular Python ML library = 41: Polished and well measured, which makes me suspicious it was agent-generated. I want to see the repo, tests and git history.
+  #37 NVIDIA developer-relations engineer, skeptical of non-CUDA c = 42: Metal kernel on Mac, 2D only. Real recording helps, but where is the CUDA comparison on equal physics?
+
+FIXES by slide (impact-weighted):
+-- slide 11  weight 51
+   [4] (technical) Lead with 21x vs MuJoCo on the same machine, labeled 2D-simplified, and demote 90x to a footnote
+   [4] (pitch) Show only one headline number (90x) with one plain-English line; move the rest to backup
+   [4] (pitch) Lead with one honest headline (21x vs MuJoCo on all cores, or 295K end-to-end training steps/s). Move the 90x same-solver figure to a footnote.
+   [4] (technical) State the CPU baseline's language, threading and compilation. Add a compiled multithreaded CPU baseline so the 90x number survives scrutiny.
+   [4] (pitch) Replace the headline with the fair_bench scaling curve (steps/s vs env count) plus end-to-end PPO throughput, and drop 90x as the hero number.
+   [4] (technical) Drop the 90x headline; show steps/s per watt or per dollar against a named NVIDIA baseline with caveats
+   [3] (pitch) Lead with one headline number (21x vs MuJoCo or 90x same-solver) and move the other to a footnote
+-- slide 14  weight 43
+   [5] (pitch) Add a concrete user count, a pilot teacher or club, and a path to revenue (pro tier, education licenses, or hardware-lab partnerships)
+   [4] (pitch) Add a concrete first step: name a target course or club and show a user count or pilot
+   [4] (pitch) Show demand evidence: named clubs or classes contacted, a waitlist number, or a tester quote
+   [4] (functionality) Add proof of a real user or test: a classmate or club member running the 3 commands on their own MacBook, with a timing and photo.
+   [4] (pitch) Add a concrete adoption proof or ask (a class or club that has tried it, or number of installs/stars) and one line on how it becomes a business or stays open-source infrastructure
+   [3] (pitch) Move the audience and three-command quickstart earlier, right after slide 4, and add one user quote or tester
+   [3] (theme) Add a comparison versus free Colab or cloud GPU, with time and cost
+-- slide 10  weight 35
+   [5] (technical) Add a contact-rich validation: the same 2-link hopper dropped and driven with fixed torques in both MacGym and MuJoCo, with trajectory RMS error and a contact-force comparison.
+   [4] (technical) Add a validation on the walker itself: same torque sequence in MacGym and MuJoCo and overlay the torso x trajectory.
+   [4] (technical) Add a multi-contact validation (a box dropped and slid in MacGym vs MuJoCo, or a 2-link falling onto the ground) with trajectory RMS error.
+   [4] (technical) Add a multi-link contact-rich comparison (walker trajectory vs MuJoCo from same initial state, divergence over time)
+   [4] (technical) Add one contact-rich locomotion check (hopper trajectory vs MuJoCo, or a stacked-box test) next to the pendulum
+   [3] (technical) Retitle 'Matches on three analytic cases' and add a multi-contact comparison, or state its absence
+   [3] (uiux) Lead with one sentence: 'it behaves like a real pendulum' with a visual instead of figures
+-- slide 15  weight 30
+   [5] (technical) Run the policy-transfer check (train in MacGym, roll out in MuJoCo with matched model) and show the result, even if it fails. A measured gap would be more credible than 'next'.
+   [4] (technical) Show a policy trained in MacGym replayed in MuJoCo, even one clip
+   [4] (functionality) Move the sim-to-sim policy transfer check from next to done, or show one preliminary result
+   [3] (theme) Show a roadmap tied to a buyer, not just 3D and a robot arm
+   [3] (technical) Show the sim-to-sim MuJoCo policy test result, even a single failing/partial one, as the next-step evidence
+   [3] (technical) Add a line on backend portability: kernel codegen could emit HIP/CUDA, so the NVIDIA-only gap closes for AMD too
+   [2] (theme) Move the 3D and real-arm plan to one dated milestone with the SO-101 arm already in hand
+-- slide 6  weight 23
+   [4] (pitch) Add a one-line plain-English caption: 'you describe a robot, the laptop practices 4,096 times at once'
+   [4] (technical) Show the real codegen on the slide: one generated kernel for the 2-line robot, with an arrow from the joint line to the corresponding torque and impulse lines.
+   [3] (technical) Show a real threadgroup/buffer diagram of MLX sharing unified memory with the kernel
+   [3] (uiux) Enlarge code and pipeline into 4 big icons or labels, cut small text
+   [3] (uiux) Enlarge the code and kernel text and cut to 4 to 5 lines, with a one-word label for each stage
+   [2] (technical) Show a bigger readable kernel snippet with the contact impulse annotated
+   [2] (uiux) Fix the overlapping header text and cut the code excerpt to the 5 lines that matter.
+-- slide 2  weight 23
+   [4] (pitch) Add a why-now line with market size: Macs are the dominant dev and student laptop and Apple silicon GPU compute is newly capable
+   [3] (pitch) Name and cite the competitor numbers and state plainly that physics is 2D on this slide
+   [3] (pitch) Name sources with links and acknowledge MJX/Brax CPU options so the problem framing is not overstated
+   [3] (pitch) Add a 'why now' line: Apple Silicon share among students, JAX Metal being abandoned, MLX maturing
+   [2] (pitch) Say 'planar 2D' on the first problem or solution slide, not at the end
+   [2] (pitch) Merge slides 2 and 3 to reach the demo a minute sooner
+   [2] (pitch) Narrow the claim to 'no fast GPU path on Mac' and acknowledge MuJoCo CPU and MJX exist, so the problem statement can't be dismissed.
+-- slide 13  weight 21
+   [4] (pitch) Show the git log with commit sizes and split of what was hand-written versus agent-generated, plus one bug he diagnosed himself
+   [3] (pitch) Say specifically what you designed (the cheat-detection metric, the architecture) and show it
+   [3] (creativity) Add one concrete example of an agent bug you caught and how
+   [3] (uiux) Replace the tiny timeline with three big numbers: 12 hours, N commits, 18 tests
+   [3] (pitch) Show one concrete example of a bug you caught that the AI agent missed
+   [3] (technical) Show what the human did: one hand-written design decision or bug diagnosis with the actual diff or foot-slip metric code
+   [2] (pitch) Put the AI-agent disclosure in the headline or bold text
+-- slide 9  weight 18
+   [4] (technical) Add the ablation as a small 2x2 grid (warm-start on/off x motor curve on/off) showing speed and slip for each.
+   [3] (uiux) Enlarge captions to readable size; one number per slide with a single before/after
+   [3] (technical) Add the actual foot-slip plot and the one-line code diff that fixed the cheating, to prove understanding
+   [3] (uiux) Enlarge body text and use a big before/after speed number
+   [3] (technical) Add the speed-vs-slip plot across training runs before and after the fix so the cheating is shown as a measurable diagnostic, not an anecdote.
+   [2] (uiux) Enlarge the before/after cheating robot visual and body text; this is the memorable story
+-- slide 5  weight 13
+   [3] (pitch) Autoplay the video with a big caption saying 'added a leg, learned in 1 minute'
+   [3] (functionality) Autoplay the tripod video full-bleed for 10 s so the fourth-leg edit is unmissable
+   [3] (pitch) Do the live L demo on stage, or autoplay the recording with a visible timer so judges feel the minute
+   [2] (functionality) Do the live L-key demo and keep the recording as fallback
+   [2] (uiux) Autoplay the tripod recording larger and cut the surrounding laptop frame so the result reads in 3 seconds
+-- slide 7  weight 12
+   [3] (pitch) Make '3.2 days in 28 seconds' the single spoken punchline and shrink the arithmetic
+   [3] (pitch) Replace '3.2 days of experience' as the hero with the clearer 'a minute of training equals X hours of robot time', and one honest line on sample efficiency vs a CPU baseline.
+   [2] (pitch) Label '3.2 days' explicitly as simulated robot time beside the number
+   [2] (uiux) Cut to one big number and move the arithmetic to notes
+   [2] (technical) Replace 'days of experience' hero with steps/s and sample efficiency curve
+-- slide 3  weight 9
+   [3] (theme) Make the theme concrete: show the ordinary object transformed with a before/after of idle GPU utilization to full utilization
+   [2] (pitch) Merge slide 3 into slide 4 to save time for more kernel detail
+   [2] (theme) Tie theme harder: show the ordinary object becoming extraordinary, with a before/after line
+   [2] (theme) Tie the 'ordinary laptop' idea more directly to theme with a larger laptop-as-robot-gym visual
+-- slide 8  weight 8
+   [3] (pitch) Plot one metric on both chart and lanes (per-episode distance on identical 8 s episodes) and put the definition on-slide, not in fine print.
+   [3] (pitch) Merge slides 7 and 8 into one learning story; drop the 3.2 days slide to shorten the deck from 16
+   [2] (pitch) State the reward and episode length used for the 21.5 m result, with seed spread already shown
+-- slide 12  weight 8
+   [3] (uiux) Replace the terminal and docs thumbnail with one big readable line: 'macgym train hopper -> 17 s -> CoreML' and a single large screenshot
+   [3] (functionality) Show pip install working from a clean venv with timing, and CI badge
+   [2] (uiux) Zoom terminal to just the 3 key lines at large size
+-- slide 16  weight 4
+   [2] (pitch) End with one specific ask and a measurable goal instead of a slogan
+   [2] (functionality) Put a larger QR code with a 'try it now' prompt
+-- slide 1  weight 2
+   [2] (pitch) Open with the cheating-robot hook in a one-line subtitle to tease the story
+
+DOUBTS:
+  - Fused kernel gives ~30x over CPU: is the CPU baseline naive Python/NumPy?
+  - Solo, built in under 4 hours with AI agents, so how much is understood
+  - 'It matches MuJoCo' rests on a pendulum, a slide and a drop, which is thin
+  - Eight commits with 18 tests suggests heavy agent generation
+  - 7.21 m average on slide 7 may use a favorable episode window
+  - Students will pick MacGym over MuJoCo MJX or Colab for a 2D-only tool
+  - Sim-to-sim check against MuJoCo is listed as next, not done
+  - Headline '3.2 days of experience' is simulated time, which may mislead a casual audience
+  - Open-source claims need the repo to actually work for strangers
+  - Planar 2D physics is far from what Isaac Lab or MuJoCo Warp do
+  - 21x vs MuJoCo is not same physics
+  - Five thousand steps a second community port figure is unsourced
+  - Students really lack cloud GPUs? Colab is free
+  - Why is 2D useful for an RL class
+  - Anyone will pay or even adopt this over Colab and MuJoCo
+  - Built solo in 12 hours with AI agents, and how much is truly his design
+  - Could he explain the contact solver and PPO himself
+  - Eighteen tests passing says little about correctness
+  - Everything done in 12 hours including docs, CLI, playground
+  - Built solo in 12 hours with this much polish
+  - 2D physics is useful for real robotics or only for classes
+  - Training speedup comparisons are not like-for-like with MuJoCo
+  - Who would actually switch from MuJoCo/Colab
+  - That a 16-year-old built it in one day, though the honesty slide helps
+  - How much was AI-written
+  - Real use beyond a demo
+  - Target user is RL students, but 2D planar sims may not match any course assignment
+  - Playground and docs are claimed, but I only saw screenshots; no evidence anyone besides the author has run it
+  - Are classes really blocked on cloud GPU? MuJoCo CPU already runs on MacBooks
+  - Physics validation covers a single pendulum, a friction slide and a drop. No contact-rich multi-body gait check, which is where the cheating happened
+  - 'Same solver on CPU' baseline may be an unoptimized step-by-step Python or NumPy loop, which makes 90x a strawman
+  - 5 seeds with a >10 m threshold is a low bar and is not a controlled comparison; no baseline algorithm or ablation
+  - The cheating fix is shown only via before/after speed and slip; no ablation of warm-starting vs motor curve
+  - Walker reaching 21.5 m in 8 s from a one-minute run with PPO in 2D says little; planar locomotion is easy and the solver may be forgiving
+  - Pendulum/friction/drop tests don't prove a contact solver is accurate for legged locomotion; the original cheating shows the contact model was exploitable
+  - PPO update is 72% of an iteration, so the sim speed advantage is mostly irrelevant to end-to-end training
+  - Comparing against a community port at 5.2K steps/s on an M3 Max is not a comparable benchmark
+  - One GPU thread per robot with a fused kernel is standard; the novelty is the Python-to-Metal compile step, which needs a clearer demo
+  - Foot slip of 0.053 m/s after the fix still exists; contact is a soft impulse approximation, so locomotion gaits may exploit it elsewhere
+  - Built with AI agents in 3 hours of commits (8 commits total); how much did you actually design?
+  - Tests: 18 checks, mostly API and parity, not physics-correctness tests beyond the MuJoCo comparison
+  - 2D-only contact solver is a toy next to Box2D/MuJoCo for anything game-relevant
+  - walker avg 54.9 m metric counts episodes longer than 8 s; hard to compare
+  - 'consider it dead' quote from an unnamed JAX maintainer
+  - 5.2K steps/s community port compared against a different workload
+  - claim that it learns walking in 60 s with PPO updating 72% of time is plausible but 2D
+  - fusing 8 substeps x 4 solver iterations into one kernel at 10.4M steps/s is believable but I want the kernel threadgroup layout
+  - built today with AI agents: how much understanding of the Metal code
+  - AI agents wrote most code; need proof the founder grasps the internals
+  - pip install -e . from a clone is not a real package yet
+  - 3.2 days of experience is a vanity-style number
+  - Is 'checked against MuJoCo' only three toy cases, not locomotion?
+  - Sim-to-sim policy transfer unproven yet
+  - Solo 12-hour build of this scope with agents: how much was directed vs generated
+  - Pendulum, friction slide and drop are easy tests; no contact-rich multi-body validation
+  - Warm-started contacts in 2D soft impulses may differ from MuJoCo's convex solver
+  - Learned gait quality: 21 m in 8 s is 2.7 m/s with possible exploit remaining
+  - Single-core CPU baseline may be unoptimized vs GPU
+  - Is Best AI/ML fit when the physics is 2D and tasks are walker/hopper only
+  - Did the live recording really run at claimed speed without edits
+  - Is the theme 'ordinary' mostly a framing of a laptop?
+  - 6.27M vs 294K MuJoCo is not like-for-like with a simpler 2D solver
+  - Contact model robustness at 4,096 parallel walkers (tunneling, stacking)
+  - 'Matches MuJoCo' claim rests on three trivial scenes
+  - Students will pick a Mac-native 2D simulator over free Colab T4 or MuJoCo MJX CPU
+  - Bigger players (MuJoCo MLX, Apple) could ship this
+  - Anyone is training real robots on a 2D sim
+  - 'Not a demo, a library' after a day of building
+  - Eighteen tests counted as proof of robustness
+  - Built solo in 12 hours with that much polish and validation
+  - Whether the live demo works on stage
+  - Planar 2D impulse solver is not comparable to MuJoCo contact; validation uses only a pendulum, a slide and a drop
+  - 5/5 seeds on one easy walker task with one hyperparameter set says little about PPO robustness
+  - No sim-to-sim transfer yet, so physics fidelity for policy transfer is unproven
+  - Built in 12 hours with AI agents: how much do you understand the kernel code?
+  - Market of students with MacBooks doing RL is small
+  - Is the demo really live and not pre-recorded?
+  - Did the AI write most of it?
+  - Eight commits in under 3 hours implies big agent-generated dumps
+  - 18 checks, 7 unit tests, is a small suite for a physics engine
+  - Numbers like 90x, 21x, 295K shift depending on slide; benchmark framing feels curated
+  - Docs site and CLI built in a day: how much is polished surface versus tested core?
+
+CONFUSING:
+  - Slide 11 has three numbers (90x, 21x, 295K) competing; takes effort to know which matters
+  - Slide 2 and 3 are slow setup before the demo
+  - Slide 13 admits AI agents but leaves unclear what he personally wrote
+  - The 2D scope appears only late (slide 11 and 15)
+  - Slide 10 cherry-picks three trivial test cases as 'matches MuJoCo'
+  - Market is 'RL classes on MacBooks', which is small and has no sign of demand
+  - Slide 3 repeats slide 2's point
+  - Slide 11 stacks 90x, 21x and a disclaimer; reads like hedging after a big claim
+  - Slide 15's iPhone-to-real-arm future is a leap from a 2D sim
+  - 90x headline is CPU vs GPU of its own solver, not a competitor; the 21x MuJoCo number is buried small
+  - Slide 2 NVIDIA framing overstated vs MJX/MuJoCo CPU being free on Mac
+  - Slides 9 to 11 are text-dense with microscopic captions
+  - Who the user is is only stated on slide 14, late in the deck
+  - Theme link is just 'laptop is ordinary', a slogan not a story
+  - Wedge of students is asserted with no evidence of demand
+  - Hard to tell what he wrote versus the agents wrote
+  - Slide 6 code and kernel text is unreadably small for a classroom
+  - Slide 11 stacks too many numbers (90x, 21x, 10.4M vs 115K, PPO 72%)
+  - Small body text on slides 9, 10, 13 is unreadable from the back of a room
+  - Slide 14 wedge is students, a market that does not pay
+  - Slide 2 NVIDIA-only claim vs Mac MLX/PyTorch alternatives; unclear why 2D matters to a buyer
+  - Why now is never stated
+  - Jargon like Metal kernel, PPO, CoreML on slides 6 and 12
+  - Slide 10 physics validation numbers mean nothing to me
+  - Slide 13 timeline is hard to read and tiny
+  - Slide 7 3.2 days math takes a moment to grasp
+  - Slide 6 header label has overlapping garbled text ('GENERATED / YOU WRITE')
+  - Slide 11 leads with 90x then spends half the slide walling it off with caveats, three speedup numbers (90x, 21x, 4x)
+  - Slide 15 says sim-to-sim DONE but also lists policy-transfer to MuJoCo as next
+  - Slide 8 chart reports 54.9 m average episode distance but the replay lanes say 21.5 m in 8 s; the metrics differ and the slide only explains it in fine print
+  - Slide 7 says 494K steps/s with PPO, slide 11 says 295K end-to-end; the two figures are never reconciled
+  - Slide 11: '4x GPU, ~30x kernel fusion' decomposition has no shown measurement
+  - Slide 11 'same physics' CPU vs GPU is a baseline I don't trust, and 21x vs MuJoCo is admittedly not the same physics
+  - Slide 2 says Mac RL sim is dead, but MuJoCo and MJX-on-CPU run on Mac; the claim only holds for GPU-fast paths
+  - Slide 15 'Sim-to-sim: done' while policy transfer to MuJoCo is still next
+  - Slide 7's 3.2 days of experience is robots x steps x dt, a flashy unit with no scientific meaning
+  - Slide 6 header text collides and the kernel excerpt is truncated with '...', so I can't judge the codegen
+  - Slide 8 chart shows 5/5 seeds at 54.9 m while the replay shows 21.5 m, a metric mismatch
+  - 90x headline then 21x then 'not same physics' caveat: three speedup numbers
+  - slide 6 header text overlaps into garbled glyphs
+  - slide 3 mostly empty: laptop with an idle GPU
+  - 90x is GPU vs the same solver on CPU, a self-made baseline
+  - MuJoCo 21x is on a different, simpler 2D solver, so not apples to apples
+  - 'every serious sim is NVIDIA-only' ignores MuJoCo CPU/MJX and Brax on CPU
+  - slide 6 header label overlaps itself
+  - unclear whether policy forward pass runs in MLX on GPU in the same command buffer or is a separate dispatch
+  - slide 3 adds little
+  - slide 14 market claim is generic: no evidence any class wants this
+  - two dense stat slides (7, 11) are a lot of numbers
+  - slide 6 header overlap
+  - Slide 11 headline 90x is the CPU-vs-GPU number but the 21x MuJoCo figure is buried in small text
+  - Slide 13 AI-agent disclosure is only a small line, easy to miss
+  - 3.2 days of experience is just robots x steps x dt, a vanity metric
+  - Slide 11 mixes CPU/GPU same-solver 90x with MuJoCo 21x; MuJoCo bench includes resets and a different cheetah model
+  - Slide 8 shows 5 seeds but only one criterion (>10 m) with no reward details
+  - Apple-only story is the opposite of a GPU-vendor-neutral pitch; no mention of ROCm/AMD or portability
+  - Slide 14 student wedge is asserted without any user evidence
+  - Slide 6 text and code are tiny, hard to read from the back
+  - Slide 11 has many small numbers under the big 90x
+  - Slide 12 terminal text is too small to read
+  - Slide 11 stacks 90x, 21x and 'not same physics' caveats; headline number is the weakest comparison
+  - Slide 10 validates only a pendulum, friction slide and drop, nothing with contact-rich locomotion
+  - Slide 14 'wedge is students' names users, not a buyer or a revenue path
+  - Why now is never stated beyond NVIDIA-only; no mention of Apple Silicon robotics trend or sim-to-real demand
+  - 2D-only simulator versus the real robotics market
+  - Slide 12 terminal text and tiny docs thumbnail are unreadable at a distance
+  - Slide 7 and 8 both talk about learning progress; 3.2 days vs 21.5 m metrics feel redundant
+  - Slides 10 and 11 small text blocks overload the page
+  - Slide 11 has too many numbers: 90x, 21x, 115K, 10.4M, 72%
+  - Slide 10 jargon (RMS, energy drift) for a non-expert
+  - Slide 9 title is great but body text is tiny
+  - Slide 11 headline 90x is a CPU-vs-GPU same-solver number, which is a weak baseline; 21x vs MuJoCo is buried
+  - Slide 7 3.2 days of experience is a vanity metric: steps times dt, not sample efficiency
+  - Slide 8 distance in one minute without reward or task definition
+  - Slide 14 audience claim of RL classes is plausible but unquantified
+  - Nothing about non-Apple GPUs or portability to other vendors, which a sponsor would ask about
+  - Slide 6 code and Metal kernel text is tiny and I could not read it from the back
+  - What PPO and MLX actually are, not explained
+  - Slide 11 has too many numbers at once
+  - Slide 13 admits AI agents but 8 commits and 18 checks is thin evidence of engineering depth
+  - Slide 2 claims about JAX Metal being dead and a 5K steps/s community port are unsourced
+  - Slide 12 CoreML parity error 4e-7 is on one export
+
+QUESTIONS:
+  - What does the kernel fusion actually fuse, and how do you handle contacts across threads?
+  - Why does PPO update dominate at 72%, and what would you change?
+  - Which parts did you write by hand versus direct an agent to write?
+  - How does a contact-rich case like the walker compare with MuJoCo?
+  - Have any teachers or students tried it?
+  - What is your first week of distribution after today?
+  - What was the exact moment you realized the robots were cheating?
+  - Who is your first user, and has anyone besides you run it?
+  - What is MuJoCo's speed on the same 2D walker model?
+  - Does a policy trained here transfer to MuJoCo?
+  - What do you do better than free Colab for an RL class?
+  - Have any real students tried it?
+  - Who is your first ten users and how do you reach them?
+  - What happens when 3D lands, does the Metal approach still win?
+  - Explain in your own words how the warm-started contact impulse works
+  - Which part did you write by hand?
+  - Which part did you write yourself versus the AI agents?
+  - Can you do the live L demo right now?
+  - Who pays and how much?
+  - Why wouldn't a student just use free Colab GPUs?
+  - What could a regular person do with this?
+  - How did you catch the robots cheating?
+  - What was the funniest cheat the robot found?
+  - Will the playground be up for judges to try?
+  - Which RL course or club would adopt this next week, and what do they use today?
+  - Can I pip install and train in a minute on a clean M1 Air, not your M3 Pro?
+  - What is the CPU baseline implemented in, and is it compiled and multithreaded?
+  - What are the reward function, observation space and PPO hyperparameters? Is the 54.9 m figure reproducible from the repo?
+  - Does a policy trained in MacGym transfer to MuJoCo at all? That is the only validation I care about.
+  - How many MuJoCo-Warp-class features does it lack: friction cones, soft contacts, 3D, domain randomization?
+  - How does the compiler handle arbitrary robot topologies; what happens with 20 bodies, or loops?
+  - What is the constraint solver (PGS iterations? 4 per substep?) and how does solution quality scale with iterations?
+  - How many bodies/contacts before the kernel falls over?
+  - Does it handle stacking or only a single ground plane?
+  - What is the throughput versus MuJoCo Warp or Isaac on an RTX GPU for the same 2D task?
+  - Why is a 4x GPU-only gain claimed when M3 Pro CPU cores are 11?
+  - Is the whole control step one dispatch, and how do you share buffers with MLX without copies?
+  - What dominates PPO update time at 72%: matmul or GAE/advantage code?
+  - Have any teachers or classmates actually tried it?
+  - What would you cut first if you had 2 more hours?
+  - What exactly did you personally write versus the agents?
+  - Does a policy trained in MacGym walk in MuJoCo at all today?
+  - Is the CPU baseline vectorized/multithreaded or naive numpy?
+  - What are the reward terms and the observation space of walker?
+  - Could the generated kernel backend target ROCm/HIP or Vulkan?
+  - Have any students or teachers actually tried it?
+  - Could my robotics club use this next week?
+  - What does the robot learn to do besides walk?
+  - How does the contact solver handle multiple simultaneous contacts, and is it warm-started per walker?
+  - Is the 90x CPU baseline single-threaded?
+  - Who pays and for what: hosted, enterprise, education licences?
+  - What stops MuJoCo from adding a Metal backend?
+  - What is the onboarding time from pip install to a first trained robot?
+  - What does the user do when training fails to converge?
+  - Can I try it on my own MacBook right now?
+  - How much of it did the AI agents write?
+  - How does the policy do when run in MuJoCo, even approximately?
+  - Why is PPO update 72 percent of the iteration, and does it use MLX compile?
+  - Would the Metal kernel generator port to other backends such as ROCm or Vulkan?
+  - Which prize are you going for: AI/ML or Hardware?
+  - How did you even learn Metal shaders?
+  - Can I make my own robot and have it learn?
+  - Show me the commit diffs: what did you write versus what was generated?
+  - What is the API stability story and what do tests cover for the contact solver?

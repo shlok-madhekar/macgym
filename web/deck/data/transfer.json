@@ -1,0 +1,72 @@
+{
+ "policy": "runs/walker.npz (PPO, MLP 256x256 tanh, trained in MacGym), deterministic mean action",
+ "policy_numpy_vs_macgym_max_abs_err": 1.677830598900698e-07,
+ "episodes": 10,
+ "episode_seconds": 8.0,
+ "control_dt": 0.02,
+ "fall_definition": "torso height < 0.875 m or |torso angle| > 1.0 rad (MacGym's training termination); distance = torso x at fall or 8 s",
+ "macgym": {
+  "distance_m": [
+   21.833965301513672,
+   21.921062469482422,
+   22.018123626708984,
+   21.75849723815918,
+   21.730308532714844,
+   21.9563045501709,
+   22.03668212890625,
+   22.125890731811523,
+   21.960865020751953,
+   22.154991149902344
+  ],
+  "mean_distance_m": 21.949669075012206,
+  "falls": 0,
+  "fall_rate": 0.0,
+  "fall_times_s": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "mean_speed_mps_over_survival": 2.743708634376526
+ },
+ "mujoco": {
+  "distance_m": [
+   19.480716467260613,
+   20.399086399699357,
+   20.026123444219262,
+   19.695742299441463,
+   20.542759548698076,
+   19.372328538552097,
+   19.051188751065045,
+   18.800167553127306,
+   20.51274494721944,
+   20.267711852500938
+  ],
+  "fall_times_s": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "mean_distance_m": 19.81485698017836,
+  "falls": 0,
+  "mean_speed_mps_over_survival": 2.476857122522295,
+  "fall_rate": 0.0
+ },
+ "mujoco_version": "4.0.1",
+ "observation": "24-d legacy walker layout rebuilt from MuJoCo qpos/qvel/geom_xpos: [y, sin a, cos a, vx, vy, 0.1w, q(6), 0.1qd(6), contact R/L (lowest point <2 cm), foot dx/y R, L]",
+ "uptime": "15:19  up  4:55, 1 user, load averages: 3.60 5.29 7.87",
+ "timestamp": "2026-11-15 15:19:42 PST"
+}

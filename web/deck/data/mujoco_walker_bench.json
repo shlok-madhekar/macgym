@@ -1,0 +1,35 @@
+{
+ "what": "env-steps/s (one env-step = one 0.02 s control step incl. 8 physics substeps) on the SAME walker robot",
+ "machine": "Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2",
+ "mujoco_version": "4.0.1",
+ "macgym": {
+  "N4096": 3845048.144916716,
+  "N16384": 7614853.9786809655,
+  "method": "scripts/bench.py bench_mlx: random actions generated on GPU each step, full mx.eval of obs/reward/done every step, auto-reset, 20 warmup steps, median of 5 timing windows (10 s total) per N",
+  "env": "macgym.envs.make('walker') (Metal kernel, 7 capsules / 6 motors, dt 0.02, 8 substeps, 4 iters)"
+ },
+ "mujoco": {
+  "1proc": 26081.777358288688,
+  "1proc_windows": [
+   25791.852872357824,
+   27988.808285821593,
+   26081.777358288688
+  ],
+  "11proc": 126417.04577721498,
+  "11proc_windows": [
+   122281.53742265337,
+   135788.35502889688,
+   126417.04577721498
+  ],
+  "method": "MJCF mirror (scripts/evidence/mj_walker.py), timestep 0.0025 x frame_skip 8, Euler, random ctrl pre-generated, reset on fall/1000 steps, 300 warmup steps; median of 3 windows of 3.0 s; 11 procs = spawn Pool warm, aggregate steps / wall time",
+  "note": "MuJoCo loop is the pure-Python mj_step loop as in Gymnasium (no obs/reward computation counted against it)"
+ },
+ "speedup_ours_best_vs_mujoco_allcores": 60.23597476008606,
+ "speedup_ours_best_vs_mujoco_1proc": 291.9607001499457,
+ "ours_best": 7614853.9786809655,
+ "uptime_start": "15:20  up  4:55, 1 user, load averages: 3.49 5.14 7.74",
+ "uptime_after_mlx": "15:20  up  4:56, 1 user, load averages: 3.45 5.03 7.64",
+ "uptime_end": "15:20  up  4:56, 1 user, load averages: 7.05 5.70 7.82",
+ "load_note": "machine not idle (desktop + other apps running); load averages recorded above",
+ "timestamp": "2026-11-15 15:20:46 PST"
+}

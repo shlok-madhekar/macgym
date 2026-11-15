@@ -1,0 +1,128 @@
+{
+ "what": "MacGym 2D walker (sequential-impulse, Metal kernel) vs MuJoCo MJCF mirror of the same robot",
+ "mujoco_version": "4.0.1",
+ "mujoco_model": "scripts/evidence/mj_walker.py (timestep 0.0025, frame_skip 8, Euler)",
+ "matched": "capsule endpoints/radii/density->mass, in-plane inertia, joint positions/limits, motor gear 100 + our torque-speed curve, damping 0.1, friction 0.9, ground-only contact",
+ "not_matched": "contact model (ours: hard velocity-level impulses + Baumgarte, 4 GS iters; MuJoCo: soft convex constraints solref 0.02), our velocity clamps (30 m/s, 60 rad/s)",
+ "cases": {
+  "collapse_rest": {
+   "description": "rest pose, zero velocity, zero torque, 3 s",
+   "torso_x": {
+    "rms_full": 0.0783208673331301,
+    "max_abs": 0.20457673274389745,
+    "ours_final": -0.2534904181957245,
+    "mujoco_final": -0.2862710811899805,
+    "rms_first_0.5s": 0.005347847987347882,
+    "rms_first_1.0s": 0.045782947301885514
+   },
+   "torso_height": {
+    "rms_full": 0.1954808844725649,
+    "max_abs": 0.6795073364301547,
+    "ours_final": 0.2043984979391098,
+    "mujoco_final": 0.20255320289097867,
+    "rms_first_0.5s": 0.006452194621615748,
+    "rms_first_1.0s": 0.2825904808294063
+   },
+   "torso_angle": {
+    "rms_full": 0.5617615466686557,
+    "max_abs": 1.8192800538725857,
+    "ours_final": 2.1018225391719003,
+    "mujoco_final": 2.1032644299256202,
+    "rms_first_0.5s": 0.048653325058946525,
+    "rms_first_1.0s": 0.16178872595984256
+   },
+   "agree_until_s": {
+    "height_within_5cm": 0.56,
+    "angle_within_0.1rad": 0.48
+   },
+   "ours_t_first_nonfoot_contact_s": 1.62,
+   "ours_t_torso_contact_s": 1.62,
+   "ours_t_fall_s": 0.74,
+   "ours_t_feet_contact_s": 0.08,
+   "mujoco_t_first_nonfoot_contact_s": 2.0,
+   "mujoco_t_torso_contact_s": 2.0,
+   "mujoco_t_fall_s": 1.1,
+   "mujoco_t_feet_contact_s": 0.08
+  },
+  "collapse_tilt": {
+   "description": "rest pose + 0.3 rad/s rigid-body tilt rate, zero torque, 3 s",
+   "torso_x": {
+    "rms_full": 0.017841988339655612,
+    "max_abs": 0.030635268034680196,
+    "ours_final": -0.2191842645406723,
+    "mujoco_final": -0.24079210298937354,
+    "rms_first_0.5s": 0.0003975191093701018,
+    "rms_first_1.0s": 0.009740513441953393
+   },
+   "torso_height": {
+    "rms_full": 0.012267336765399534,
+    "max_abs": 0.053322360546405934,
+    "ours_final": 0.20509372651576996,
+    "mujoco_final": 0.20254988308898358,
+    "rms_first_0.5s": 0.00930238397183464,
+    "rms_first_1.0s": 0.018778548634080756
+   },
+   "torso_angle": {
+    "rms_full": 0.028561541290890335,
+    "max_abs": 0.10008480572287959,
+    "ours_final": 2.0994753082606454,
+    "mujoco_final": 2.1032750512122815,
+    "rms_first_0.5s": 0.002593150905753041,
+    "rms_first_1.0s": 0.03761909770822678
+   },
+   "agree_until_s": {
+    "height_within_5cm": 0.66,
+    "angle_within_0.1rad": 0.7000000000000001
+   },
+   "ours_t_first_nonfoot_contact_s": 0.9,
+   "ours_t_torso_contact_s": 0.9,
+   "ours_t_fall_s": 0.56,
+   "ours_t_feet_contact_s": 0.08,
+   "mujoco_t_first_nonfoot_contact_s": 0.92,
+   "mujoco_t_torso_contact_s": 0.92,
+   "mujoco_t_fall_s": 0.58,
+   "mujoco_t_feet_contact_s": 0.08
+  },
+  "open_loop_sine": {
+   "description": "open-loop torques 1.5 Hz: hips +/-0.6 antiphase, knees -0.4*max(+/-s,0), ankles +/-0.2 (x gear 100 Nm), 2 s",
+   "torso_x": {
+    "rms_full": 0.09239759932470328,
+    "max_abs": 0.16687094172282846,
+    "ours_final": -0.6210224628448486,
+    "mujoco_final": -0.7491324150323192,
+    "rms_first_0.5s": 0.002187454551859898,
+    "rms_first_1.0s": 0.07208708049627563
+   },
+   "torso_height": {
+    "rms_full": 0.09418654950984595,
+    "max_abs": 0.32827867762552754,
+    "ours_final": 0.05962919443845749,
+    "mujoco_final": 0.052370825705586155,
+    "rms_first_0.5s": 0.004539570798285502,
+    "rms_first_1.0s": 0.09373240590077324
+   },
+   "torso_angle": {
+    "rms_full": 0.22199009553470084,
+    "max_abs": 0.5522254799174497,
+    "ours_final": 1.6190919121119638,
+    "mujoco_final": 1.5763480454424632,
+    "rms_first_0.5s": 0.007226458490611108,
+    "rms_first_1.0s": 0.15658687217005354
+   },
+   "agree_until_s": {
+    "height_within_5cm": 0.8,
+    "angle_within_0.1rad": 0.8
+   },
+   "ours_t_first_nonfoot_contact_s": 1.0,
+   "ours_t_torso_contact_s": 1.0,
+   "ours_t_fall_s": 0.62,
+   "ours_t_feet_contact_s": 0.06,
+   "mujoco_t_first_nonfoot_contact_s": 1.16,
+   "mujoco_t_torso_contact_s": 1.16,
+   "mujoco_t_fall_s": 0.6,
+   "mujoco_t_feet_contact_s": 0.06
+  }
+ },
+ "uptime": "15:20  up  4:56, 1 user, load averages: 7.21 5.76 7.82",
+ "timestamp": "2026-11-15 15:20:52 PST"
+}
