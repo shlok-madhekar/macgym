@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python API · MacGym</title>
+<meta name="description" content="MacGym is a robot-learning framework for Apple Silicon. Define a robot in Python, train thousands of copies on your Mac's GPU, export the policy to CoreML.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,&lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;rect x=&quot;0.5&quot; y=&quot;0.5&quot; width=&quot;19&quot; height=&quot;19&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot;/&gt;&lt;path d=&quot;M4 15 L8 6 L10 11 L12 6 L16 15&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot; stroke-width=&quot;1.6&quot; stroke-linecap=&quot;square&quot;/&gt;&lt;rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;3&quot; height=&quot;3&quot; fill=&quot;%23FF4D00&quot;/&gt;&lt;/svg&gt;">
+</head><body>
+<header class="hdr">
+  <a class="wordmark" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="19" fill="none" stroke="#121212"/><path d="M4 15 L8 6 L10 11 L12 6 L16 15" fill="none" stroke="#121212" stroke-width="1.6" stroke-linecap="square"/><rect x="14" y="3" width="3" height="3" fill="#FF4D00"/></svg>MacGym <span class="ver">v0.3</span></a>
+  <nav><a href="index.html" class="">Overview</a><a href="quickstart.html" class="on">Docs</a><a href="examples.html" class="">Examples</a><a href="benchmarks.html" class="">Benchmarks</a></nav>
+  <div class="right">
+    <a href="https://github.com/shlokmadhekar/macgym"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    <a class="btn" href="/playground">Open Playground</a>
+  </div>
+</header>
+<div class="docs"><aside class="side"><h6 class="mono-label">Get started</h6><a href="quickstart.html" class="">Quickstart</a><a href="quickstart.html#install" class="sub ">Install</a><a href="quickstart.html#first-robot" class="sub ">Your first robot</a><a href="quickstart.html#train" class="sub ">Train and watch</a><a href="quickstart.html#export" class="sub ">Export</a><h6 class="mono-label">Reference</h6><a href="api.html" class="on">Python API</a><a href="cli.html" class="">CLI</a><h6 class="mono-label">Guides</h6><a href="examples.html" class="">Examples</a><a href="how-it-works.html" class="">How it works</a><a href="benchmarks.html" class="">Benchmarks</a><h6 class="mono-label">Tools</h6><a href="/playground" class="">Playground</a><a href="https://github.com/shlokmadhekar/macgym" class="">GitHub</a></aside>
+<main class="content"><div class="crumb mono-label">Reference</div><h1>Python API</h1><p class="lede">The whole public surface of <code>import macgym as mg</code>. Robots and tasks are plain Python; everything after <code>mg.make</code> runs on the GPU.</p>
+
+<div class="codeblock"><pre><code data-lang="py">import macgym as mg</code></pre></div>
+<h2 id="robot">Robot</h2>
+<div class="api-entry"><div class="sig"><span class="n">mg.Robot</span>(<span class="a">name: str</span>)</div>
+<p>Builder for a planar multibody robot. Bodies are capsules in the x/y plane, connected by hinge joints with a motor at each joint.</p></div>
+<h3 id="robot-body">robot.body<span class="sig-args">(name, start, end, radius, density=1000)</span></h3>
+<p>Adds a capsule. Returns a <code>Body</code> handle.</p>
+<div class="params"><div><code>name</code><span><span class="ty">str</span>Unique name, used by s.body(name) and s.contact(name).</span></div><div><code>start, end</code><span><span class="ty">tuple[float, float]</span>Endpoints of the capsule axis in metres, at rest pose.</span></div><div><code>radius</code><span><span class="ty">float</span>Capsule radius in metres.</span></div><div><code>density</code><span><span class="ty">float = 1000</span>kg/m³. Mass and inertia are derived from the shape.</span></div></div>
+<h3 id="robot-joint">robot.joint<span class="sig-args">(parent, child, at, limits, motor, damping=0.1, stiffness=0.0)</span></h3>
+<p>Connects two bodies with a hinge. Returns a <code>Joint</code> handle. Each joint adds one action dimension.</p>
+<div class="params"><div><code>parent, child</code><span><span class="ty">Body</span>Handles returned by robot.body.</span></div><div><code>at</code><span><span class="ty">tuple[float, float]</span>Hinge location in world coordinates at rest pose.</span></div><div><code>limits</code><span><span class="ty">tuple[float, float]</span>Joint angle limits in radians.</span></div><div><code>motor</code><span><span class="ty">float</span>Gear: torque in N·m at action = 1. Actions are clipped to [-1, 1].</span></div><div><code>damping</code><span><span class="ty">float = 0.1</span>Viscous joint damping.</span></div><div><code>stiffness</code><span><span class="ty">float = 0.0</span>Spring back toward the rest angle.</span></div></div>
+<h3 id="robot-root">robot.set_root<span class="sig-args">(body)</span></h3>
+<p>Selects the body used for <code>s.root</code>, the camera, and distance travelled. Defaults to the first body added.</p>
+
+<h2 id="task">Task</h2>
+<div class="api-entry"><div class="sig"><span class="n">mg.Task</span>(<span class="a">reward, done=None, episode_steps=1000, obs=None</span>)</div>
+<p>What the robot should learn. All callables receive a batched <a class="ln" href="#state">State</a> and return an array of shape <code>(N,)</code>.</p></div>
+<div class="params"><div><code>reward</code><span><span class="ty">Callable[[State], mx.array]</span>Per-step reward.</span></div><div><code>done</code><span><span class="ty">Callable[[State], mx.array] | None</span>Termination mask. Terminated robots auto-reset.</span></div><div><code>episode_steps</code><span><span class="ty">int = 1000</span>Time limit in control steps.</span></div><div><code>obs</code><span><span class="ty">Callable[[State], mx.array] | None</span>Override the automatic observation (root height, angle and velocities, joint q and qd, contacts).</span></div></div>
+
+<h2 id="state">State</h2>
+<p>The batched view passed to <code>reward</code>, <code>done</code> and <code>obs</code>. Every field is an MLX array with one entry per robot.</p>
+<table class="t"><thead><tr><th>Field</th><th>Shape</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>s.root.x, .y</code></td><td>(N,)</td><td>Root body position. x is relative to the episode start.</td></tr>
+<tr><td><code>s.root.vx, .vy</code></td><td>(N,)</td><td>Root linear velocity, m/s.</td></tr>
+<tr><td><code>s.root.angle, .omega</code></td><td>(N,)</td><td>Root orientation and angular velocity.</td></tr>
+<tr><td><code>s.root.height</code></td><td>(N,)</td><td>Root height above ground.</td></tr>
+<tr><td><code>s.body("name")</code></td><td>(N,) each</td><td>Same fields as root, for any body: <code>x y vx vy angle omega</code>.</td></tr>
+<tr><td><code>s.joint("name" | i)</code></td><td>(N,) each</td><td><code>.q</code> angle and <code>.qd</code> velocity.</td></tr>
+<tr><td><code>s.action</code></td><td>(N, A)</td><td>Actions applied this step, in [-1, 1].</td></tr>
+<tr><td><code>s.action_sq</code></td><td>(N,)</td><td>Sum of squared actions. Handy for effort penalties.</td></tr>
+<tr><td><code>s.contact("name")</code></td><td>(N,)</td><td>1 if the body touches the ground, else 0.</td></tr>
+<tr><td><code>s.t, s.dt</code></td><td>scalar</td><td>Step index within the episode, control timestep.</td></tr>
+</tbody></table>
+
+<h2 id="make">make</h2>
+<div class="api-entry"><div class="sig"><span class="n">mg.make</span>(<span class="a">robot, task, num_envs=4096, seed=0</span>) -> BatchedEnv</div>
+<p>Compiles the robot to a Metal kernel and allocates <code>num_envs</code> copies. The returned env exposes <code>reset()</code>, <code>step(actions)</code>, <code>render_state()</code> and running <code>metrics</code>, and auto-resets finished episodes.</p></div>
+
+<h2 id="train">train</h2>
+<div class="api-entry"><div class="sig"><span class="n">mg.train</span>(<span class="a">env, iters=200, hidden=(256, 256), on_iter=None, save=None</span>) -> TrainResult</div>
+<p>Runs PPO on the GPU. Returns <code>TrainResult(policy, history)</code>.</p></div>
+<div class="params"><div><code>iters</code><span><span class="ty">int = 200</span>PPO iterations (rollout + update).</span></div><div><code>hidden</code><span><span class="ty">tuple[int, ...]</span>MLP hidden sizes for actor and critic.</span></div><div><code>on_iter</code><span><span class="ty">Callable[[dict], None] | None</span>Called after each iteration with metrics: distance, return, steps/s, elapsed.</span></div><div><code>save</code><span><span class="ty">str | None</span>Checkpoint path (.npz) written at the end.</span></div></div>
+
+<h2 id="load-policy">load_policy</h2>
+<div class="api-entry"><div class="sig"><span class="n">mg.load_policy</span>(<span class="a">path, env</span>) -> Policy</div>
+<p>Loads a checkpoint. <code>policy.act(obs)</code> returns deterministic actions for a batch of observations.</p></div>
+
+<h2 id="export">Policy.export</h2>
+<div class="api-entry"><div class="sig"><span class="n">policy.export</span>(<span class="a">path</span>)</div>
+<p>Format is chosen from the extension: <code>.onnx</code> needs <code>onnx</code>, <code>.mlpackage</code> needs <code>coremltools</code>. Install both with <code>pip install -e ".[export]"</code>. CoreML export is best effort and raises a clear error if coremltools is missing.</p></div>
+
+<h2 id="view">view</h2>
+<div class="api-entry"><div class="sig"><span class="n">mg.view</span>(<span class="a">env, policy=None, port=8765</span>)</div>
+<p>Starts the local server and opens the browser viewer for a custom env. With no policy it trains live; with a policy it plays it back.</p></div>
+
+<h2 id="to-gymnasium">to_gymnasium</h2>
+<div class="api-entry"><div class="sig"><span class="n">mg.to_gymnasium</span>(<span class="a">env</span>) -> gymnasium.vector.VectorEnv</div>
+<p>NumPy in, NumPy out. Use with Stable-Baselines3, CleanRL, or your own trainer. Requires the <code>[gym]</code> extra.</p></div>
+
+<h2 id="robots">robots</h2>
+<p>Built-in <code>(robot, task)</code> pairs, written with the public API above. Read their source as worked examples.</p>
+<table class="t"><thead><tr><th>Call</th><th>Body plan</th></tr></thead><tbody>
+<tr><td><code>mg.robots.walker()</code></td><td>Planar biped: torso, two legs with knees.</td></tr>
+<tr><td><code>mg.robots.cheetah()</code></td><td>Planar runner with front and back legs.</td></tr>
+<tr><td><code>mg.robots.hopper()</code></td><td>Single leg that has to hop to move.</td></tr>
+<tr><td><code>mg.robots.tripod()</code></td><td>Torso with two stiff legs. The quickstart robot.</td></tr>
+<tr><td><code>mg.robots.worm()</code></td><td>Chain of segments that moves by undulating.</td></tr>
+</tbody></table>
+<div class="codeblock"><pre><code data-lang="py">robot, task = mg.robots.cheetah()
+env = mg.make(robot, task, num_envs=16384)</code></pre></div>
+
+<div class="pager"><a href="quickstart.html"><span class="mono-label">Previous</span><strong>Quickstart</strong></a><a class="next" href="cli.html"><span class="mono-label">Next</span><strong>CLI</strong></a></div>
+</main><nav class="toc"><span class="mono-label">On this page</span></nav></div>
+<footer class="foot"><span>MacGym. Robot learning for Apple Silicon. MIT licensed.</span><span class="links"><a href="quickstart.html">Docs</a><a href="api.html">API</a><a href="benchmarks.html">Benchmarks</a><a href="https://github.com/shlokmadhekar/macgym">GitHub</a></span></footer>
+<script src="site.js"></script></body></html>

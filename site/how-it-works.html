@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works · MacGym</title>
+<meta name="description" content="MacGym is a robot-learning framework for Apple Silicon. Define a robot in Python, train thousands of copies on your Mac's GPU, export the policy to CoreML.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,&lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;rect x=&quot;0.5&quot; y=&quot;0.5&quot; width=&quot;19&quot; height=&quot;19&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot;/&gt;&lt;path d=&quot;M4 15 L8 6 L10 11 L12 6 L16 15&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot; stroke-width=&quot;1.6&quot; stroke-linecap=&quot;square&quot;/&gt;&lt;rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;3&quot; height=&quot;3&quot; fill=&quot;%23FF4D00&quot;/&gt;&lt;/svg&gt;">
+</head><body>
+<header class="hdr">
+  <a class="wordmark" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="19" fill="none" stroke="#121212"/><path d="M4 15 L8 6 L10 11 L12 6 L16 15" fill="none" stroke="#121212" stroke-width="1.6" stroke-linecap="square"/><rect x="14" y="3" width="3" height="3" fill="#FF4D00"/></svg>MacGym <span class="ver">v0.3</span></a>
+  <nav><a href="index.html" class="">Overview</a><a href="quickstart.html" class="on">Docs</a><a href="examples.html" class="">Examples</a><a href="benchmarks.html" class="">Benchmarks</a></nav>
+  <div class="right">
+    <a href="https://github.com/shlokmadhekar/macgym"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    <a class="btn" href="/playground">Open Playground</a>
+  </div>
+</header>
+<div class="docs"><aside class="side"><h6 class="mono-label">Get started</h6><a href="quickstart.html" class="">Quickstart</a><a href="quickstart.html#install" class="sub ">Install</a><a href="quickstart.html#first-robot" class="sub ">Your first robot</a><a href="quickstart.html#train" class="sub ">Train and watch</a><a href="quickstart.html#export" class="sub ">Export</a><h6 class="mono-label">Reference</h6><a href="api.html" class="">Python API</a><a href="cli.html" class="">CLI</a><h6 class="mono-label">Guides</h6><a href="examples.html" class="">Examples</a><a href="how-it-works.html" class="on">How it works</a><a href="benchmarks.html" class="">Benchmarks</a><h6 class="mono-label">Tools</h6><a href="/playground" class="">Playground</a><a href="https://github.com/shlokmadhekar/macgym" class="">GitHub</a></aside>
+<main class="content"><div class="crumb mono-label">Guides</div><h1>How it works</h1><p class="lede">Python robot definition, auto-generated Metal kernel, PPO in MLX with unified memory, then viewer and export.</p>
+
+<figure class="diagram"><svg viewBox="0 0 760 330" font-family="Inter Tight, Helvetica, Arial" role="img" aria-label="Pipeline diagram">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#121212"/></marker>
+<pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#D9D3C7" stroke-width="1"/></pattern></defs>
+<!-- unified memory band -->
+<rect x="190" y="252" width="380" height="44" fill="url(#hatch)" stroke="#C9C2B4"/>
+<text x="380" y="279" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" letter-spacing="1" fill="#121212">UNIFIED MEMORY · NO HOST/DEVICE COPIES</text>
+<line x1="275" y1="196" x2="275" y2="252" stroke="#121212" stroke-dasharray="3 3"/><line x1="485" y1="196" x2="485" y2="252" stroke="#121212" stroke-dasharray="3 3"/>
+<!-- box 1 -->
+<rect x="10" y="40" width="160" height="156" fill="#F3F0E8" stroke="#121212"/>
+<text x="22" y="62" font-family="JetBrains Mono" font-size="10" letter-spacing="1" fill="#6B665C">01 · PYTHON</text>
+<text x="22" y="84" font-size="15" font-weight="700" fill="#121212">Robot definition</text>
+<g font-family="JetBrains Mono" font-size="9.5" fill="#121212"><text x="22" y="110">robot.body(...)</text><text x="22" y="125">robot.joint(...)</text><text x="22" y="140">Task(reward=...)</text></g>
+<g stroke="#121212" stroke-width="3" stroke-linecap="round"><line x1="60" y1="170" x2="120" y2="170"/><line x1="66" y1="170" x2="60" y2="186"/><line x1="114" y1="170" x2="122" y2="186"/></g>
+<!-- box 2 -->
+<rect x="200" y="40" width="150" height="156" fill="#F3F0E8" stroke="#121212"/>
+<text x="212" y="62" font-family="JetBrains Mono" font-size="10" letter-spacing="1" fill="#6B665C">02 · METAL</text>
+<text x="212" y="84" font-size="15" font-weight="700" fill="#121212">Generated kernel</text>
+<text x="212" y="104" font-size="11" fill="#2A2925">one GPU thread per robot</text>
+<g fill="none" stroke="#121212" stroke-width="0.8"><rect x="212" y="116" width="9" height="9" /><rect x="224" y="116" width="9" height="9" /><rect x="236" y="116" width="9" height="9" /><rect x="248" y="116" width="9" height="9" /><rect x="260" y="116" width="9" height="9" /><rect x="272" y="116" width="9" height="9" /><rect x="284" y="116" width="9" height="9" /><rect x="296" y="116" width="9" height="9" /><rect x="308" y="116" width="9" height="9" /><rect x="320" y="116" width="9" height="9" /><rect x="212" y="128" width="9" height="9" /><rect x="224" y="128" width="9" height="9" /><rect x="236" y="128" width="9" height="9" /><rect x="248" y="128" width="9" height="9" /><rect x="260" y="128" width="9" height="9" /><rect x="272" y="128" width="9" height="9" /><rect x="284" y="128" width="9" height="9" /><rect x="296" y="128" width="9" height="9" /><rect x="308" y="128" width="9" height="9" /><rect x="320" y="128" width="9" height="9" /><rect x="212" y="140" width="9" height="9" /><rect x="224" y="140" width="9" height="9" /><rect x="236" y="140" width="9" height="9" /><rect x="248" y="140" width="9" height="9" /><rect x="260" y="140" width="9" height="9" fill="#FF4D00" stroke="#FF4D00"/><rect x="272" y="140" width="9" height="9" /><rect x="284" y="140" width="9" height="9" /><rect x="296" y="140" width="9" height="9" /><rect x="308" y="140" width="9" height="9" /><rect x="320" y="140" width="9" height="9" /><rect x="212" y="152" width="9" height="9" /><rect x="224" y="152" width="9" height="9" /><rect x="236" y="152" width="9" height="9" /><rect x="248" y="152" width="9" height="9" /><rect x="260" y="152" width="9" height="9" /><rect x="272" y="152" width="9" height="9" /><rect x="284" y="152" width="9" height="9" /><rect x="296" y="152" width="9" height="9" /><rect x="308" y="152" width="9" height="9" /><rect x="320" y="152" width="9" height="9" /><rect x="212" y="164" width="9" height="9" /><rect x="224" y="164" width="9" height="9" /><rect x="236" y="164" width="9" height="9" /><rect x="248" y="164" width="9" height="9" /><rect x="260" y="164" width="9" height="9" /><rect x="272" y="164" width="9" height="9" /><rect x="284" y="164" width="9" height="9" /><rect x="296" y="164" width="9" height="9" /><rect x="308" y="164" width="9" height="9" /><rect x="320" y="164" width="9" height="9" /><rect x="212" y="176" width="9" height="9" /><rect x="224" y="176" width="9" height="9" /><rect x="236" y="176" width="9" height="9" /><rect x="248" y="176" width="9" height="9" /><rect x="260" y="176" width="9" height="9" /><rect x="272" y="176" width="9" height="9" /><rect x="284" y="176" width="9" height="9" /><rect x="296" y="176" width="9" height="9" /><rect x="308" y="176" width="9" height="9" /><rect x="320" y="176" width="9" height="9" /></g>
+<!-- box 3 -->
+<rect x="420" y="40" width="140" height="156" fill="#F3F0E8" stroke="#121212"/>
+<text x="432" y="62" font-family="JetBrains Mono" font-size="10" letter-spacing="1" fill="#6B665C">03 · MLX</text>
+<text x="432" y="84" font-size="15" font-weight="700" fill="#121212">PPO update</text>
+<text x="432" y="104" font-size="10.5" fill="#2A2925">rollout, GAE, minibatches</text>
+<g stroke="#121212" stroke-width="0.7"><line x1="434" y1="124" x2="485" y2="124"/><line x1="434" y1="124" x2="485" y2="140"/><line x1="434" y1="124" x2="485" y2="156"/><line x1="434" y1="124" x2="485" y2="172"/><line x1="434" y1="138" x2="485" y2="124"/><line x1="434" y1="138" x2="485" y2="140"/><line x1="434" y1="138" x2="485" y2="156"/><line x1="434" y1="138" x2="485" y2="172"/><line x1="434" y1="152" x2="485" y2="124"/><line x1="434" y1="152" x2="485" y2="140"/><line x1="434" y1="152" x2="485" y2="156"/><line x1="434" y1="152" x2="485" y2="172"/><line x1="434" y1="166" x2="485" y2="124"/><line x1="434" y1="166" x2="485" y2="140"/><line x1="434" y1="166" x2="485" y2="156"/><line x1="434" y1="166" x2="485" y2="172"/><line x1="434" y1="180" x2="485" y2="124"/><line x1="434" y1="180" x2="485" y2="140"/><line x1="434" y1="180" x2="485" y2="156"/><line x1="434" y1="180" x2="485" y2="172"/><line x1="485" y1="124" x2="536" y2="138"/><line x1="485" y1="124" x2="536" y2="158"/><line x1="485" y1="124" x2="536" y2="178"/><line x1="485" y1="140" x2="536" y2="138"/><line x1="485" y1="140" x2="536" y2="158"/><line x1="485" y1="140" x2="536" y2="178"/><line x1="485" y1="156" x2="536" y2="138"/><line x1="485" y1="156" x2="536" y2="158"/><line x1="485" y1="156" x2="536" y2="178"/><line x1="485" y1="172" x2="536" y2="138"/><line x1="485" y1="172" x2="536" y2="158"/><line x1="485" y1="172" x2="536" y2="178"/></g>
+<g fill="#121212"><circle cx="434" cy="124" r="2.5"/><circle cx="434" cy="138" r="2.5"/><circle cx="434" cy="152" r="2.5"/><circle cx="434" cy="166" r="2.5"/><circle cx="434" cy="180" r="2.5"/><circle cx="485" cy="124" r="2.5"/><circle cx="485" cy="140" r="2.5"/><circle cx="485" cy="156" r="2.5"/><circle cx="485" cy="172" r="2.5"/><circle cx="536" cy="138" r="2.5" fill="#121212"/><circle cx="536" cy="158" r="2.5" fill="#FF4D00"/><circle cx="536" cy="178" r="2.5" fill="#121212"/></g>
+<!-- box 4 -->
+<rect x="590" y="40" width="160" height="156" fill="#F3F0E8" stroke="#121212"/>
+<text x="602" y="62" font-family="JetBrains Mono" font-size="10" letter-spacing="1" fill="#6B665C">04 · OUT</text>
+<text x="602" y="84" font-size="15" font-weight="700" fill="#121212">Viewer and export</text>
+<g font-family="JetBrains Mono" font-size="9.5" fill="#121212"><text x="602" y="110">macgym view</text><text x="602" y="125">policy.mlpackage</text><text x="602" y="140">policy.onnx</text></g>
+<line x1="602" y1="180" x2="738" y2="180" stroke="#121212"/>
+<g stroke="rgba(18,18,18,0.25)" stroke-width="2" stroke-linecap="round"><line x1="612" y1="165" x2="618" y2="180"/><line x1="624" y1="163" x2="630" y2="180"/><line x1="640" y1="164" x2="644" y2="180"/></g>
+<g stroke="#FF4D00" stroke-width="2.4" stroke-linecap="round"><line x1="700" y1="160" x2="706" y2="180"/><line x1="700" y1="160" x2="694" y2="180"/><line x1="700" y1="160" x2="702" y2="148"/></g>
+<!-- arrows -->
+<line x1="170" y1="118" x2="198" y2="118" stroke="#121212" marker-end="url(#ar)"/>
+<line x1="350" y1="100" x2="418" y2="100" stroke="#121212" marker-end="url(#ar)"/>
+<line x1="418" y1="140" x2="352" y2="140" stroke="#121212" marker-end="url(#ar)"/>
+<text x="386" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="#6B665C">obs, reward</text>
+<text x="379" y="156" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B665C">actions</text>
+<line x1="560" y1="118" x2="588" y2="118" stroke="#121212" marker-end="url(#ar)"/>
+<text x="185" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B665C">mg.make</text>
+<text x="575" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6B665C">checkpoint</text>
+<line x1="185" y1="34" x2="185" y2="112" stroke="#C9C2B4" stroke-dasharray="2 3"/>
+<line x1="575" y1="34" x2="575" y2="112" stroke="#C9C2B4" stroke-dasharray="2 3"/>
+<rect x="300" y="211" width="160" height="16" fill="#FBFAF6"/><text x="380" y="223" text-anchor="middle" font-family="JetBrains Mono" font-size="9.5" fill="#121212">4,096 robots · one GPU</text>
+</svg><figcaption>From a Python file to a shippable policy. Steps 02 and 03 loop on the GPU and share the same memory.</figcaption></figure>
+<h2 id="define">1. A robot is Python</h2>
+<p>A <code>Robot</code> is a list of capsules (two endpoints and a radius) and hinge joints (a pivot, limits, a motor gear). There is no file format to learn. <code>Task</code> holds lambdas over a batched <code>State</code>, so rewards are ordinary array math.</p>
+<h2 id="kernel">2. One Metal kernel per body plan</h2>
+<p><code>mg.make</code> reads the body plan and generates a Metal kernel specialized to it: fixed body count, fixed joint list, constants folded in. The kernel runs one GPU thread per robot, so 4,096 robots means 4,096 threads integrating their own planar dynamics, contacts and joint limits in parallel. No Python loop touches individual environments.</p>
+<p>The dynamics are deliberately simple: 2D, maximal coordinates, penalty contacts against a flat ground, a few substeps per control step. That is what makes thousands of copies cheap, and it is also why the <a class="ln" href="benchmarks.html">benchmarks</a> are not a like-for-like physics comparison with MuJoCo.</p>
+<h2 id="ppo">3. PPO in MLX</h2>
+<p>Training is PPO written in MLX: rollouts, advantage estimation, observation normalization and minibatch updates all run on the GPU. On Apple Silicon the CPU and GPU share one pool of memory, so simulator state, observations and network weights never get copied between devices. The sim writes observations, the policy reads them in place.</p>
+<h2 id="out">4. Watch it, ship it</h2>
+<p><code>macgym view</code> streams a sample of robots to a browser viewer over a WebSocket. Every robot is drawn on one shared runway with the best highlighted, and the viewer replays earlier generations so you can see the gait improve without reading a number.</p>
+<p>When you are happy, <code>policy.export()</code> writes CoreML (for a native app on the Neural Engine) or ONNX (for everything else). <code>mg.to_gymnasium</code> exposes the same env to existing RL libraries.</p>
+
+<div class="pager"><a href="examples.html"><span class="mono-label">Previous</span><strong>Examples</strong></a><a class="next" href="benchmarks.html"><span class="mono-label">Next</span><strong>Benchmarks</strong></a></div>
+</main><nav class="toc"><span class="mono-label">On this page</span></nav></div>
+<footer class="foot"><span>MacGym. Robot learning for Apple Silicon. MIT licensed.</span><span class="links"><a href="quickstart.html">Docs</a><a href="api.html">API</a><a href="benchmarks.html">Benchmarks</a><a href="https://github.com/shlokmadhekar/macgym">GitHub</a></span></footer>
+<script src="site.js"></script></body></html>

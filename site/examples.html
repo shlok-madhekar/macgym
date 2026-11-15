@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Examples · MacGym</title>
+<meta name="description" content="MacGym is a robot-learning framework for Apple Silicon. Define a robot in Python, train thousands of copies on your Mac's GPU, export the policy to CoreML.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,&lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;rect x=&quot;0.5&quot; y=&quot;0.5&quot; width=&quot;19&quot; height=&quot;19&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot;/&gt;&lt;path d=&quot;M4 15 L8 6 L10 11 L12 6 L16 15&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot; stroke-width=&quot;1.6&quot; stroke-linecap=&quot;square&quot;/&gt;&lt;rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;3&quot; height=&quot;3&quot; fill=&quot;%23FF4D00&quot;/&gt;&lt;/svg&gt;">
+</head><body>
+<header class="hdr">
+  <a class="wordmark" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="19" fill="none" stroke="#121212"/><path d="M4 15 L8 6 L10 11 L12 6 L16 15" fill="none" stroke="#121212" stroke-width="1.6" stroke-linecap="square"/><rect x="14" y="3" width="3" height="3" fill="#FF4D00"/></svg>MacGym <span class="ver">v0.3</span></a>
+  <nav><a href="index.html" class="">Overview</a><a href="quickstart.html" class="">Docs</a><a href="examples.html" class="on">Examples</a><a href="benchmarks.html" class="">Benchmarks</a></nav>
+  <div class="right">
+    <a href="https://github.com/shlokmadhekar/macgym"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    <a class="btn" href="/playground">Open Playground</a>
+  </div>
+</header>
+<div class="docs"><aside class="side"><h6 class="mono-label">Get started</h6><a href="quickstart.html" class="">Quickstart</a><a href="quickstart.html#install" class="sub ">Install</a><a href="quickstart.html#first-robot" class="sub ">Your first robot</a><a href="quickstart.html#train" class="sub ">Train and watch</a><a href="quickstart.html#export" class="sub ">Export</a><h6 class="mono-label">Reference</h6><a href="api.html" class="">Python API</a><a href="cli.html" class="">CLI</a><h6 class="mono-label">Guides</h6><a href="examples.html" class="on">Examples</a><a href="how-it-works.html" class="">How it works</a><a href="benchmarks.html" class="">Benchmarks</a><h6 class="mono-label">Tools</h6><a href="/playground" class="">Playground</a><a href="https://github.com/shlokmadhekar/macgym" class="">GitHub</a></aside>
+<main class="content"><div class="crumb mono-label">Guides</div><h1>Examples</h1><p class="lede">Five short files that cover the framework end to end: built-in robots, custom bodies, reward shaping, Gymnasium, and export.</p>
+<p>Each example is a single file in <code>examples/</code>. Run it with Python, or hand it to the CLI.</p><h2 id="ex01" style="display:none">Train a built-in robot</h2><article class="ex"><header><span class="num">01</span><h3>Train a built-in robot</h3><span class="file mono-label">examples/01_quickstart.py</span></header>
+<div class="desc"><p>The shortest path from install to a trained policy. Every built-in robot is a <code>(robot, task)</code> pair written with the same public API you use.</p></div><pre><code data-lang="py">&quot;&quot;&quot;Train the built-in walker for 100 iterations, then report how far it gets.
+
+    python examples/01_quickstart.py
+&quot;&quot;&quot;
+import os
+
+import macgym as mg
+
+ITERS = int(os.environ.get(&quot;MACGYM_ITERS&quot;, 100))
+ENVS = int(os.environ.get(&quot;MACGYM_ENVS&quot;, 4096))
+
+env = mg.make(*mg.robots.walker(), num_envs=ENVS)
+result = mg.train(env, iters=ITERS, save=&quot;runs/quickstart_walker.npz&quot;)
+print(f&quot;final distance: {result.final.get(&#x27;dist&#x27;) or 0:.2f} m   policy: {result.policy}&quot;)</code></pre><div class="run"><span>$ python examples/01_quickstart.py</span><span class="mono-label">01_quickstart.py</span></div></article><h2 id="ex02" style="display:none">Define your own robot</h2><article class="ex"><header><span class="num">02</span><h3>Define your own robot</h3><span class="file mono-label">examples/02_custom_robot.py</span></header>
+<div class="desc"><p>Capsules and hinge joints. The Metal kernel for this exact body plan is generated when you call <code>mg.make</code>.</p></div><pre><code data-lang="py">&quot;&quot;&quot;A brand-new three-legged creature and its reward, in about 20 lines.
+
+    python examples/02_custom_robot.py
+&quot;&quot;&quot;
+import os
+
+import macgym as mg
+
+robot = mg.Robot(&quot;tripod3&quot;)
+torso = robot.body(&quot;torso&quot;, start=(-0.5, 0.7), end=(0.5, 0.7), radius=0.07)
+for name, x in ((&quot;back&quot;, -0.5), (&quot;mid&quot;, 0.0), (&quot;front&quot;, 0.5)):
+    thigh = robot.body(f&quot;{name}_thigh&quot;, start=(x, 0.7), end=(x, 0.35), radius=0.04)
+    shin = robot.body(f&quot;{name}_shin&quot;, start=(x, 0.35), end=(x + 0.1, 0.05), radius=0.035)
+    robot.joint(torso, thigh, at=(x, 0.7), limits=(-1.0, 1.0), motor=70, name=f&quot;{name}_hip&quot;)
+    robot.joint(thigh, shin, at=(x, 0.35), limits=(-1.5, 0.3), motor=50, name=f&quot;{name}_knee&quot;)
+robot.set_root(torso)
+
+task = mg.Task(
+    reward=lambda s: s.root.vx + 0.5 * (s.root.y &gt; 0.45) - 0.002 * s.action_sq,  # go forward, stay up
+    done=lambda s: s.root.y &lt; 0.25,
+    episode_steps=1000,
+)
+
+if __name__ == &quot;__main__&quot;:
+    env = mg.make(robot, task, num_envs=int(os.environ.get(&quot;MACGYM_ENVS&quot;, 4096)))
+    mg.train(env, iters=int(os.environ.get(&quot;MACGYM_ITERS&quot;, 150)), save=&quot;runs/tripod3.npz&quot;)</code></pre><div class="run"><span>$ macgym train examples/02_custom_robot.py</span><span class="mono-label">02_custom_robot.py</span></div></article><h2 id="ex03" style="display:none">Shape the reward</h2><article class="ex"><header><span class="num">03</span><h3>Shape the reward</h3><span class="file mono-label">examples/03_custom_reward.py</span></header>
+<div class="desc"><p>Rewards and terminations are lambdas over a batched <code>State</code>. Every field is an MLX array with one entry per robot.</p></div><pre><code data-lang="py">&quot;&quot;&quot;Same cheetah body, new goal: hop BACKWARDS. Only the Task changes.
+
+    python examples/03_custom_reward.py
+&quot;&quot;&quot;
+import os
+
+import macgym as mg
+
+robot, _ = mg.robots.cheetah()          # reuse the built-in body, throw away its task
+
+
+def hop_backwards(s):
+    airborne = (1 - s.contact(&quot;bfoot&quot;)) * (1 - s.contact(&quot;ffoot&quot;))  # both feet off the ground
+    return -s.root.vx + 0.5 * airborne - 0.1 * s.action_sq
+
+
+task = mg.Task(reward=hop_backwards, episode_steps=1000)
+
+if __name__ == &quot;__main__&quot;:
+    env = mg.make(robot, task, num_envs=int(os.environ.get(&quot;MACGYM_ENVS&quot;, 4096)))
+    result = mg.train(env, iters=int(os.environ.get(&quot;MACGYM_ITERS&quot;, 150)), save=&quot;runs/cheetah_backflip.npz&quot;)
+    print(f&quot;distance (negative = backwards): {result.final.get(&#x27;dist&#x27;) or 0:.2f} m&quot;)</code></pre><div class="run"><span>$ macgym train examples/03_custom_reward.py --envs 8192</span><span class="mono-label">03_custom_reward.py</span></div></article><h2 id="ex04" style="display:none">Use it from Gymnasium</h2><article class="ex"><header><span class="num">04</span><h3>Use it from Gymnasium</h3><span class="file mono-label">examples/04_gymnasium.py</span></header>
+<div class="desc"><p>Wrap any MacGym env as a <code>gymnasium.vector.VectorEnv</code> (NumPy in, NumPy out) for Stable-Baselines3, CleanRL, or your own loop. Needs <code>pip install -e ".[gym]"</code>.</p></div><pre><code data-lang="py">&quot;&quot;&quot;Use a MacGym env from any Gymnasium-based library (SB3, CleanRL, ...).
+
+to_gymnasium returns a gymnasium.vector.VectorEnv with numpy float32 in/out.
+Autoreset is SAME_STEP: when an env finishes, the obs returned for it is already the
+first obs of its next episode (see macgym/gym_compat.py).
+
+    python examples/04_gymnasium.py
+&quot;&quot;&quot;
+import os
+
+import numpy as np
+
+import macgym as mg
+
+N = int(os.environ.get(&quot;MACGYM_ENVS&quot;, 256))
+STEPS = int(os.environ.get(&quot;MACGYM_STEPS&quot;, 500))
+
+venv = mg.to_gymnasium(mg.make(*mg.robots.walker(), num_envs=N))
+print(&quot;obs space:&quot;, venv.single_observation_space, &quot; action space:&quot;, venv.single_action_space)
+
+obs, info = venv.reset(seed=0)
+episodes, returns = 0, []
+for _ in range(STEPS):
+    actions = venv.action_space.sample()                     # random policy
+    obs, reward, terminated, truncated, info = venv.step(actions)
+    done = terminated | truncated
+    episodes += int(done.sum())
+    returns += list(info[&quot;episode_return&quot;][done])
+assert obs.shape == (N, venv.single_observation_space.shape[0]) and obs.dtype == np.float32
+print(f&quot;{STEPS} steps x {N} envs, {episodes} episodes finished, &quot;
+      f&quot;mean random-policy return {np.mean(returns) if returns else 0:.1f}&quot;)
+venv.close()</code></pre><div class="run"><span>$ python examples/04_gymnasium.py</span><span class="mono-label">04_gymnasium.py</span></div></article><h2 id="ex05" style="display:none">Export to CoreML</h2><article class="ex"><header><span class="num">05</span><h3>Export to CoreML</h3><span class="file mono-label">examples/05_export_coreml.py</span></header>
+<div class="desc"><p>Load a checkpoint and ship the policy. CoreML runs on the Neural Engine in a native app; ONNX goes anywhere. Needs <code>pip install -e ".[export]"</code>.</p></div><pre><code data-lang="py">&quot;&quot;&quot;Train briefly, then export the policy to CoreML (.mlpackage) and ONNX and run it outside MLX.
+
+    python examples/05_export_coreml.py
+&quot;&quot;&quot;
+import os
+
+import numpy as np
+
+import macgym as mg
+
+env = mg.make(*mg.robots.walker(), num_envs=int(os.environ.get(&quot;MACGYM_ENVS&quot;, 4096)))
+result = mg.train(env, iters=int(os.environ.get(&quot;MACGYM_ITERS&quot;, 50)), save=&quot;runs/export_demo.npz&quot;)
+os.makedirs(&quot;exports&quot;, exist_ok=True)
+
+info = result.policy.export(&quot;exports/walker.onnx&quot;)
+print(f&quot;ONNX   -&gt; {info[&#x27;path&#x27;]}  max |diff| vs MLX: {info[&#x27;max_abs_err&#x27;]:.1e}&quot;)
+try:
+    info = result.policy.export(&quot;exports/walker.mlpackage&quot;)
+    err = info[&quot;max_abs_err&quot;]
+    print(f&quot;CoreML -&gt; {info[&#x27;path&#x27;]}  max |diff| vs MLX: &quot; + (f&quot;{err:.1e}&quot; if err is not None else &quot;n/a&quot;))
+    import coremltools as ct
+
+    model = ct.models.MLModel(info[&quot;path&quot;])
+    obs = np.array(env.reset(), dtype=np.float32)[:1]
+    print(&quot;CoreML action for one observation:&quot;, np.round(model.predict({&quot;obs&quot;: obs})[&quot;action&quot;][0], 3))
+except ImportError as e:
+    print(&quot;CoreML export skipped:&quot;, e)</code></pre><div class="run"><span>$ macgym export runs/walker.npz --format coreml</span><span class="mono-label">05_export_coreml.py</span></div></article>
+<div class="pager"><a href="cli.html"><span class="mono-label">Previous</span><strong>CLI</strong></a><a class="next" href="how-it-works.html"><span class="mono-label">Next</span><strong>How it works</strong></a></div>
+</main><nav class="toc"><span class="mono-label">On this page</span></nav></div>
+<footer class="foot"><span>MacGym. Robot learning for Apple Silicon. MIT licensed.</span><span class="links"><a href="quickstart.html">Docs</a><a href="api.html">API</a><a href="benchmarks.html">Benchmarks</a><a href="https://github.com/shlokmadhekar/macgym">GitHub</a></span></footer>
+<script src="site.js"></script></body></html>

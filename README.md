@@ -1,142 +1,123 @@
 # MacGym
 
-**Massively parallel robot RL on the Mac you already own.**
+**Robot learning, on the Mac you already own.**
 
-MacGym simulates thousands of robots at once on an Apple Silicon GPU with [MLX](https://github.com/ml-explore/mlx), trains them with PPO on that same GPU, and streams the whole swarm live into your browser. No NVIDIA card, no CUDA, no cloud.
-
-Every mainstream GPU robotics sim (Isaac Lab, MuJoCo Warp, ManiSkill) needs NVIDIA. MacGym is written from scratch for Metal and unified memory instead.
-
-- Batched 2D multibody physics in pure MLX, `mx.compile`d, no Python loops over envs
-- PPO fully on the GPU (rollouts, GAE, normalization, updates)
-- Live three.js viewer: thousands of agents, env-steps/sec counter, reward curve, drag-to-set-target
-- Honest benchmark vs CPU MuJoCo included (`scripts/bench.py`)
-
-Environments: `cartpole`, `arm` (reach a draggable target), `walker` (planar biped), `cheetah` (planar quadruped-style runner).
-
-## Quickstart
-
-Requirements: Apple Silicon Mac, Python 3.10+, `mlx`, `numpy`, `aiohttp` (plus `mujoco` only if you want to run the CPU baseline benchmark).
-
-```bash
-pip install mlx numpy aiohttp mujoco
-python3 -m macgym.server --port 8765
-```
-
-Then open **http://localhost:8765**, pick an env, set the number of robots (256 to 16,384) and press **Start**.
-
-Viewer without a backend (fake data, for UI work): http://localhost:8765/?demo=1
-
-## Training from the CLI
-
-Headless PPO training (prints iteration, env steps, env-steps/sec and returns):
-
-```bash
-python3 -m macgym.train --env walker --num-envs 4096 --iters 300 --save walker.npz
-python3 -m macgym.train --env cartpole --num-envs 4096 --iters 100
-```
-
-Flags: `--env` (cartpole | arm | walker | cheetah), `--num-envs`, `--iters`, `--save PATH.npz`, `--load PATH.npz`, `--hidden 128,128`, `--lr`, `--rollout-len`, `--epochs`, `--minibatches`, `--gamma`, `--ent-coef`, `--lr-decay`, `--seed`.
-
-Or start the live server and kick off a run immediately (the browser can attach any time):
-
-```bash
-python3 -m macgym.server --port 8765 --env walker --num-envs 4096 --autostart
-```
-
-Server flags: `--host` (default `0.0.0.0`), `--port` (8765), `--env` (walker), `--num-envs` (4096), `--render-envs` (how many robots to stream to the viewer), `--autostart`.
-
-Or drive PPO directly from Python:
+MacGym is a robot-learning framework for Apple Silicon. Define a robot in about 15 lines of Python, train 4,096 copies of it on your Mac's GPU, and export the policy to CoreML. No NVIDIA card, no CUDA, no cloud.
 
 ```python
-from macgym.envs import make
-from macgym.rl.ppo import PPO
+import macgym as mg
 
-env = make("walker", 4096)
-ppo = PPO(env, hidden=(256, 256))
-for i in range(300):
-    m = ppo.train_iter()
-    print(f"iter {m['iter']:4d}  sps {m['sps']:,.0f}  ep_return {m['mean_ep_return']:.1f}")
-ppo.save("walker.npz")
+robot = mg.Robot("tripod")
+torso = robot.body("torso", start=(0, 1.0), end=(0.6, 1.0), radius=0.06)
+front = robot.body("front", start=(0.6, 1.0), end=(0.6, 0.5), radius=0.04)
+back = robot.body("back", start=(0.0, 1.0), end=(0.0, 0.5), radius=0.04)
+robot.joint(torso, front, at=(0.6, 1.0), limits=(-1.0, 1.0), motor=80)
+robot.joint(torso, back, at=(0.0, 1.0), limits=(-1.0, 1.0), motor=80)
+
+task = mg.Task(
+    reward=lambda s: s.root.vx - 0.001 * s.action_sq,
+    done=lambda s: s.root.y < 0.4,
+)
+env = mg.make(robot, task, num_envs=4096)
+mg.train(env, iters=200, save="runs/tripod.npz")
 ```
 
-WebSocket protocol (`/ws`): `{"cmd":"list"}`, `{"cmd":"start","env":"walker","num_envs":4096,"render_envs":64}`, `{"cmd":"stop"}`, `{"cmd":"showcase","on":true}`, `{"cmd":"set_target","x":0.5,"y":0.8}`, `{"cmd":"save"}`, `{"cmd":"bench"}`. See `CONTRACT.md` for the full spec.
+`mg.make` turns that body plan into its own Metal kernel (one GPU thread per robot), and `mg.train` runs PPO in MLX on the same chip, sharing unified memory with the simulator.
 
-## Architecture
+## Install
 
-```
-                        Apple Silicon  (one pool of unified memory, zero copy)
- ┌───────────────────────────────────────────────────────────────────────────┐
- │  GPU (Metal, via MLX)                                                     │
- │                                                                           │
- │   ┌────────────────────────────┐  obs, reward, done   ┌────────────────┐  │
- │   │ BatchedEnv.step()          │ ───────────────────▶ │ PPO            │  │
- │   │  N envs x K capsule bodies │                      │  policy + value│  │
- │   │  maximal-coord 2D physics  │ ◀─────────────────── │  GAE, clip obj │  │
- │   │  joints, contacts, substeps│      actions (N,A)   │  obs norm      │  │
- │   │  auto-reset   (mx.compile) │                      │  (mx.compile)  │  │
- │   └─────────────┬──────────────┘                      └───────┬────────┘  │
- │                 │ render_state(R): slice first R envs         │ metrics   │
- └─────────────────┼─────────────────────────────────────────────┼───────────┘
-                   ▼                                             ▼
-          ┌───────────────────────────────────────────────────────────┐
-          │ macgym.server  (aiohttp, trainer thread)                  │
-          │   static web/   +   WebSocket /ws  (frames ~30 Hz, metrics)│
-          └───────────────────────────┬───────────────────────────────┘
-                                      │ JSON: capsules [x1,y1,x2,y2,r]
-                                      ▼
-          ┌───────────────────────────────────────────────────────────┐
-          │ Browser: three.js, orthographic camera, InstancedMesh     │
-          │   grid of R robots, env-steps/s HUD, reward chart,        │
-          │   env picker, num_envs slider, drag-to-set-target         │
-          └───────────────────────────────────────────────────────────┘
+Requires an Apple Silicon Mac (M1 or newer) and Python 3.10+.
+
+```bash
+git clone <repo-url> macgym
+cd macgym
+pip install -e .
+pip install -e ".[gym]"      # optional: gymnasium wrapper
+pip install -e ".[export]"   # optional: onnx + coremltools
 ```
 
+## CLI
+
+```bash
+macgym new tripod                                   # scaffold a robot file
+macgym train tripod.py --envs 4096 --iters 200      # headless PPO, progress in metres and steps/s
+macgym view tripod.py                               # live viewer in the browser
+macgym export runs/tripod.npz --format coreml       # or --format onnx
+macgym bench                                        # GPU vs CPU MuJoCo on this machine
 ```
-macgym/
-  envs/       base.py (BatchedEnv), cartpole.py, arm.py, walker.py, cheetah.py, physics2d.py, registry in __init__.py
-  rl/ppo.py   PPO in MLX
-  server.py   aiohttp + WebSocket trainer server
-  train.py    headless training CLI
-web/          index.html, app.js, style.css, bench.json
-scripts/      bench.py
-docs/         DEVPOST.md, VIDEO_SCRIPT.md
-```
 
-## Benchmark
+Anywhere a file is accepted you can pass a built-in name instead: `walker`, `cheetah`, `hopper`, `tripod`, `worm`. A robot file defines `robot` and `task` at module level, or a `make_env(num_envs)` function.
 
-Run it yourself: `python3 scripts/bench.py` (add `--quick` for shorter timing windows). Results go to `web/bench.json` and show up in the viewer.
+## Python API
 
-<!-- BENCH:START -->
-Machine: Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2
+| Call | What it does |
+|------|--------------|
+| `mg.Robot(name)` | Planar robot builder. `.body(name, start, end, radius, density=1000)` adds a capsule; `.joint(parent, child, at, limits, motor, damping=0.1, stiffness=0.0)` adds a motorized hinge; `.set_root(body)` picks the body used for position and distance. |
+| `mg.Task(reward, done=None, episode_steps=1000, obs=None)` | Reward and termination as lambdas over a batched `State`. Observations are generated from the robot unless you pass `obs`. |
+| `mg.make(robot, task, num_envs=4096, seed=0)` | Compiles the robot and returns a batched env with `reset`, `step`, `render_state` and `metrics`. Auto-resets. |
+| `mg.train(env, iters=200, hidden=(256, 256), on_iter=None, save=None)` | PPO on the GPU. Returns `TrainResult(policy, history)`. |
+| `mg.load_policy(path, env)` | Loads a checkpoint. `policy.act(obs)` returns actions. |
+| `policy.export("x.mlpackage" \| "x.onnx")` | CoreML or ONNX, chosen by extension. Needs the `[export]` extra. |
+| `mg.view(env, policy=None, port=8765)` | Local server plus browser viewer for any env. Trains live if no policy is given. |
+| `mg.to_gymnasium(env)` | `gymnasium.vector.VectorEnv` wrapper (NumPy in and out) for Stable-Baselines3, CleanRL, or your own loop. |
+| `mg.robots.walker()`, `cheetah()`, `hopper()`, `tripod()`, `worm()` | Built-in `(robot, task)` pairs, written with the same public API. |
+
+Inside `reward`, `done` and `obs`, every field of `s` is an MLX array with one entry per robot: `s.root.{x, y, vx, vy, angle, omega, height}`, `s.body("name")`, `s.joint("name" or index).{q, qd}`, `s.action`, `s.action_sq`, `s.contact("name")`, `s.t`, `s.dt`.
+
+## Playground
+
+`/playground` on the local server puts a robot file in a code editor next to the live track. Pick a preset or start blank, change the body, press **Run**, and 4,096 copies start learning. Errors show inline in the editor.
+
+## Examples
+
+| File | Shows |
+|------|-------|
+| `examples/01_quickstart.py` | Train a built-in robot in five lines |
+| `examples/02_custom_robot.py` | Define a body plan from scratch |
+| `examples/03_custom_reward.py` | Rewards and terminations over the batched `State` |
+| `examples/04_gymnasium.py` | Use MacGym envs from Gymnasium-based libraries |
+| `examples/05_export_coreml.py` | Export a trained policy to CoreML and ONNX |
+
+## Benchmarks
+
+Measured with `macgym bench` (`scripts/bench.py`) on an Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E). Env-steps per second, summed over all environments, physics substeps and auto-reset included.
 
 | Task | Backend | Envs | Env-steps/s |
-|---|---|---:|---:|
-| cartpole | MLX GPU (Metal) | 1,024 | 1,468,760 |
-| cartpole | MLX GPU (Metal) | 4,096 | 6,121,731 |
-| cartpole | MLX GPU (Metal) | 16,384 | 19,256,854 |
-| walker | MLX GPU (Metal) | 1,024 | 752,450 |
+|------|---------|-----:|------------:|
 | walker | MLX GPU (Metal) | 4,096 | 3,048,904 |
 | walker | MLX GPU (Metal) | 16,384 | 6,274,760 |
-| cheetah | MLX GPU (Metal) | 1,024 | 746,004 |
-| cheetah | MLX GPU (Metal) | 4,096 | 3,046,077 |
 | cheetah | MLX GPU (Metal) | 16,384 | 6,589,763 |
-| cartpole | CPU MuJoCo 1 thread | 1 | 91,232 |
-| cartpole | CPU MuJoCo 11 procs | 11 | 514,545 |
-| cheetah | CPU MuJoCo 1 thread | 1 | 52,376 |
-| cheetah | CPU MuJoCo 11 procs | 11 | 293,810 |
+| cartpole | MLX GPU (Metal) | 16,384 | 19,256,854 |
+| cheetah | CPU MuJoCo, 1 thread | 1 | 52,376 |
+| cheetah | CPU MuJoCo, 11 processes | 11 | 293,810 |
+| cartpole | CPU MuJoCo, 11 processes | 11 | 514,545 |
 
-Best MLX GPU vs best CPU MuJoCo (all cores): cartpole **37.4x**, cheetah **22.4x**, walker **21.4x** (walker compared against MuJoCo half-cheetah)
-<!-- BENCH:END -->
+Best GPU vs best CPU: walker 21.4x, cheetah 22.4x, cartpole 37.4x.
 
-**Methodology.** One env-step = one control step of one environment, physics substeps / frame-skip included. MLX: random actions generated on the GPU, full `mx.eval` every step, auto-reset included. MuJoCo: Gymnasium-style InvertedPendulum-like cartpole (timestep 0.02, frame_skip 2) and HalfCheetah-like planar model (timestep 0.01, frame_skip 5), Python `mj_step` loop with random ctrl, single thread and one process per core.
+**Read the caveat.** MacGym uses its own simplified 2D planar dynamics (capsule bodies, maximal coordinates, penalty ground contact, a few substeps). MuJoCo solves full 3D generalized-coordinate dynamics with a constraint-based contact solver, driven here from a Python `mj_step` loop. That is not the same physics, so read the ratios as "how much RL experience per second this laptop can generate for these tasks", not "MLX beats MuJoCo at identical simulation". The walker is compared against MuJoCo's half-cheetah as the nearest planar locomotion model. GPU numbers varied by roughly ±30% run to run because other jobs shared the GPU. Full methodology is in `web/bench.json`.
 
-**Caveat, honestly.** MacGym's MLX tasks use our own simplified 2D planar dynamics (capsule bodies, maximal coordinates, penalty contacts). MuJoCo solves full 3D generalized-coordinate dynamics with a constraint-based contact solver. This is not identical physics, so read the speedup as "RL experience per second this laptop can generate for these tasks", not "MLX beats MuJoCo at the same simulation". The MLX walker is compared against the MuJoCo half-cheetah as the nearest planar locomotion model.
+## How it works
 
-## Roadmap
+1. **Define.** A `Robot` is capsules and hinges in Python. A `Task` is array math over a batched state.
+2. **Compile.** `mg.make` generates a Metal kernel specialized to the body plan. Each GPU thread steps one robot, so there is no Python loop over environments.
+3. **Train.** PPO in MLX: rollouts, advantages, normalization and updates all on the GPU. Simulator state and network weights live in the same unified memory, so nothing is copied between devices.
+4. **Ship.** Watch it with `macgym view`, export with `policy.export`, or hand the env to Gymnasium.
 
-- 3D rigid bodies (quadrupeds, humanoids)
-- Export policies to a real SO-101 arm via LeRobot
-- Native Mac app
-- MJCF import, domain randomization, terrain
+## Docs
 
-Built for the "Elevate the Ordinary" hackathon: the laptop you already own becomes a robotics supercomputer.
+The documentation site is plain static HTML in `site/` (no build step). The local server serves it at `/docs`, or open it directly:
+
+```bash
+python3 -m http.server 8797 --directory site
+```
+
+## Layout
+
+```
+macgym/        package: envs/ (physics2d, built-in envs), rl/ (PPO), server.py
+web/           viewer and playground
+site/          documentation site
+examples/      runnable examples
+scripts/       bench.py
+docs/          DEVPOST.md, VIDEO_SCRIPT.md
+```

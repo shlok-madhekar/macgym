@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MacGym · Robot learning, on the Mac you already own</title>
+<meta name="description" content="MacGym is a robot-learning framework for Apple Silicon. Define a robot in Python, train thousands of copies on your Mac's GPU, export the policy to CoreML.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,&lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;rect x=&quot;0.5&quot; y=&quot;0.5&quot; width=&quot;19&quot; height=&quot;19&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot;/&gt;&lt;path d=&quot;M4 15 L8 6 L10 11 L12 6 L16 15&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot; stroke-width=&quot;1.6&quot; stroke-linecap=&quot;square&quot;/&gt;&lt;rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;3&quot; height=&quot;3&quot; fill=&quot;%23FF4D00&quot;/&gt;&lt;/svg&gt;">
+</head><body>
+<header class="hdr">
+  <a class="wordmark" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="19" fill="none" stroke="#121212"/><path d="M4 15 L8 6 L10 11 L12 6 L16 15" fill="none" stroke="#121212" stroke-width="1.6" stroke-linecap="square"/><rect x="14" y="3" width="3" height="3" fill="#FF4D00"/></svg>MacGym <span class="ver">v0.3</span></a>
+  <nav><a href="index.html" class="on">Overview</a><a href="quickstart.html" class="">Docs</a><a href="examples.html" class="">Examples</a><a href="benchmarks.html" class="">Benchmarks</a></nav>
+  <div class="right">
+    <a href="https://github.com/shlokmadhekar/macgym"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    <a class="btn" href="/playground">Open Playground</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="l">
+    <div class="eyebrow mono-label"><span class="dot"></span>Open-source robot learning for Apple Silicon</div>
+    <h1>Robot learning, on the Mac you already own.</h1>
+    <p class="sub">Define a robot in fifteen lines of Python. MacGym compiles it to a Metal kernel, trains 4,096 copies on your Mac's GPU, and exports the policy to CoreML.</p>
+    <div class="ctas">
+      <a class="btn" href="quickstart.html">Get started</a>
+      <a class="btn ghost" href="/playground">Open Playground</a>
+      <a class="btn ghost" href="https://github.com/shlokmadhekar/macgym"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>&nbsp;GitHub</a>
+    </div>
+    <div class="install"><span class="p">$</span><code id="inst">pip install -e .</code><button type="button" data-copy="#inst">Copy</button></div>
+    <div class="req mono-label">Apple Silicon (M1 or newer) · Python 3.10+ · MLX</div>
+  </div>
+  <div class="r">
+    <div class="codeblock"><div class="cap"><span class="mono-label">tripod.py</span><button class="copy" type="button" data-copy="#hero-code">Copy</button></div>
+    <pre><code id="hero-code" data-lang="py" data-lines>import macgym as mg
+
+robot = mg.Robot(&quot;tripod&quot;)
+torso = robot.body(&quot;torso&quot;, start=(0, 1.0), end=(0.6, 1.0), radius=0.06)
+front = robot.body(&quot;front&quot;, start=(0.6, 1.0), end=(0.6, 0.5), radius=0.04)
+back = robot.body(&quot;back&quot;, start=(0.0, 1.0), end=(0.0, 0.5), radius=0.04)
+robot.joint(torso, front, at=(0.6, 1.0), limits=(-1.0, 1.0), motor=80)
+robot.joint(torso, back, at=(0.0, 1.0), limits=(-1.0, 1.0), motor=80)
+
+task = mg.Task(
+    reward=lambda s: s.root.vx - 0.001 * s.action_sq,
+    done=lambda s: s.root.y &lt; 0.4,
+)
+env = mg.make(robot, task, num_envs=4096)
+mg.train(env, iters=200, save=&quot;runs/tripod.npz&quot;)</code></pre></div>
+    <div class="after-code">
+      <div><span class="mono-label">Train</span><code>macgym train tripod.py</code></div>
+      <div><span class="mono-label">Watch</span><code>macgym view tripod.py</code></div>
+      <div><span class="mono-label">Ship</span><code>--format coreml</code></div>
+    </div>
+  </div>
+</section>
+<section class="track">
+  <div class="track-head"><span class="mono-label" id="swarm-gen">iteration 0</span><span class="mono-label">Schematic replay. Run <code>macgym view walker</code> for the real one.</span><span class="mono-label" style="color:var(--accent)" id="swarm-best">best 0.0 m</span></div>
+  <canvas id="swarm" aria-label="Animated illustration: overlaid walkers going further each training iteration"></canvas>
+</section>
+<section class="numbers">
+  <div><div class="v acc">21<small>x</small></div><div class="k">more env-steps per second than MuJoCo running on all 11 CPU cores of the same laptop.</div><div class="fine mono-label">Walker, 2D vs 3D physics. See notes.</div></div>
+  <div><div class="v">3.0<small>M/s</small></div><div class="k">env-steps per second with 4,096 walkers on one M3 Pro GPU, physics and auto-reset included.</div><div class="fine mono-label">MLX on Metal, median of 5 windows</div></div>
+  <div><div class="v">6.3<small>M/s</small></div><div class="k">env-steps per second at 16,384 walkers. Unified memory means no copies between sim and policy.</div><div class="fine mono-label">Apple M3 Pro, 18 GB</div></div>
+</section>
+<div class="numbers-note"><span>Measured 2026-11-15 12:02:33 PST on Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2. MacGym uses simplified 2D planar dynamics; MuJoCo solves full 3D with a constraint solver. Read the ratio as RL experience per second on this laptop, not identical physics.</span><a href="benchmarks.html">Full benchmark</a></div>
+<section class="feature-grid">
+  <a href="api.html#robot"><div class="n">01 · DEFINE</div><h3>Robots are Python</h3><p>Capsules, hinges, motors, limits. No XML, no URDF. A Robot is a few method calls you can read in one screen.</p><div class="go">mg.Robot &rarr;</div></a>
+  <a href="how-it-works.html"><div class="n">02 · COMPILE</div><h3>One GPU thread per robot</h3><p>Each body plan becomes its own Metal kernel. Thousands of copies step in parallel with no Python loop over environments.</p><div class="go">How it works &rarr;</div></a>
+  <a href="api.html#train"><div class="n">03 · TRAIN</div><h3>PPO, on the same chip</h3><p>Rollouts, advantages and updates run in MLX. Sim state and network weights share one pool of unified memory.</p><div class="go">mg.train &rarr;</div></a>
+  <a href="api.html#export"><div class="n">04 · SHIP</div><h3>CoreML or ONNX</h3><p>Export a trained policy for a native app or any runtime. Or wrap the env for Gymnasium and bring your own trainer.</p><div class="go">Policy.export &rarr;</div></a>
+</section>
+<div class="section-head"><h2>Everything is a command away.</h2><a class="mono-label" href="cli.html" style="color:var(--ink)">CLI reference &rarr;</a></div>
+<div class="cli-strip">
+  <div><span class="cap mono-label">Terminal</span><pre><code data-lang="sh">$ macgym new tripod
+$ macgym train tripod.py --envs 4096 --iters 200
+$ macgym view tripod.py
+$ macgym export runs/tripod.npz --format coreml</code></pre></div>
+  <div><span class="cap mono-label">Example output</span><pre><code data-lang="text">iter  40/200   dist  2.8 m   best  6.1 m   3.0M steps/s   0:14
+iter  80/200   dist  7.4 m   best 12.9 m   3.0M steps/s   0:29
+iter 120/200   dist 11.0 m   best 17.2 m   2.9M steps/s   0:43
+saved runs/tripod.npz</code></pre></div>
+</div>
+<footer class="foot"><span>MacGym. Robot learning for Apple Silicon. MIT licensed.</span><span class="links"><a href="quickstart.html">Docs</a><a href="api.html">API</a><a href="benchmarks.html">Benchmarks</a><a href="https://github.com/shlokmadhekar/macgym">GitHub</a></span></footer>
+<script src="site.js"></script></body></html>

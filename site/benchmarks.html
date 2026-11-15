@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benchmarks · MacGym</title>
+<meta name="description" content="MacGym is a robot-learning framework for Apple Silicon. Define a robot in Python, train thousands of copies on your Mac's GPU, export the policy to CoreML.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,&lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;rect x=&quot;0.5&quot; y=&quot;0.5&quot; width=&quot;19&quot; height=&quot;19&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot;/&gt;&lt;path d=&quot;M4 15 L8 6 L10 11 L12 6 L16 15&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot; stroke-width=&quot;1.6&quot; stroke-linecap=&quot;square&quot;/&gt;&lt;rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;3&quot; height=&quot;3&quot; fill=&quot;%23FF4D00&quot;/&gt;&lt;/svg&gt;">
+</head><body>
+<header class="hdr">
+  <a class="wordmark" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="19" fill="none" stroke="#121212"/><path d="M4 15 L8 6 L10 11 L12 6 L16 15" fill="none" stroke="#121212" stroke-width="1.6" stroke-linecap="square"/><rect x="14" y="3" width="3" height="3" fill="#FF4D00"/></svg>MacGym <span class="ver">v0.3</span></a>
+  <nav><a href="index.html" class="">Overview</a><a href="quickstart.html" class="">Docs</a><a href="examples.html" class="">Examples</a><a href="benchmarks.html" class="on">Benchmarks</a></nav>
+  <div class="right">
+    <a href="https://github.com/shlokmadhekar/macgym"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    <a class="btn" href="/playground">Open Playground</a>
+  </div>
+</header>
+<div class="docs"><aside class="side"><h6 class="mono-label">Get started</h6><a href="quickstart.html" class="">Quickstart</a><a href="quickstart.html#install" class="sub ">Install</a><a href="quickstart.html#first-robot" class="sub ">Your first robot</a><a href="quickstart.html#train" class="sub ">Train and watch</a><a href="quickstart.html#export" class="sub ">Export</a><h6 class="mono-label">Reference</h6><a href="api.html" class="">Python API</a><a href="cli.html" class="">CLI</a><h6 class="mono-label">Guides</h6><a href="examples.html" class="">Examples</a><a href="how-it-works.html" class="">How it works</a><a href="benchmarks.html" class="on">Benchmarks</a><h6 class="mono-label">Tools</h6><a href="/playground" class="">Playground</a><a href="https://github.com/shlokmadhekar/macgym" class="">GitHub</a></aside>
+<main class="content"><div class="crumb mono-label">Guides</div><h1>Benchmarks</h1><p class="lede">Measured on one laptop with the script in the repo. Numbers, methodology, and the parts that are not apples to apples.</p>
+
+<h2 id="results">Results</h2>
+<p class="mono-label">Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2 · 2026-11-15 12:02:33 PST</p>
+<table class="t"><thead><tr><th>Task</th><th>Backend</th><th class="num">Envs</th><th class="num">Env-steps / s</th><th></th></tr></thead><tbody><tr class=""><td>walker</td><td>MLX GPU (Metal)</td><td class="num">1,024</td><td class="num">752,450</td><td><span class="bar" style="width:5px"></span></td></tr><tr class=""><td>walker</td><td>MLX GPU (Metal)</td><td class="num">4,096</td><td class="num">3,048,904</td><td><span class="bar" style="width:22px"></span></td></tr><tr class=" best"><td>walker</td><td>MLX GPU (Metal)</td><td class="num">16,384</td><td class="num">6,274,760</td><td><span class="bar" style="width:45px"></span></td></tr><tr class=""><td>cheetah</td><td>MLX GPU (Metal)</td><td class="num">1,024</td><td class="num">746,004</td><td><span class="bar" style="width:5px"></span></td></tr><tr class=""><td>cheetah</td><td>MLX GPU (Metal)</td><td class="num">4,096</td><td class="num">3,046,077</td><td><span class="bar" style="width:22px"></span></td></tr><tr class=" best"><td>cheetah</td><td>MLX GPU (Metal)</td><td class="num">16,384</td><td class="num">6,589,763</td><td><span class="bar" style="width:47px"></span></td></tr><tr class="cpu"><td>cheetah</td><td>CPU MuJoCo 1 thread</td><td class="num">1</td><td class="num">52,376</td><td><span class="bar" style="width:2px"></span></td></tr><tr class="cpu"><td>cheetah</td><td>CPU MuJoCo 11 procs</td><td class="num">11</td><td class="num">293,810</td><td><span class="bar" style="width:2px"></span></td></tr><tr class=""><td>cartpole</td><td>MLX GPU (Metal)</td><td class="num">1,024</td><td class="num">1,468,760</td><td><span class="bar" style="width:10px"></span></td></tr><tr class=""><td>cartpole</td><td>MLX GPU (Metal)</td><td class="num">4,096</td><td class="num">6,121,731</td><td><span class="bar" style="width:44px"></span></td></tr><tr class=" best"><td>cartpole</td><td>MLX GPU (Metal)</td><td class="num">16,384</td><td class="num">19,256,854</td><td><span class="bar" style="width:140px"></span></td></tr><tr class="cpu"><td>cartpole</td><td>CPU MuJoCo 1 thread</td><td class="num">1</td><td class="num">91,232</td><td><span class="bar" style="width:2px"></span></td></tr><tr class="cpu"><td>cartpole</td><td>CPU MuJoCo 11 procs</td><td class="num">11</td><td class="num">514,545</td><td><span class="bar" style="width:3px"></span></td></tr></tbody></table>
+<h2 id="speedup">Best GPU vs best CPU</h2>
+<table class="t"><thead><tr><th>Task</th><th>MLX GPU (best)</th><th>MuJoCo CPU (best)</th><th class="num">Ratio</th></tr></thead><tbody>
+<tr><td>walker</td><td>16,384 envs</td><td>half-cheetah, 11 procs</td><td class="num">21.4x</td></tr>
+<tr><td>cheetah</td><td>16,384 envs</td><td>half-cheetah, 11 procs</td><td class="num">22.4x</td></tr>
+<tr><td>cartpole</td><td>16,384 envs</td><td>inverted pendulum, 11 procs</td><td class="num">37.4x</td></tr>
+</tbody></table>
+<h2 id="caveats">Caveats</h2>
+<div class="note warn"><span class="mono-label">Not the same physics</span>MacGym uses its own simplified 2D planar dynamics: capsule bodies, maximal coordinates, penalty ground contact, a few substeps per control step. MuJoCo solves full 3D generalized-coordinate dynamics with a constraint-based contact solver. Read these ratios as how much RL experience per second this laptop can generate for these tasks, not as MLX beating MuJoCo at identical simulation.</div>
+<ul>
+<li>The MLX walker has no MuJoCo twin, so it is compared against the MuJoCo half-cheetah as the nearest planar locomotion model.</li>
+<li>MuJoCo numbers come from a plain Python <code>mj_step</code> loop, so they include Python overhead per step. One process per core uses all 11 P and E cores.</li>
+<li>GPU numbers varied by roughly ±30% run to run. The laptop was not idle during measurement; other training jobs shared the GPU.</li>
+<li>Env-steps per second counts control steps summed over all environments, with physics substeps and frame-skip included.</li>
+</ul>
+<h2 id="method">Method</h2>
+<p>MLX: median of 5 timing windows, random actions generated on the GPU, full <code>mx.eval</code> every step, auto-reset included, <code>mx.compile</code> on the physics step. MuJoCo: Gymnasium-style models written inline (InvertedPendulum-like cartpole with timestep 0.02 and frame skip 2; HalfCheetah-like planar model with timestep 0.01 and frame skip 5), random controls, then one process per core with spawn, warmed up. mlx 0.32.4, mujoco 4.0.1, Python 3.13.12.</p>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym bench
+$ python3 scripts/bench.py --quick   # shorter timing windows</code></pre></div>
+
+<div class="pager"><a href="how-it-works.html"><span class="mono-label">Previous</span><strong>How it works</strong></a></div>
+</main><nav class="toc"><span class="mono-label">On this page</span></nav></div>
+<footer class="foot"><span>MacGym. Robot learning for Apple Silicon. MIT licensed.</span><span class="links"><a href="quickstart.html">Docs</a><a href="api.html">API</a><a href="benchmarks.html">Benchmarks</a><a href="https://github.com/shlokmadhekar/macgym">GitHub</a></span></footer>
+<script src="site.js"></script></body></html>

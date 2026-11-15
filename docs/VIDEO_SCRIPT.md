@@ -1,29 +1,29 @@
-# MacGym demo video (90 s)
+# MacGym demo video (about 110 s)
 
-Format: 1080p, screen recordings captured with the server running on the actual M3 Pro, plus two real camera shots. Voiceover recorded separately, casual and confident, not rushed. Music: low, punchy electronic bed, ducks under voice. Burn in captions.
+Format: 1080p screen recordings on the actual M3 Pro, plus one real camera shot at the open. Voiceover recorded separately: casual, confident, not rushed. Low electronic music bed that ducks under the voice. Burned-in captions.
 
 Prep before recording:
-- `python3 -m macgym.server --port 8765`, browser full screen on `http://localhost:8765`, dark mode, notifications off.
-- Have a pre-trained walker checkpoint ready for the showcase beat so it looks good on the first take.
-- Charger plugged in at the start (needed for shot 2).
+- Local server running with the Playground open at `/playground`, browser full screen, notifications off.
+- Terminal with a large font, in the repo folder, venv active.
+- A trained walker checkpoint ready (`runs/walker.npz`) so the export beat works on the first take.
+- `web/bench.json` up to date. Every number on screen comes from it. Don't round up.
 
 | # | Time | Shot | On screen | Voiceover |
 |---|------|------|-----------|-----------|
-| 1 | 0:00 to 0:05 | **Real shot.** Close-up, MacBook closed on a desk. Hands open the lid, screen lights up. | Caption: "this is a normal MacBook." | "This is my laptop. Totally normal MacBook. M3 Pro, 18 gigs." |
-| 2 | 0:05 to 0:12 | Screen: quick scroll past the Isaac Lab, MuJoCo Warp and ManiSkill install pages, each with the "NVIDIA GPU required" line highlighted. | Red underline on each "NVIDIA" / "CUDA". | "If you want to train robots with RL right now, basically every simulator wants an NVIDIA GPU. Isaac Lab, MuJoCo Warp, ManiSkill. All of them." |
-| 3 | 0:12 to 0:18 | Screen: text card. | "jax-metal: dead (Jan 2026)" / "best Mac port: ~5.2k steps/s" | "The Mac options are kind of dead. Best port I found does about five thousand steps a second. That's not enough to train anything." |
-| 4 | 0:18 to 0:24 | Screen: terminal, type `python3 -m macgym.server --port 8765`, hit enter, cut to browser loading. | MacGym logo appears in the viewer. | "So I built MacGym. Robot physics and RL that run entirely on the Mac's GPU." |
-| 5 | 0:24 to 0:34 | Screen: viewer. Pick "walker", drag the slider to 4,096, press Start. Grid of walkers spawns and starts flailing. | Big env-steps/sec counter climbs. | "Pick a robot, pick how many. Four thousand walkers. Hit start." |
-| 6 | 0:34 to 0:44 | Screen: slow push in on the counter, then on the "N robots" label. | Counter reads 6.3M at 16,384. | "That number is real. Millions of physics steps a second, on a laptop, with no NVIDIA anything." |
-| 7 | 0:44 to 0:52 | **Real shot.** Hand unplugs the MagSafe charger from the MacBook. Cut straight back to the screen, still training. | Caption: "on battery." | "And yeah, it's not plugged into anything. Still training." |
-| 8 | 0:52 to 1:04 | Screen: time-lapse of the reward chart going up, walkers going from falling over to actually walking. Toggle Showcase. | Reward curve highlighted. | "This is PPO, also running on the GPU. Watch them figure out how to walk. Few minutes ago these things couldn't stand up." |
-| 9 | 1:04 to 1:12 | Screen: switch to the arm env, drag the target around, thousands of arms chase the cursor. | Cursor trail visible. | "You can mess with them live. Drag the target and every arm goes after it." |
-| 10 | 1:12 to 1:22 | Screen: benchmark table from `bench.json` (viewer bench panel). Animate the bars. | "37.4x vs MuJoCo on every CPU core" plus small caveat text: "2D simplified dynamics vs MuJoCo full 3D" | "Here's the honest benchmark. Way more experience per second than MuJoCo on every core of the same laptop. Different physics, so read the fine print, but that's the point. The GPU was just sitting there." |
-| 11 | 1:22 to 1:30 | Screen: wide shot of the full grid in showcase mode, then fade to title card. | "MacGym. Elevate the Ordinary." + repo URL | "Your laptop is already a robotics supercomputer. MacGym just turns it on." |
+| 1 | 0:00 to 0:10 | Screen: Playground. Code editor on the left with the tripod robot file, empty track on the right. Cursor changes a leg's `end=` coordinate, the robot preview on the right updates. | Caption: "this is a robot. it's 15 lines of python." | "This is a robot. The whole thing is like fifteen lines of Python. I'm gonna make its back leg longer." |
+| 2 | 0:10 to 0:18 | Press **Run**. The track fills with thousands of faint tripods, all flopping at 0 m. | Footer: "4,096 robots in parallel · Apple M3 Pro GPU" | "Hit run. That's not one robot. That's four thousand and ninety six copies of it, on my laptop's GPU." |
+| 3 | 0:18 to 0:36 | Time-lapse of training: robots spread down the runway, orange best robot pulls ahead, avg and best markers move right, progress chart climbs, generation replays fill in (0:00, 0:10, 0:30, 1:00). | Small "4x" badge in the corner while sped up. | "Every one of them is trying something slightly different. PPO, also on the GPU, keeps what works. A minute ago these things couldn't move. Now look at them." |
+| 4 | 0:36 to 0:44 | **Real shot.** Close-up of the MacBook on a desk, Playground still running on the screen. | Caption: "a normal MacBook." | "And this is just a normal MacBook. No NVIDIA card, no cloud. The laptop I already had." |
+| 5 | 0:44 to 0:56 | Screen: terminal. Type `git clone`, `cd macgym`, `pip install -e .`. Install finishes. | Caption: "pip install -e ." | "So I turned it into a framework. It's called MacGym. Clone it, pip install, done." |
+| 6 | 0:56 to 1:10 | Terminal: `macgym new tripod`, then `macgym train tripod.py --envs 4096`. Progress lines tick by with distance in metres and steps per second. | Highlight the steps/s column. | "There's a CLI. New scaffolds a robot, train trains it. It tells you how far your robot walks in actual metres, not some random reward number." |
+| 7 | 1:10 to 1:20 | Terminal: `macgym export runs/walker.npz --format coreml`. Cut to Finder showing `walker.mlpackage`. | Caption: "CoreML. ONNX too." | "When you like it, export it. CoreML so it runs in a real Mac or iPhone app, or ONNX for anything else." |
+| 8 | 1:20 to 1:36 | Screen: docs site Benchmarks page. Slow scroll down the table, pause on the caveat box. | "3.0M env-steps/s · 4,096 walkers" and "21x vs MuJoCo on all 11 CPU cores", with small text "2D simplified physics vs MuJoCo full 3D" | "Here's the honest benchmark. Three million steps a second with four thousand walkers, about twenty one times what MuJoCo gets on every CPU core of the same laptop. Different physics, ours is 2D, so read the fine print. But that's the point. The GPU was just sitting there." |
+| 9 | 1:36 to 1:50 | Screen: back to the Playground, swap the preset to worm, press Run, a field of worms starts wiggling forward. Fade to title card. | Title card: "MacGym. Robot learning, on the Mac you already own." Repo URL underneath. Theme line: "Elevate the Ordinary." | "Your laptop is already a robot-learning rig. MacGym just turns it on." |
 
 ## Shot notes
 
-- Keep every screen shot moving (slow zoom or pan). No static frames over 3 seconds.
-- Shot 6 and 10 numbers come straight from `web/bench.json`. Don't round up.
-- Shot 7: film the unplug in one take, then cut on the motion so it feels continuous. Make sure the menu bar battery icon is visible in the screen shot right after.
-- If walker training isn't impressive in real time, record a long take and speed it up in shot 8, with a small "4x" badge in the corner so it stays honest.
+- Keep every screen shot moving with a slow zoom or pan. No static frame over 3 seconds.
+- Shot 3: record one long real take and speed it up. Keep the "4x" badge visible the whole time it's sped up so it stays honest.
+- Shots 6 and 8: numbers come straight from the terminal and `web/bench.json`. If a run comes out lower on the day, use the real number.
+- Shot 1: zoom the editor so the code is readable on a phone screen.
+- If the Run in shot 2 takes a beat to start, cut on the button press so it feels instant, but never fake the training footage.

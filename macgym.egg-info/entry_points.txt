@@ -1,0 +1,2 @@
+[console_scripts]
+macgym = macgym.cli:main

@@ -242,7 +242,7 @@ def _num(v):
     return v
 
 
-LOCO_ENVS = ("walker", "cheetah", "hopper")
+LOCO_ENVS = ("walker", "cheetah", "hopper", "playground")
 REPLAY_SCHEDULE = (10.0, 30.0, 60.0, 120.0, 240.0)  # training wall seconds
 REPLAY_MAX_STEPS = 400
 REPLAY_EVERY = 2
@@ -493,6 +493,8 @@ class Trainer:
 
     # -- command handlers (trainer thread) --
     def _handle(self, cmd, msg):
+        if cmd == "run_code":  # playground
+            return trainer_run_code(self, msg)
         if cmd == "start":
             name = msg.get("env", "cartpole")
             n = int(msg.get("num_envs", 4096))
@@ -586,7 +588,7 @@ class Trainer:
         self.run_t0 = None
         self.replay_env = None
         try:
-            if not isinstance(self.env, StubEnv):
+            if not isinstance(self.env, StubEnv) and self.env_name != PLAYGROUND_ENV:  # playground builds its own
                 self.replay_env = make_env(self.env_name, 1)
         except Exception:
             traceback.print_exc()
@@ -690,6 +692,179 @@ class Trainer:
 
 
 # ---------------------------------------------------------------------------
+# Playground: run_code / preview_code (web/playground.html)
+# ---------------------------------------------------------------------------
+PLAYGROUND_ENV = "playground"
+PLAYGROUND_FILE = "<robot.py>"
+_BLOCKED_BUILTINS = ("open", "exec", "eval", "compile", "input", "breakpoint", "exit", "quit", "help")
+
+
+def _playground_builtins():
+    import builtins
+    b = dict(vars(builtins))
+    for k in _BLOCKED_BUILTINS:
+        b.pop(k, None)
+    return b
+
+
+def exec_robot_code(code):
+    """Exec a robot file in a fresh namespace with `mg` preloaded. Returns the namespace."""
+    import macgym as mg
+    compiled = compile(code, PLAYGROUND_FILE, "exec")
+    ns = {"__name__": "__playground__", "__builtins__": _playground_builtins(), "mg": mg}
+    exec(compiled, ns)
+    if "make_env" not in ns and ("robot" not in ns or "task" not in ns):
+        missing = [k for k in ("robot", "task") if k not in ns]
+        raise NameError(f"define {' and '.join(missing)} (or def make_env(num_envs))")
+    return ns
+
+
+def code_error(e):
+    """User-facing error message with the line in the robot file that caused it."""
+    line = None
+    if isinstance(e, SyntaxError) and e.filename == PLAYGROUND_FILE:
+        line = e.lineno
+        msg = f"SyntaxError: {e.msg}"
+    else:
+        for fr in traceback.extract_tb(e.__traceback__):
+            if fr.filename == PLAYGROUND_FILE:
+                line = fr.lineno
+        msg = f"{type(e).__name__}: {e}"
+    return {"type": "error", "message": msg, "line": line, "source": "code"}
+
+
+def _vec2(v):
+    a = np.asarray(v, np.float64).ravel()
+    return float(a[0]), float(a[1])
+
+
+def robot_capsules(robot):
+    """Rest-pose capsules [[x1, y1, x2, y2, r], ...], colors and joint count of an mg.Robot."""
+    for name in ("rest_capsules", "capsules"):
+        fn = getattr(robot, name, None)
+        if callable(fn):
+            caps = np.asarray(fn(), np.float64).reshape(-1, 5)
+            break
+    else:
+        bodies = getattr(robot, "bodies", None) or getattr(robot, "_bodies", [])
+        rows = []
+        for b in bodies:
+            b = getattr(b, "capsule", b)
+            p1 = next(getattr(b, k) for k in ("start", "p1") if hasattr(b, k))
+            p2 = next(getattr(b, k) for k in ("end", "p2") if hasattr(b, k))
+            rows.append([*_vec2(p1), *_vec2(p2), float(getattr(b, "radius"))])
+        caps = np.asarray(rows, np.float64).reshape(-1, 5)
+    joints = getattr(robot, "joints", None) or getattr(robot, "_joints", [])
+    joint_pts = []
+    for j in joints:
+        if isinstance(j, dict):
+            at = j.get("at")
+        else:
+            at = next((getattr(j, k) for k in ("at", "point") if hasattr(j, k)), None)
+        if at is not None:
+            joint_pts.append([round(v, 4) for v in _vec2(at)])
+    colors = getattr(robot, "colors", None)
+    try:
+        colors = colors() if callable(colors) else colors
+        colors = [str(c) for c in colors] if colors is not None else None
+    except Exception:
+        colors = None
+    return caps, colors, len(joints), joint_pts
+
+
+def preview_code(code):
+    """Exec the code (no simulation) and return the robot's rest pose for the editor preview."""
+    t0 = time.perf_counter()
+    try:
+        ns = exec_robot_code(code)
+        robot = ns.get("robot")
+        if robot is None:
+            return {"type": "preview", "capsules": [], "colors": None, "bodies": 0, "joints": 0,
+                    "note": "make_env() files have no static preview"}
+        caps, colors, nj, jpts = robot_capsules(robot)
+    except Exception as e:
+        return {**code_error(e), "phase": "preview"}
+    if not len(caps):
+        return {"type": "error", "message": "robot has no bodies: add one with robot.body(...)", "line": None,
+                "source": "code", "phase": "preview"}
+    return {"type": "preview", "name": getattr(robot, "name", None),
+            "capsules": np.round(caps, 4).tolist(), "colors": colors, "joint_points": jpts,
+            "bodies": int(len(caps)), "joints": int(nj),
+            "ms": round((time.perf_counter() - t0) * 1000.0, 1)}
+
+
+def _build_playground_env(ns, num_envs):
+    import macgym as mg
+    if "make_env" in ns:
+        return ns["make_env"](num_envs)
+    return mg.make(ns["robot"], ns["task"], num_envs=num_envs)
+
+
+def trainer_run_code(tr, msg):
+    """Trainer-thread handler for {"cmd":"run_code"}: build the env from user code, start training."""
+    import mlx.core as mx
+    log = lambda line, level="info": tr.emit({"type": "log", "line": line, "level": level})
+    code = msg.get("code") or ""
+    n = max(1, min(int(msg.get("num_envs", 4096)), 65536))
+    tr.render_envs = max(1, min(int(msg.get("render_envs", MAX_RENDER_ENVS)), MAX_RENDER_ENVS, n))
+    tr.state = "idle"
+    tr.env = tr.ppo = None
+    tr.emit({"type": "status", "state": "building", "env": PLAYGROUND_ENV, "num_envs": n,
+             "render_envs": tr.render_envs, "checkpoint": False})
+    t0 = time.perf_counter()
+    try:
+        ns = exec_robot_code(code)
+        robot = ns.get("robot")
+        nb = nj = None
+        if robot is not None:
+            caps, _, nj, _ = robot_capsules(robot)
+            nb = len(caps)
+        log(f"build ok · {getattr(robot, 'name', 'robot')} · {nb} bodies, {nj} joints · {(time.perf_counter() - t0) * 1000:.0f} ms", "ok")
+        t1 = time.perf_counter()
+        env = _build_playground_env(ns, n)
+        env.reset()
+        out = env.step(mx.zeros((n, int(env.act_dim))))
+        mx.eval(out[0], out[1])
+        nb = nb if nb is not None else getattr(getattr(env, "model", None), "B", "?")
+        nj = nj if nj is not None else getattr(getattr(env, "model", None), "J", "?")
+        log(f"compiled Metal kernel for {nb} bodies / {nj} joints in {time.perf_counter() - t1:.2f} s", "ok")
+    except Exception as e:
+        traceback.print_exc()
+        err = code_error(e)
+        tr.emit(err)
+        log(err["message"] + (f"  (line {err['line']})" if err["line"] else ""), "error")
+        tr.emit(tr.status())
+        return
+    try:
+        sim_sps, nsteps = measure_sim_sps(env)
+        tr.sim_info = {"type": "info", "sim_sps": round(sim_sps, 1), "env": PLAYGROUND_ENV, "num_envs": n,
+                       "steps": nsteps, "note": "sim-only: random actions, no policy, no PPO update"}
+        tr.emit(tr.sim_info)
+        log(f"simulating {n:,} robots at {sim_sps / 1e6:.2f}M steps/s (raw physics, no policy)")
+    except Exception as e:
+        traceback.print_exc()
+        log(f"sim benchmark skipped: {e}", "warn")
+    env.reset()
+    tr.ppo = make_trainer(env, PLAYGROUND_ENV)
+    tr.env, tr.env_name, tr.num_envs = env, PLAYGROUND_ENV, n
+    tr.obs = None
+    tr._new_run()
+    try:
+        tr.replay_env = _build_playground_env(ns, 1)
+    except Exception:
+        traceback.print_exc()
+        tr.replay_env = None
+    tr.emit({"type": "status", "state": "starting", "env": PLAYGROUND_ENV, "num_envs": n,
+             "render_envs": tr.render_envs, "checkpoint": False})
+    tr._push_frame(force=True)
+    tr._replay("0:00", 0.0)
+    tr.run_t0 = time.time()
+    tr.state = "training"
+    log(f"training {n:,} copies with PPO on the GPU")
+    tr.emit(tr.status())
+
+
+# ---------------------------------------------------------------------------
 # aiohttp app
 # ---------------------------------------------------------------------------
 class Server:
@@ -773,6 +948,10 @@ class Server:
                     await ws.send_str(json.dumps({"type": "bench", "data": data}))
                 elif cmd == "status":
                     await ws.send_str(json.dumps(self.trainer.status()))
+                elif cmd == "run_code":  # playground
+                    self.trainer.submit("run_code", msg)
+                elif cmd == "preview_code":  # playground
+                    await ws.send_str(json.dumps(await self.preview(msg)))
                 elif cmd in ("start", "stop", "showcase", "set_target", "save", "load", "render"):
                     self.trainer.submit(cmd, msg)
                 else:
@@ -782,6 +961,26 @@ class Server:
         finally:
             self.clients.discard(ws)
         return ws
+
+    async def preview(self, msg):
+        loop = asyncio.get_running_loop()
+        try:
+            r = await asyncio.wait_for(loop.run_in_executor(None, preview_code, msg.get("code") or ""), 3.0)
+        except asyncio.TimeoutError:
+            r = {"type": "error", "message": "preview timed out (code ran > 3 s)", "line": None, "phase": "preview"}
+        if msg.get("seq") is not None:
+            r["seq"] = msg["seq"]
+        return r
+
+    async def playground(self, request):
+        return web.FileResponse(os.path.join(WEB_DIR, "playground.html"))
+
+    async def preset(self, request):
+        from macgym import presets
+        src = presets.source(request.match_info["name"])
+        if src is None:
+            raise web.HTTPNotFound()
+        return web.Response(text=src, content_type="text/x-python")
 
     async def index(self, request):
         p = os.path.join(WEB_DIR, "index.html")
@@ -802,11 +1001,43 @@ class Server:
         app = web.Application()
         app.router.add_get("/", self.index)
         app.router.add_get("/ws", self.ws_handler)
+        app.router.add_get("/playground", self.playground)
+        app.router.add_get("/presets/{name}", self.preset)
+        app.router.add_get("/docs", lambda r: web.HTTPFound("/docs/"))
+        app.router.add_get("/docs/", lambda r: web.FileResponse(os.path.join(SITE_DIR, "index.html")))
+        if os.path.isdir(SITE_DIR):
+            app.router.add_static("/docs/", SITE_DIR, show_index=False)
         os.makedirs(WEB_DIR, exist_ok=True)
         app.router.add_static("/", WEB_DIR, show_index=False)
         app.on_startup.append(self.on_startup)
         app.on_cleanup.append(self.on_cleanup)
         return app
+
+
+SITE_DIR = os.path.join(os.path.dirname(WEB_DIR), "site")
+
+
+def view(target=None, policy=None, port=8765, num_envs=4096, open_browser=True, **kwargs):
+    """Start the live viewer. target: builtin env name, path to a robot .py file, or None.
+
+    A robot file opens in the Playground and starts training immediately; a builtin trains in the viewer.
+    """
+    srv = Server()
+    page = "/"
+    if isinstance(target, str) and target.endswith(".py"):
+        with open(target) as f:
+            srv.trainer.submit("run_code", {"code": f.read(), "num_envs": num_envs})
+        page = "/playground"
+    elif isinstance(target, str):
+        srv.trainer.submit("start", {"env": target, "num_envs": num_envs, "render_envs": DEFAULT_RENDER_ENVS})
+    elif target is not None:
+        raise TypeError("mg.view takes a builtin name or a robot .py path (see `macgym new`)")
+    url = f"http://localhost:{port}{page}"
+    print(f"[macgym] viewer on {url}", flush=True)
+    if open_browser:
+        import subprocess, threading
+        threading.Timer(1.0, lambda: subprocess.Popen(["open", url])).start()
+    web.run_app(srv.make_app(), host="0.0.0.0", port=port, print=None)
 
 
 def main():
@@ -817,7 +1048,10 @@ def main():
     ap.add_argument("--num-envs", type=int, default=4096)
     ap.add_argument("--render-envs", type=int, default=DEFAULT_RENDER_ENVS)
     ap.add_argument("--autostart", action="store_true")
+    ap.add_argument("--file", default=None, help="robot .py file to build and train on startup (opens in Playground)")
     args = ap.parse_args()
+    if args.file:
+        return view(args.file, port=args.port, num_envs=args.num_envs, open_browser=False)
     srv = Server()
     if args.autostart:
         srv.trainer.submit("start", {"env": args.env, "num_envs": args.num_envs, "render_envs": args.render_envs})

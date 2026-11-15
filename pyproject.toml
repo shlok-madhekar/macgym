@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macgym"
+version = "0.3.0"
+description = "Robot-learning framework for Apple Silicon: define a robot in Python, train thousands of copies on the Mac GPU with MLX, export to CoreML."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["mlx", "numpy", "aiohttp"]
+
+[project.optional-dependencies]
+gym = ["gymnasium>=1.0"]
+export = ["onnx", "onnxruntime", "coremltools"]
+dev = ["pytest", "gymnasium>=1.0", "onnx", "onnxruntime", "coremltools"]
+
+[project.scripts]
+macgym = "macgym.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["macgym*"]
+
+[tool.setuptools.package-data]
+macgym = ["templates/*.py"]

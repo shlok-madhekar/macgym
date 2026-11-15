@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLI · MacGym</title>
+<meta name="description" content="MacGym is a robot-learning framework for Apple Silicon. Define a robot in Python, train thousands of copies on your Mac's GPU, export the policy to CoreML.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,&lt;svg width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 20 20&quot; aria-hidden=&quot;true&quot;&gt;&lt;rect x=&quot;0.5&quot; y=&quot;0.5&quot; width=&quot;19&quot; height=&quot;19&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot;/&gt;&lt;path d=&quot;M4 15 L8 6 L10 11 L12 6 L16 15&quot; fill=&quot;none&quot; stroke=&quot;%23121212&quot; stroke-width=&quot;1.6&quot; stroke-linecap=&quot;square&quot;/&gt;&lt;rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;3&quot; height=&quot;3&quot; fill=&quot;%23FF4D00&quot;/&gt;&lt;/svg&gt;">
+</head><body>
+<header class="hdr">
+  <a class="wordmark" href="index.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="19" fill="none" stroke="#121212"/><path d="M4 15 L8 6 L10 11 L12 6 L16 15" fill="none" stroke="#121212" stroke-width="1.6" stroke-linecap="square"/><rect x="14" y="3" width="3" height="3" fill="#FF4D00"/></svg>MacGym <span class="ver">v0.3</span></a>
+  <nav><a href="index.html" class="">Overview</a><a href="quickstart.html" class="on">Docs</a><a href="examples.html" class="">Examples</a><a href="benchmarks.html" class="">Benchmarks</a></nav>
+  <div class="right">
+    <a href="https://github.com/shlokmadhekar/macgym"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    <a class="btn" href="/playground">Open Playground</a>
+  </div>
+</header>
+<div class="docs"><aside class="side"><h6 class="mono-label">Get started</h6><a href="quickstart.html" class="">Quickstart</a><a href="quickstart.html#install" class="sub ">Install</a><a href="quickstart.html#first-robot" class="sub ">Your first robot</a><a href="quickstart.html#train" class="sub ">Train and watch</a><a href="quickstart.html#export" class="sub ">Export</a><h6 class="mono-label">Reference</h6><a href="api.html" class="">Python API</a><a href="cli.html" class="on">CLI</a><h6 class="mono-label">Guides</h6><a href="examples.html" class="">Examples</a><a href="how-it-works.html" class="">How it works</a><a href="benchmarks.html" class="">Benchmarks</a><h6 class="mono-label">Tools</h6><a href="/playground" class="">Playground</a><a href="https://github.com/shlokmadhekar/macgym" class="">GitHub</a></aside>
+<main class="content"><div class="crumb mono-label">Reference</div><h1>CLI</h1><p class="lede">Five commands: scaffold, train, view, export, benchmark.</p>
+
+<p>Installing the package adds a <code>macgym</code> command. Robot files must define <code>robot</code> and <code>task</code> at module level, or a <code>make_env(num_envs)</code> function. Anywhere a file is accepted you can also pass a built-in name: <code>walker</code>, <code>cheetah</code>, <code>hopper</code>, <code>tripod</code>, <code>worm</code>.</p>
+<h2 id="train">macgym train</h2>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym train &lt;file.py | builtin&gt; [--envs 4096] [--iters 200] [--save PATH]</code></pre></div>
+<p>Headless PPO. Prints one progress line per interval in human units: distance in metres, steps per second, elapsed time.</p>
+<table class="t"><thead><tr><th>Flag</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>--envs</code></td><td>4096</td><td>Number of robots simulated in parallel.</td></tr>
+<tr><td><code>--iters</code></td><td>200</td><td>PPO iterations.</td></tr>
+<tr><td><code>--save</code></td><td>runs/&lt;name&gt;.npz</td><td>Checkpoint path.</td></tr>
+</tbody></table>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym train walker --envs 16384
+$ macgym train my_robot.py --iters 400 --save runs/my_robot.npz</code></pre></div>
+<h2 id="view">macgym view</h2>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym view [&lt;file.py | builtin&gt;]</code></pre></div>
+<p>Starts the local server and opens the viewer in your browser. Every robot is drawn on one runway, the best in orange, with a progress chart and replays of earlier generations.</p>
+<h2 id="export">macgym export</h2>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym export &lt;ckpt.npz&gt; --format onnx | coreml</code></pre></div>
+<p>Writes <code>.onnx</code> or <code>.mlpackage</code> next to the checkpoint. Requires the <code>[export]</code> extra.</p>
+<h2 id="new">macgym new</h2>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym new &lt;name&gt;</code></pre></div>
+<p>Scaffolds <code>&lt;name&gt;.py</code> from a template with a two-leg robot and a forward-velocity task, ready for <code>macgym train</code>.</p>
+<h2 id="bench">macgym bench</h2>
+<div class="codeblock"><pre><code data-lang="sh">$ macgym bench</code></pre></div>
+<p>Runs <code>scripts/bench.py</code>: MLX on the GPU vs CPU MuJoCo (one thread, and one process per core). Writes <code>web/bench.json</code>. See <a class="ln" href="benchmarks.html">Benchmarks</a>.</p>
+
+<div class="pager"><a href="api.html"><span class="mono-label">Previous</span><strong>Python API</strong></a><a class="next" href="examples.html"><span class="mono-label">Next</span><strong>Examples</strong></a></div>
+</main><nav class="toc"><span class="mono-label">On this page</span></nav></div>
+<footer class="foot"><span>MacGym. Robot learning for Apple Silicon. MIT licensed.</span><span class="links"><a href="quickstart.html">Docs</a><a href="api.html">API</a><a href="benchmarks.html">Benchmarks</a><a href="https://github.com/shlokmadhekar/macgym">GitHub</a></span></footer>
+<script src="site.js"></script></body></html>

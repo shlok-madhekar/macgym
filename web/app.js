@@ -1,9 +1,8 @@
 // MacGym viewer v2. Talks to ws://<host>/ws (CONTRACT.md §3 + REDESIGN.md), or a fake server with ?demo=1.
 (function () {
   "use strict";
-  const C = { paper: "#F3F0E8", ink: "#121212", rule: "#D9D3C7", muted: "#6B665C", accent: "#FF4D00", old: "#8A94A6", faint: "#B4AD9F" };
-  const SANS = '"Inter Tight", "Helvetica Neue", Arial, sans-serif';
-  const MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+  const T = window.MacGymTrack; // shared drawing (track.js)
+  const { C, fit, strokeRobots, strokeOne, mono, tracked, dashed, label } = T;
   const REPLAY_AT = [0, 10, 30, 60, 120, 240];
   const LOCO = new Set(["walker", "cheetah"]);
   const META = {
@@ -244,14 +243,6 @@
   }
 
   // ---------------- canvases ----------------
-  function fit(cv) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-    const w = cv.clientWidth, h = cv.clientHeight;
-    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
-    const ctx = cv.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return { ctx, w, h };
-  }
   const trackCv = $("track"), chartCv = $("chart");
 
   // Interpolated capsule buffer for the current render time.
@@ -274,50 +265,6 @@
     return f;
   }
 
-  function strokeRobots(ctx, f, buf, X, Y, s, alpha, color, skip) {
-    const per = f.K * 5;
-    ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.globalAlpha = alpha;
-    for (let i = 0; i < f.R; i++) {
-      if (i === skip) continue;
-      const o = i * per;
-      for (let k = 0; k < f.K; k++) {
-        const q = o + k * 5;
-        ctx.lineWidth = clamp(buf[q + 4] * 2 * s * 0.45, 1, 3.2);
-        ctx.beginPath(); ctx.moveTo(X(buf[q]), Y(buf[q + 1])); ctx.lineTo(X(buf[q + 2]), Y(buf[q + 3])); ctx.stroke();
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-  function strokeOne(ctx, buf, o, K, X, Y, s, color, joints) {
-    ctx.lineCap = "round"; ctx.strokeStyle = color;
-    for (let k = 0; k < K; k++) {
-      const q = o + k * 5;
-      ctx.lineWidth = clamp(buf[q + 4] * 2 * s * 0.6, 1.6, 4.5);
-      ctx.beginPath(); ctx.moveTo(X(buf[q]), Y(buf[q + 1])); ctx.lineTo(X(buf[q + 2]), Y(buf[q + 3])); ctx.stroke();
-    }
-    if (joints) {
-      for (let k = 0; k < K; k++) {
-        const q = o + k * 5;
-        for (const [x, y] of [[buf[q], buf[q + 1]], [buf[q + 2], buf[q + 3]]]) {
-          ctx.fillStyle = C.paper; ctx.beginPath(); ctx.arc(X(x), Y(y), 2.6, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(X(x), Y(y), 1.5, 0, Math.PI * 2); ctx.fill();
-        }
-      }
-    }
-  }
-  function mono(ctx, size, color) { ctx.font = `500 ${size}px ${MONO}`; ctx.fillStyle = color; }
-  function tracked(ctx, text, x, y, align, spacing = 0.8) {
-    ctx.letterSpacing = spacing + "px";
-    ctx.textAlign = align || "left"; ctx.fillText(text, x, y); ctx.letterSpacing = "0px";
-  }
-  function dashed(ctx, x, y1, y2, color, dash) {
-    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash(dash || [4, 4]);
-    ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, y1); ctx.lineTo(Math.round(x) + 0.5, y2); ctx.stroke(); ctx.restore();
-  }
-  function label(ctx, text, x, y, color, align, weight, size) {
-    ctx.font = `${weight || 600} ${size || 14}px ${SANS}`; ctx.fillStyle = color; ctx.textAlign = align || "left"; ctx.fillText(text, x, y);
-  }
-
   function drawTrack(now, dt) {
     const { ctx, w, h } = fit(trackCv);
     ctx.clearRect(0, 0, w, h);
@@ -329,90 +276,7 @@
   }
 
   function drawLoco(ctx, w, h, pad, f, dt) {
-    const groundY = Math.round(h - 64) + 0.5;
-    // distances
-    let mean = 0, max = 0, bi = f ? f.best : -1;
-    if (f && f.dist) {
-      for (let i = 0; i < f.R; i++) { mean += lerpDist[i]; if (lerpDist[i] > max) max = lerpDist[i]; }
-      mean /= f.R;
-      if (bi >= 0) max = Math.max(max, lerpDist[bi]);
-      S.record = Math.max(S.record, max);
-    }
-    // camera: 0 m at left; furthest robot + 15% fits. Grows quickly, shrinks slowly.
-    S.cam.targetRange = Math.max(8, max * 1.15 + 1);
-    const k = S.cam.targetRange > S.cam.range ? 2.2 : 0.35;
-    S.cam.range += (S.cam.targetRange - S.cam.range) * (1 - Math.exp(-k * dt));
-    const usableW = w - pad * 2;
-    const topSpace = 92; // room for marker labels
-    const robotH = S.env === "cheetah" ? 1.1 : 1.65;
-    const s = Math.min(usableW / (S.cam.range + 0.7), (groundY - topSpace) / robotH * 0.62);
-    const x0 = pad + 0.55 * s;
-    const X = (x) => x0 + x * s, Y = (y) => groundY - y * s;
-    const visibleM = (w - pad - x0) / s;
-
-    // ground + ruler
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pad, groundY); ctx.lineTo(w - pad, groundY); ctx.stroke();
-    const labelEvery = s > 60 ? 1 : s > 22 ? 5 : s > 9 ? 10 : 20;
-    const minorEvery = s > 6 ? 1 : 5;
-    for (let m = 0; m <= visibleM + 1e-6; m += minorEvery) {
-      const x = Math.round(X(m)) + 0.5;
-      const major = m % labelEvery === 0;
-      ctx.strokeStyle = major ? C.ink : C.muted;
-      ctx.beginPath(); ctx.moveTo(x, groundY); ctx.lineTo(x, groundY + (major ? 9 : 4)); ctx.stroke();
-      if (major) { mono(ctx, 11, m === 0 ? C.ink : C.muted); tracked(ctx, `${m} m`, x, groundY + 25, "center", 0.4); }
-    }
-    if (!S.avgMarks.length) { mono(ctx, 10.5, C.muted); tracked(ctx, "START", X(0), groundY + 43, "center"); }
-
-    if (!f) return;
-    // Figures keep a legible size even when the runway is 100 m long: scale each body about its own torso.
-    const sb = Math.max(s, (groundY - topSpace) / robotH * 0.42);
-    if (sb > s * 1.01) {
-      const g = sb / s, per = f.K * 5;
-      for (let i = 0; i < f.R; i++) {
-        const o = i * per, ax = lerpBuf[o];
-        for (let q = o; q < o + per; q += 5) {
-          lerpBuf[q] = ax + (lerpBuf[q] - ax) * g; lerpBuf[q + 1] *= g;
-          lerpBuf[q + 2] = ax + (lerpBuf[q + 2] - ax) * g; lerpBuf[q + 3] *= g; lerpBuf[q + 4] *= g;
-        }
-      }
-    }
-    // crowd
-    strokeRobots(ctx, f, lerpBuf, X, Y, s, S.frame.R > 128 ? 0.13 : 0.22, C.ink, bi);
-
-    // markers
-    const mTop = Math.max(58, groundY - robotH * Math.max(s, (groundY - topSpace) / robotH * 0.42) - 64);
-    // where the crowd's average stood at each generation moment, along the ruler
-    for (const mk of S.avgMarks) {
-      const x = Math.round(X(mk.x)) + 0.5;
-      ctx.strokeStyle = C.old; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(x, groundY + 34); ctx.lineTo(x, groundY + 46); ctx.stroke();
-    }
-    S.avgMarks.forEach((mk, i) => {
-      const next = S.avgMarks[i + 1];
-      if (next && X(next.x) - X(mk.x) < 34) return;
-      mono(ctx, 9.5, C.old); tracked(ctx, mk.label, X(mk.x) + 4, groundY + 46, "left", 0.2);
-    });
-    S.liveMean = mean;
-    const bestNow = f.dist && bi >= 0 ? lerpDist[bi] : max;
-    if (S.record > 0.3 && S.record - bestNow > 0.4) {
-      const xr = X(S.record);
-      dashed(ctx, xr, mTop + 30, groundY, C.old, [1, 3]);
-      mono(ctx, 10.5, C.old); tracked(ctx, `RECORD ${S.record.toFixed(1)} M`, xr + 6, mTop + 40, "left", 0.6);
-    }
-    if (f.dist) {
-      const xa = X(mean), xb = X(lerpDist[bi] ?? max);
-      dashed(ctx, xa, mTop + 8, groundY, C.ink, [4, 4]);
-      dashed(ctx, xb, mTop - 14, groundY, C.accent, []);
-      const avgTxt = `avg ${mean.toFixed(1)} m`, bestTxt = `best ${(lerpDist[bi] ?? max).toFixed(1)} m`;
-      // avoid overlap: avg label left of its line if lines are close
-      ctx.font = `600 14px ${SANS}`;
-      const close = Math.abs(xb - xa) < ctx.measureText(avgTxt).width + 20;
-      label(ctx, avgTxt, close ? xa - 6 : xa + 6, mTop + 18, C.ink, close ? "right" : "left");
-      label(ctx, bestTxt, xb + 6, mTop - 4, C.accent, "left");
-    }
-    // best robot on top
-    if (bi >= 0) strokeOne(ctx, lerpBuf, bi * f.K * 5, f.K, X, Y, s, C.accent, true);
+    T.drawLoco(ctx, w, h, pad, f, lerpBuf, lerpDist, S, dt, { robotH: S.env === "cheetah" ? 1.1 : 1.65 });
   }
 
   function drawArm(ctx, w, h, pad, f) {
@@ -484,64 +348,7 @@
   }
 
   // ---------------- progress chart ----------------
-  function niceStep(range, target) {
-    const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
-    return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p;
-  }
-  function drawChart(now) {
-    const { ctx, w, h } = fit(chartCv);
-    ctx.clearRect(0, 0, w, h);
-    const L = 44, R = 18, T = 14, B = 26;
-    const pw = w - L - R, ph = h - T - B;
-    const hist = S.hist;
-    const tMax = Math.max(60, hist.length ? hist[hist.length - 1][0] * 1.08 : 60);
-    let vMin = 0, vMax = 1;
-    for (const [, v] of hist) { vMax = Math.max(vMax, v); vMin = Math.min(vMin, v); }
-    vMax *= 1.12;
-    const xs = (t) => L + (t / tMax) * pw, ys = (v) => T + ph - ((v - vMin) / (vMax - vMin)) * ph;
-    // grid
-    const vStep = niceStep(vMax - vMin, 4);
-    ctx.lineWidth = 1;
-    mono(ctx, 10.5, C.muted);
-    for (let v = Math.ceil(vMin / vStep) * vStep; v <= vMax + 1e-9; v += vStep) {
-      const y = Math.round(ys(v)) + 0.5;
-      ctx.strokeStyle = v === 0 ? C.ink : C.rule;
-      ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(L + pw, y); ctx.stroke();
-      const txt = (vStep < 1 ? v.toFixed(1) : String(Math.round(v))) + (S.unit && v !== 0 ? "" : "");
-      mono(ctx, 10.5, C.muted); tracked(ctx, txt, L - 8, y + 3.5, "right", 0.2);
-    }
-    mono(ctx, 10.5, C.muted); tracked(ctx, (S.unit || "").toUpperCase(), L - 8, T - 2, "right");
-    const tStep = [10, 15, 30, 60, 120, 300, 600].find((st) => tMax / st <= 7) || 1200;
-    for (let t = 0; t <= tMax; t += tStep) {
-      const x = Math.round(xs(t)) + 0.5;
-      ctx.strokeStyle = C.ink;
-      ctx.beginPath(); ctx.moveTo(x, T + ph); ctx.lineTo(x, T + ph + 4); ctx.stroke();
-      mono(ctx, 10.5, C.muted); tracked(ctx, mmss(t), x, T + ph + 18, "center", 0.2);
-    }
-    ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.moveTo(L + 0.5, T); ctx.lineTo(L + 0.5, T + ph + 0.5); ctx.lineTo(L + pw, T + ph + 0.5); ctx.stroke();
-    // replay moments as faint vertical ticks
-    for (const r of S.replays) {
-      if (r.train_seconds == null || r.label === "now") continue;
-      const x = Math.round(xs(r.train_seconds)) + 0.5;
-      ctx.strokeStyle = C.rule; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, T + ph); ctx.stroke(); ctx.setLineDash([]);
-    }
-    if (hist.length < 1) {
-      mono(ctx, 11, C.faint); tracked(ctx, S.state === "idle" ? "PROGRESS APPEARS HERE ONCE TRAINING STARTS" : "WAITING FOR FIRST FINISHED EPISODES", L + pw / 2, T + ph / 2, "center");
-      return;
-    }
-    // light smoothing for a calm line
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.75; ctx.lineJoin = "round";
-    ctx.beginPath();
-    let sm = hist[0][1];
-    const pts = [];
-    for (let i = 0; i < hist.length; i++) { sm = i ? sm * 0.6 + hist[i][1] * 0.4 : sm; pts.push([xs(hist[i][0]), ys(sm)]); }
-    pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-    ctx.stroke();
-    const [lx, ly] = pts[pts.length - 1];
-    ctx.strokeStyle = C.accent; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
-    ctx.beginPath(); ctx.moveTo(L, Math.round(ly) + 0.5); ctx.lineTo(lx, Math.round(ly) + 0.5); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = C.accent; ctx.beginPath(); ctx.arc(lx, ly, 4.5, 0, Math.PI * 2); ctx.fill();
-  }
+  function drawChart(now) { T.drawChart(chartCv, S); }
 
   // ---------------- generations ----------------
   let genCells = [];
@@ -580,54 +387,10 @@
   }
   function drawGens(now) {
     for (const g of genCells) {
-      const { ctx, w, h } = fit(g.cv);
-      ctx.clearRect(0, 0, w, h);
-      const rep = g.rep, frames = rep.frames || [];
-      if (!frames.length) continue;
-      const K = rep.K || frames[0].length / 5;
-      const dtr = rep.dt || 0.04;
-      const hold = 1.0;
-      const dur = frames.length * dtr + hold;
-      const t = Math.max(0, (now - g.start) / 1000) % dur;
-      const fi = Math.min(frames.length - 1, Math.floor(t / dtr));
-      const fr = frames[fi];
+      const env = g.rep.env || S.env;
+      const kind = LOCO.has(env) ? "loco" : env === "arm" ? "arm" : "cart";
       const isNew = g.cv.closest(".gen").classList.contains("newest");
-      const col = isNew ? C.accent : C.ink;
-      if (LOCO.has(rep.env || S.env)) {
-        const gy = Math.round(h - 22) + 0.5;
-        const robotH = (rep.env || S.env) === "cheetah" ? 1.05 : 1.6;
-        const s = Math.min((gy - 22) / robotH, w / 2.6);
-        const camX = fr[0]; // follow torso
-        const X = (x) => w * 0.42 + (x - camX) * s, Y = (y) => gy - y * s;
-        ctx.strokeStyle = C.ink; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
-        const m0 = Math.floor(camX - w * 0.42 / s), m1 = Math.ceil(camX + w * 0.58 / s);
-        for (let m = Math.max(0, m0); m <= m1; m++) {
-          const x = Math.round(X(m)) + 0.5;
-          ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy + (m % 5 === 0 ? 6 : 3)); ctx.stroke();
-          if (m % 5 === 0) { mono(ctx, 9.5, C.muted); tracked(ctx, `${m}`, x, gy + 16, "center", 0); }
-        }
-        if (m0 <= 0) { ctx.fillStyle = C.muted; ctx.fillRect(Math.round(X(0)), gy - 6, 1, 6); }
-        strokeOne(ctx, fr, 0, K, X, Y, s, col, false);
-        mono(ctx, 9.5, C.muted); tracked(ctx, `${Math.max(0, camX).toFixed(1)} M`, w - 6, 14, "right", 0.4);
-      } else if ((rep.env || S.env) === "arm") {
-        const s = Math.min(w, h) / 2.4;
-        const cx = w / 2, cy = h / 2 + 4;
-        const X = (x) => cx + x * s, Y = (y) => cy - y * s;
-        ctx.strokeStyle = C.rule; ctx.beginPath(); ctx.arc(cx, cy, s, 0, Math.PI * 2); ctx.stroke();
-        const tg = rep.targets && (Array.isArray(rep.targets[fi]) ? rep.targets[fi] : rep.targets[0]);
-        if (tg) { ctx.strokeStyle = C.ink; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(X(tg[0]), Y(tg[1]), 4, 0, Math.PI * 2); ctx.stroke(); }
-        ctx.fillStyle = C.ink; ctx.fillRect(cx - 8, cy - 1.5, 16, 3);
-        strokeOne(ctx, fr, 0, K, X, Y, s, col, false);
-      } else {
-        const gy = Math.round(h - 22) + 0.5;
-        const s = Math.min((gy - 24) / 1.15, w / 2.6);
-        const X = (x) => w / 2 + x * s, Y = (y) => gy - y * s;
-        ctx.strokeStyle = C.ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
-        dashed(ctx, X(0), Y(1.1), gy, C.rule, [2, 3]);
-        strokeOne(ctx, fr, 0, K, X, Y, s, col, false);
-        mono(ctx, 9.5, C.muted); tracked(ctx, `${(fi * dtr).toFixed(1)} S`, w - 6, 14, "right", 0.4);
-      }
+      T.drawReplay(g.cv, g.rep, now, g.start, isNew, kind, { robotH: env === "cheetah" ? 1.05 : 1.6 });
     }
   }
 
