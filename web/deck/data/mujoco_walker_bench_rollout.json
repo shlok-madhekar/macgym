@@ -1,0 +1,320 @@
+{
+ "what": "env-steps/s on the SAME walker MJCF mirror (scripts/evidence/mj_walker.py); one env-step = one 0.02 s control step = 8 physics steps of 0.0025 s",
+ "ours_4096": 3638256.1123145567,
+ "ours_16384": 6751181.1811786555,
+ "mujoco_rollout_best": 165064.6310042389,
+ "mujoco_rollout_best_config": {
+  "nthread": 11,
+  "nbatch": 4096,
+  "ctrl_steps": 50,
+  "physics_steps": 400,
+  "session": "run1_mj_only"
+ },
+ "mujoco_rollout_peak_single_window": 183898.1926272321,
+ "mujoco_rollout_1thread": 29375.34083560417,
+ "threads": 11,
+ "speedup_vs_rollout_4096": 22.041403359276437,
+ "speedup_vs_rollout_16384": 40.90022883827416,
+ "speedup_vs_rollout_peak_window_4096": 19.78407759389689,
+ "speedup_vs_rollout_peak_window_16384": 36.71151458711467,
+ "mujoco_version": "4.0.1",
+ "machine": "Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2",
+ "rollout_runs": [
+  {
+   "nthread": 1,
+   "nbatch": 256,
+   "ctrl_steps": 50,
+   "physics_steps": 400,
+   "rates": [
+    28361.827512391945,
+    29375.34083560417,
+    29893.3443539356
+   ],
+   "median": 29375.34083560417,
+   "frac_fallen_at_end": 0.94921875,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 1,
+   "nbatch": 256,
+   "ctrl_steps": 50,
+   "physics_steps": 400,
+   "rates": [
+    29783.242563126812,
+    20920.7272197051,
+    27289.194305155095
+   ],
+   "median": 27289.194305155095,
+   "frac_fallen_at_end": 0.921875,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 5,
+   "nbatch": 1024,
+   "ctrl_steps": 125,
+   "physics_steps": 1000,
+   "rates": [
+    100362.30730207794,
+    116479.46280014011,
+    108465.13153193158
+   ],
+   "median": 108465.13153193158,
+   "frac_fallen_at_end": 0.9658203125,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 5,
+   "nbatch": 4096,
+   "ctrl_steps": 50,
+   "physics_steps": 400,
+   "rates": [
+    117749.96097963046,
+    96333.10369157014,
+    119956.4425739671
+   ],
+   "median": 117749.96097963046,
+   "frac_fallen_at_end": 0.92919921875,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 5,
+   "nbatch": 4096,
+   "ctrl_steps": 125,
+   "physics_steps": 1000,
+   "rates": [
+    96738.7865613238,
+    88137.27885631104,
+    106393.10985514705
+   ],
+   "median": 96738.7865613238,
+   "frac_fallen_at_end": 0.97021484375,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 5,
+   "nbatch": 16384,
+   "ctrl_steps": 25,
+   "physics_steps": 200,
+   "rates": [
+    117121.58688311484,
+    113107.09980389665,
+    116033.78067430748
+   ],
+   "median": 116033.78067430748,
+   "frac_fallen_at_end": 0.7701416015625,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 11,
+   "nbatch": 1024,
+   "ctrl_steps": 125,
+   "physics_steps": 1000,
+   "rates": [
+    152119.55719706425,
+    158992.05654187905,
+    183898.1926272321
+   ],
+   "median": 158992.05654187905,
+   "frac_fallen_at_end": 0.97265625,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 11,
+   "nbatch": 4096,
+   "ctrl_steps": 50,
+   "physics_steps": 400,
+   "rates": [
+    165064.6310042389,
+    176276.57691647697,
+    154097.46027194758
+   ],
+   "median": 165064.6310042389,
+   "frac_fallen_at_end": 0.935302734375,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 11,
+   "nbatch": 4096,
+   "ctrl_steps": 125,
+   "physics_steps": 1000,
+   "rates": [
+    164933.48483189632,
+    161138.50649314464,
+    168689.54784967698
+   ],
+   "median": 164933.48483189632,
+   "frac_fallen_at_end": 0.961181640625,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 11,
+   "nbatch": 16384,
+   "ctrl_steps": 25,
+   "physics_steps": 200,
+   "rates": [
+    100109.79551602081,
+    157773.739078336,
+    152107.37504409088
+   ],
+   "median": 152107.37504409088,
+   "frac_fallen_at_end": 0.767822265625,
+   "session": "run1_mj_only"
+  },
+  {
+   "nthread": 1,
+   "nbatch": 256,
+   "ctrl_steps": 50,
+   "physics_steps": 400,
+   "rates": [
+    27902.173453907675,
+    29635.1233093093,
+    29008.454734106348
+   ],
+   "median": 29008.454734106348,
+   "frac_fallen_at_end": 0.94921875,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 1,
+   "nbatch": 256,
+   "ctrl_steps": 50,
+   "physics_steps": 400,
+   "rates": [
+    29687.415290072076,
+    27491.47288079994,
+    29204.205345355127
+   ],
+   "median": 29204.205345355127,
+   "frac_fallen_at_end": 0.921875,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 5,
+   "nbatch": 1024,
+   "ctrl_steps": 125,
+   "physics_steps": 1000,
+   "rates": [
+    123541.16261313343,
+    102336.11500182614,
+    69225.77283977969
+   ],
+   "median": 102336.11500182614,
+   "frac_fallen_at_end": 0.9658203125,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 5,
+   "nbatch": 4096,
+   "ctrl_steps": 50,
+   "physics_steps": 400,
+   "rates": [
+    74977.50080973763,
+    88430.32449836891,
+    111536.23766531442
+   ],
+   "median": 88430.32449836891,
+   "frac_fallen_at_end": 0.92919921875,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 5,
+   "nbatch": 4096,
+   "ctrl_steps": 125,
+   "physics_steps": 1000,
+   "rates": [
+    103223.97245712664,
+    76387.88165321252,
+    108924.63847718864
+   ],
+   "median": 103223.97245712664,
+   "frac_fallen_at_end": 0.97021484375,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 5,
+   "nbatch": 16384,
+   "ctrl_steps": 25,
+   "physics_steps": 200,
+   "rates": [
+    120947.83265973974,
+    126543.61972268994,
+    122350.06666115335
+   ],
+   "median": 122350.06666115335,
+   "frac_fallen_at_end": 0.7701416015625,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 11,
+   "nbatch": 1024,
+   "ctrl_steps": 125,
+   "physics_steps": 1000,
+   "rates": [
+    150239.88503096916,
+    157719.240205309,
+    148150.24145626932
+   ],
+   "median": 150239.88503096916,
+   "frac_fallen_at_end": 0.97265625,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 11,
+   "nbatch": 4096,
+   "ctrl_steps": 50,
+   "physics_steps": 400,
+   "rates": [
+    168248.21536326915,
+    151450.3703133908,
+    149262.02116408752
+   ],
+   "median": 151450.3703133908,
+   "frac_fallen_at_end": 0.935302734375,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 11,
+   "nbatch": 4096,
+   "ctrl_steps": 125,
+   "physics_steps": 1000,
+   "rates": [
+    96523.00613838082,
+    146369.74971739776,
+    131851.18496116533
+   ],
+   "median": 131851.18496116533,
+   "frac_fallen_at_end": 0.961181640625,
+   "session": "run2_after_ours"
+  },
+  {
+   "nthread": 11,
+   "nbatch": 16384,
+   "ctrl_steps": 25,
+   "physics_steps": 200,
+   "rates": [
+    160792.20523169244,
+    176449.48291893967,
+    156686.67858409559
+   ],
+   "median": 160792.20523169244,
+   "frac_fallen_at_end": 0.767822265625,
+   "session": "run2_after_ours"
+  }
+ ],
+ "uptime": {
+  "run1_start": "15:25  up 5 hrs, 1 user, load averages: 4.76 5.38 7.12",
+  "run1_end": "15:26  up  5:02, 1 user, load averages: 13.56 7.48 7.76",
+  "run2_start": "15:26  up  5:02, 1 user, load averages: 12.63 7.39 7.72",
+  "run2_after_ours": "15:26  up  5:02, 1 user, load averages: 15.00 8.38 8.07",
+  "run2_end": "15:27  up  5:03, 1 user, load averages: 21.16 10.89 9.00"
+ },
+ "notes": [
+  "MuJoCo path: C-level mujoco.rollout.Rollout(nthread=N) (persistent C++ thread pool), one MjData per thread, batched initial states (reset pose + N(0,0.1) qvel noise), open-loop uniform[-1,1] controls held for 8 substeps (np.repeat), preallocated state output (mjSTATE_FULLPHYSICS, 19 doubles/step). Rate = nbatch*ctrl_steps / wall time of one rollout call; median of 3 calls per config after warmup. Swept nthread in {1,5,11} x nbatch in {1024,4096,16384} x horizon {25,50,125} control steps; best config median reported.",
+  "mujoco.rollout has native threading in this version (4.0.1, not 3.4.1 as assumed), so no separate threaded mj_step loop was needed; rollout already is a tight C mj_step loop.",
+  "Ours re-measured in the same session with scripts/bench.py bench_mlx('walker', N, seconds=10) (same method as mujoco_walker_bench.py). Came in lower than the earlier 3.85M/7.61M because load average was ~12.6 at the start (machine busy with other processes); MuJoCo CPU numbers are also depressed by that load.",
+  "Favourable to MuJoCo: no obs/reward/done computation, no auto-reset logic, no DC-motor speed-curve on ctrl (open loop), no Python per step. Ours includes GPU action sampling + obs/reward/done + auto-reset each step.",
+  "Unfavourable to MuJoCo: no resets, so ~77-97% of walkers have fallen by rollout end and lie on the floor (likely more contacts than a standing walker); rollout also writes the full state trajectory to memory.",
+  "Python mj_step loop (previous bench): 126.4K env-steps/s on 11 procs, 26.1K on 1 proc. C rollout: ~29K on 1 thread, ~150-165K on 11 threads, i.e. only ~1.3x better than the Python multi-process loop for this small model (per-step physics dominates, not Python overhead)."
+ ],
+ "timestamp": "2026-11-15 15:28:09 PST"
+}

@@ -111,6 +111,29 @@
   }
   function transfer() { const j = F()['transfer.json']; if (!j || !j.macgym || !j.mujoco) return null; return { ours: j.macgym.mean_distance_m, mj: j.mujoco.mean_distance_m, n: j.episodes, falls: j.mujoco.falls, sec: j.episode_seconds }; }
   function transferSummary() { const t = transfer(); if (!t) return null; return `<b>${t.mj.toFixed(1)} m</b> in MuJoCo vs ${t.ours.toFixed(1)} m in MacGym (${Math.round((100 * t.mj) / t.ours)}%), ${t.n} episodes of ${t.sec} s, <b>${t.falls} falls</b>`; }
+  function rollout() { const j = F()['mujoco_walker_bench_rollout.json']; if (!j || !j.mujoco_rollout_best) return null; return { ours16: j.ours_16384, ours4: j.ours_4096, mj: j.mujoco_rollout_best, x16: j.speedup_vs_rollout_16384, x4: j.speedup_vs_rollout_4096 }; }
+  function waterfall() {
+    const j = F()['fair_bench.json']; if (!j || !j.rows) return null;
+    const at = (re) => (j.rows.find((r) => re.test(r.backend) && r.num_envs === 16384) || {}).env_steps_per_s;
+    const c = at(/^CPU same solver/), g = at(/^GPU same solver/), k = at(/^GPU Metal/);
+    return c && g && k ? { c, g, k, gpu: g / c, fuse: k / g } : null;
+  }
+  function freshInstall() {
+    const j = F()['fresh_install.json']; if (!j || !j.install_ok || !j.train_ok) return null;
+    const clone = ((j.steps || []).find((x) => /git clone/.test(x.command)) || {}).wall_seconds || 0;
+    const sm_ = j.summary || {}, sec = j.clone_to_walking_seconds ?? (sm_.train_seconds != null ? clone + (sm_.venv_seconds || 0) + (sm_.install_seconds || 0) + sm_.train_seconds : null);
+    if (typeof sec !== 'number') return null;
+    return sec >= 90 ? (sec / 60).toFixed(1) + ' min' : Math.round(sec) + ' s';
+  }
+  function robust() {
+    const j = F()['transfer_robust.json']; if (!j || !j.mujoco) return null;
+    const NAMES = { nominal: 'nominal', 'friction_x0.8': 'friction −20%', 'friction_x1.2': 'friction +20%', 'mass_x0.8': 'mass −20%', 'mass_x1.2': 'mass +20%', init_random: 'random starts' };
+    return { ref: j.macgym_nominal_reference, rows: Object.entries(j.mujoco).map(([k, v]) => ({ name: NAMES[k] || k, m: v.mean_distance_m, sd: v.std_distance_m, falls: v.falls, n: v.episodes })) };
+  }
+  function robustRows() {
+    const r = robust(); if (!r) return [];
+    return [`<b>robustness in MuJoCo</b> · n=20 each<div class="rtab">${r.rows.filter((x) => x.name !== 'nominal').map((x) => `<span>${x.name}</span><b>${x.m.toFixed(1)} ± ${x.sd.toFixed(1)} m</b><em>${x.falls}/${x.n} falls</em>`).join('')}</div>`];
+  }
   const QUIET = { walker: 6.27e6, mujoco: 294e3 }; // earlier quiet bench run (walker vs MuJoCo HalfCheetah, 11 procs)
   function tripodGen() { const j = F()['tripod_replay.json']; if (!j) return null; const gs = j.generations || (j.frames ? [j] : null); if (!gs) return null; const g = gs[gs.length - 1]; g.robot = j.robot || 'tripod'; g.dt = g.dt || j.dt; return g; }
 
@@ -147,7 +170,7 @@
       id: 'built', steps: 2,
       html: () => kick('So I built') + hl(['MacGym'], 's-big-hl') +
         lede('Write a robot in Python. Train <b>4,096 copies</b> on your Mac’s GPU in about a minute. Export to <b>CoreML</b>.', 0.3) +
-        `<p class="tag rv" style="transition-delay:.4s">planar 2D physics · Apple silicon · open source</p>` +
+        `<p class="tag rv" style="transition-delay:.4s">planar 2D on purpose: fast to teach, fast to iterate</p>` +
         `<div class="s1">${facts(['^<b>4,096</b> copies, one GPU thread each'], 0.15)}</div>`,
       notes: 'So I built MacGym. You write a robot in Python, and MacGym trains four thousand ninety six copies of it at once on the Mac GPU. Planar 2D physics, so think robot learning class, not Isaac Lab. Let me show you it running.',
       staticT: 2.4,
@@ -204,7 +227,7 @@
       notes: 'You describe the robot, top right. The joint line with motor 80 becomes these lines of generated Metal: a torque that falls off with speed, like a real DC motor. Every robot copy is one GPU thread running the whole step, contacts included. PPO in MLX learns on the same memory, and you export to CoreML.',
       shape(w, t) {
         // annotated arrow: joint line (python) -> torque line (metal), along the right margin
-        const x0 = 1812, y0 = 325, y1 = 664, xm = 1890;
+        const x0 = 1792, y0 = 325, y1 = 664, xm = 1855;
         for (let k = 0; k <= 70; k++) {
           const u = k / 70, x = (1 - u) * (1 - u) * x0 + 2 * u * (1 - u) * xm + u * u * x0, y = y0 + (y1 - y0) * u;
           const flow = 0.5 + 0.5 * Math.sin(u * 18 - t * 5);
@@ -222,26 +245,22 @@
     {
       id: 'number',
       html: () => {
-        const R = numberReading(), steps = Math.round((R.days * 86400) / (4096 * 0.02)), tot = R.days * 86400 / 0.02;
-        return kick('The number · simulated robot time') + hl([`${R.days} days of`, 'experience.', `^${R.secs} seconds.`]) +
-          facts([`<b>4,096</b> tripods in parallel, live playground run on one M3 Pro${R.src ? ' (screen recording, timer at ' + R.clock + ')' : ''}`, `<span class="m">4,096 robots × ${steps.toLocaleString()} steps × 0.02 s ≈ ${Math.round(R.days * 86400).toLocaleString()} s ≈ ${R.days} days</span>`, `that is ${(tot / 1e6).toFixed(1)}M steps in ${R.secs} s, about <b>${fmt(tot / R.secs)} steps/s</b> including PPO`, `^average distance per episode: <b>${R.avg} m</b> at that same moment`]) + imgTag(R.src ? 'pg_t30.png' : '__none', 'left:1010px;top:150px;width:520px;border:1px solid #E3E3DE', 0.5);
+        const R = numberReading(), E = endReading(), steps = Math.round((R.days * 86400) / (4096 * 0.02));
+        return kick('The number · simulated robot time') + hl([`${R.days} days of`, 'practice.', `^${R.secs} seconds.`]) +
+          facts([`<b>4,096</b> tripods in parallel, live in the playground on this M3 Pro`, `<span class="m">4,096 × ${steps.toLocaleString()} steps × 0.02 s ≈ ${R.days} days</span>`, `^same run: <b>${R.days} days at 0:${String(R.secs).padStart(2, '0')}</b>, <b>${E.days} days at ${E.clock}</b>`]) +
+          (has('pg_t30.png') ? `<img class="panel rv" style="left:1000px;top:210px;width:830px;border:1px solid #E3E3DE;transition-delay:.45s" src="assets/pg_t30_counter.png?v=${V()}">` : '');
       },
-      notes: 'That recording, frozen at twenty eight seconds: 4,096 tripods have already racked up three point two days of experience. The math is on the slide: robots times steps times the 0.02 second timestep. That is roughly half a million steps a second, with learning included.',
+      notes: 'This is the real playground counter, frozen at twenty eight seconds: 4,096 tripods have already done three point two days of practice. Same run hits seven point eight days at one minute six. It is simulated robot time: robots times steps times the 0.02 second timestep.',
       staticT: 3.0,
       shape(w, t) {
-        const tg = tripodGen(), g = tg || gen(3), shot = has('pg_t30.png'), rows = tg ? 3 : shot ? 4 : 5, per = tg ? 4 : 7, X0 = 960, Wd = 900, v = 1.3;
-        for (let r = 0; r < rows; r++) {
-          const scale = tg ? 64 + r * 18 : 34 + r * 8.5, oy = tg ? (shot ? 600 : 420) + r * (shot ? 150 : 190) : shot ? 560 + r * 118 : 300 + r * 132;
-          for (let c = 0; c < per; c++) {
-            const k = r * per + c, Fr = S.frameAt(g, t + hash(k + 9) * 6, 'loop'), root = Fr[0];
-            const x = X0 + (((c / per) * Wd + hash(k) * 60 + t * v * scale) % Wd);
-            const fade = sm(X0, X0 + 90, x) * sm(X0 + Wd, X0 + Wd - 90, x), acc = r === rows - 1 && c === 2, tone = r < rows - 3 || (tg && r === 0) ? T.GRAY : T.INK;
-            S.robot(w, g, { fr: Fr, ox: x, oy, scale, rootWX: root, spacing: tg ? 5.6 : 5.2, rMax: (tg ? 1.4 : 1.1) + r * 0.2, near: acc ? T.ACC : tone, far: acc ? T.ACC : (r < 2 ? T.LIGHT : T.GRAY), fade });
-          }
+        const tg = tripodGen(); if (!tg) return;
+        for (let c = 0; c < 4; c++) {
+          const Fr = S.frameAt(tg, t + c * 1.7, 'loop'), x = 1080 + c * 220;
+          S.robot(w, tg, { fr: Fr, ox: x, oy: 900, scale: 120, rootWX: Fr[0], spacing: 6, rMax: 2.1, near: c === 3 ? T.ACC : T.INK, far: T.GRAY });
         }
+        for (let i = 0; i < 90; i++) w.push(1000 + i * 9.3, 908, 1.1, T.LIGHT);
       },
-      draw(ctx, t, a) { if (has('pg_t30.png')) label(ctx, 'THE PLAYGROUND AT 0:28 · REAL SCREENSHOT', 1010, 478, a, '#9A9A95');
-        label(ctx, tripodGen() ? 'REAL TRIPOD REPLAYS' : 'WALKER REPLAYS (ILLUSTRATION; THE STAT IS THE TRIPOD)', 1410, 1000, a, '#9A9A95', 'center'); },
+      draw(ctx, t, a) { if (has('pg_t30.png')) label(ctx, 'REAL PLAYGROUND COUNTER AT 0:28', 1000, 196, a, '#9A9A95'); if (tripodGen()) label(ctx, 'REAL TRIPOD REPLAYS FROM TRAINING', 1000, 950, a, '#9A9A95'); },
     },
     // ---------------------------------------------------------------- it learns
     {
@@ -250,23 +269,24 @@
         const sj = F()['seeds.json'];
         return kick('It learns') + hl(['From falling', 'to running.', '~In one minute.'], 'sm') +
           facts([...DATA.gens.map((g) => `<b>${g.label}</b> of training · ${g.result_text}`), ...(sj ? [(() => { const d = sj.runs.map((r) => r.dist_at_60s), m = d.reduce((a, b) => a + b, 0) / d.length, sd = Math.sqrt(d.reduce((a, b) => a + (b - m) * (b - m), 0) / (d.length - 1)); return `^<b>${sj.n_learned} of ${sj.n_seeds} seeds</b> learned to walk · ${m.toFixed(1)} ± ${sd.toFixed(1)} m average episode distance at 60 s`; })()] : [])]) +
-          `<p class="caveat rv" style="transition-delay:.75s">Lanes: real replays from one from-scratch walker run, one 8 s evaluation per checkpoint, distances as recorded.${sj ? ' Chart: 5 fresh seeds, metric is average distance per finished training episode (episodes run longer than 8 s, so the numbers are bigger).' : ''}</p>` +
-          imgTag('seeds.png', 'left:1030px;top:110px;width:760px', 0.4);
+          `<p class="caveat rv" style="transition-delay:.75s">Rows above are the 8 s replays. The chart counts whole training episodes (up to 20 s), so its distances are bigger.</p>` +
+          imgTag('seeds.png', 'left:1060px;top:118px;width:700px', 0.4);
       },
       notes: 'These are real replays from one run. At zero seconds it falls. Ten seconds, it lunges and falls. Thirty seconds, fifteen metres. One minute, twenty one and a half metres in eight seconds. And so you know it is not one lucky run: I retrained from scratch with five seeds, and all five learned to walk within a minute.',
       staticT: 9.0,
       shape(w, t) {
-        const withChart = has('seeds.png'), period = 9.0, tt = Math.min(t, 8.6) % period, scale = withChart ? 52 : 82, x0 = 1020, x1 = 1820;
-        const top = withChart ? 640 : 300, gap = withChart ? 108 : 178;
+        const withChart = has('seeds.png'), period = 9.0, tt = Math.min(t, 8.6) % period, scale = withChart ? 62 : 82, x0 = 1020, x1 = 1820;
+        const top = withChart ? 600 : 300, gap = withChart ? 124 : 178;
         for (let i = 0; i < 4; i++) {
           const g = gen(i), oy = top + i * gap, Fr = S.frameAt(g, tt, 'hold'), root = Fr[0], start = g.frames[0][0];
           const prog = Math.min(1, Math.max(0, (root - start) / 22)), sx = 1110 + prog * 560, cam = root - (sx - x0) / scale, acc = i === 3;
           ground(w, x0, x1, oy, cam, scale, withChart ? 0.2 : 0.125, 1, T.GRAY, 1.3);
-          S.robot(w, g, { fr: Fr, ox: sx, oy, scale, rootWX: root, spacing: withChart ? 4.6 : 5.5, rMax: withChart ? 1.35 : 1.75, near: acc ? T.ACC : T.INK, far: acc ? T.ACC : T.GRAY });
+          S.robot(w, g, { fr: Fr, ox: sx, oy, scale, rootWX: root, spacing: withChart ? 5 : 5.5, rMax: withChart ? 1.55 : 1.75, near: acc ? T.ACC : T.INK, far: acc ? T.ACC : T.GRAY });
         }
       },
       draw(ctx, t, a) {
-        const withChart = has('seeds.png'), top = withChart ? 640 : 300, gap = withChart ? 108 : 178, lift = withChart ? 78 : 118;
+        const withChart = has('seeds.png'), top = withChart ? 600 : 300, gap = withChart ? 124 : 178, lift = withChart ? 92 : 118;
+        if (withChart) { label(ctx, 'CHART · TRAINING EPISODES (UP TO 20 S) · 5 SEEDS', 1060, 108, a, '#FF4D00'); label(ctx, 'LANES · 8 S REPLAYS · ONE RUN', 1020, 478, a, '#FF4D00'); }
         for (let i = 0; i < 4; i++) {
           const g = gen(i), oy = top + i * gap;
           label(ctx, g.label, 1020, oy - lift, a, i === 3 ? '#FF4D00' : '#111', 'left', withChart ? 'mono' : 'big');
@@ -278,8 +298,9 @@
     {
       id: 'cheated',
       html: () => kick('The twist') + hl(['My first robots', 'cheated.', '~Here’s how', '~we caught it.'], 'sm') +
-        `<div class="bigpair rv" style="transition-delay:.35s"><div><span class="bad">6.16</span><i>m/s · v1 walker</i></div><div><span>2.74</span><i>m/s · after the fix</i></div></div>` +
-        facts(['!unlimited motor power, feet <b>skating</b>', 'caught it with a <b>foot-slip metric</b> · fixed with warm-started contacts + a <b>DC-motor curve</b>', '^cheetah foot slip <b>0.735 → 0.053 m/s</b>'], 0.5),
+        `<div class="bigpair rv" style="transition-delay:.35s"><div><span class="bad">6.16</span><i>m/s · v1 walker gait</i></div><div><span>2.74</span><i>m/s · after the fix</i></div></div>` +
+        `<p class="tag mute rv" style="transition-delay:.42s">speed = forward speed of the learned gait</p>` +
+        facts(['!cause: unlimited motor power + feet <b>skating</b> (caught with a foot-slip metric)', 'warm-starting contacts alone: slip <b>0.063 m/s</b>, but still <b>6.64 m/s</b>', '^the <b>motor torque-speed curve</b> was the real fix · cheetah slip 0.735 → 0.053 m/s'], 0.5),
       notes: 'My favorite part. The first walkers ran six metres a second. That was RL cheating: infinite motor power and feet that skated. We added a foot-slip metric to catch it, then fixed the physics: contacts that remember last step’s push, and a real DC motor curve. Now the walker does 2.7 metres a second and slip dropped fourteen times.',
       shape(w, t) { slipPanels(w, t); },
       draw(ctx, t, a) {
@@ -291,55 +312,47 @@
     {
       id: 'valid',
       html: () => {
-        const v = F()['validation.json'], c = contactSummary();
-        if (!v) return kick('Validation') + hl(['Checked against', '~MuJoCo.'], 'sm') + facts(['sim-to-sim check vs MuJoCo · results pending']);
-        const p = v.pendulum, sl = v.slide, d = v.drop;
-        return kick('Is it real physics?') + hl(['Checked against', '~MuJoCo.'], 'sm') +
-          facts([`<b>pendulum</b> · period error <b>${pct(p.period_err_pct_vs_analytic.ours)}%</b>, within <b>${p.rms_angle_err_deg_vs_mujoco_rk4.ours.toFixed(2)}°</b> of MuJoCo`,
-            `<b>friction stop</b> · ${sl.ours_m.toFixed(3)} m vs MuJoCo ${sl.mujoco_pyramidal_m.toFixed(3)} m`,
-            `<b>drop</b> · impact at ${d.ours.impact_time_s.toFixed(2)} s, same as MuJoCo`,
-            c ? `^<b>walker contact</b> · ${c}` : '<b>walker contact case</b> · running now']) +
-          `<p class="caveat rv" style="transition-delay:.8s">Three analytic cases plus the walker itself (collapse, tilt, open-loop torques), MuJoCo ${esc(v.mujoco_version)}, matched geometry, mass, motors and timestep.</p>` +
-          imgTag('contact_validation.png', 'left:1090px;top:520px;width:640px', 0.6);
+        const v = F()['validation.json'], cv = F()['contact_validation.json'];
+        const a = cv ? Object.values(cv.cases).map((c) => c.agree_until_s.height_within_5cm) : [];
+        const win = a.length ? `${Math.min(...a).toFixed(1)}–${Math.max(...a).toFixed(1)} s` : '';
+        return kick('Checked against MuJoCo') + hl(['Same tests as', 'the pro simulator.', '~Same answers.'], 'sm') +
+          (v ? facts([`<b>analytic:</b> pendulum period off by <b>${pct(v.pendulum.period_err_pct_vs_analytic.ours)}%</b> · friction stop ${v.slide.ours_m.toFixed(3)} vs ${v.slide.mujoco_pyramidal_m.toFixed(3)} m · drop lands on the same frame`,
+            cv ? `^<b>walker contact:</b> within 5 cm for the first <b>${win}</b>, then the contact models differ; same final pose` : '<b>walker contact case</b> · pending']) : '') +
+          imgTag('contact_validation.png', 'left:1000px;top:190px;width:830px', 0.45) +
+          (cv ? `<div class="chartnote rv" style="transition-delay:.8s">agree within 5 cm for ${win}, then contact models differ</div>` : '');
       },
-      notes: 'Is it real physics? We ran the same setups in MuJoCo. Pendulum period within a hundredth of a percent of the textbook, the swing within a sixth of a degree of MuJoCo, the friction stop within millimetres, the drop lands on the same frame. And the hard one, a walker hitting the ground with contacts, which tracks MuJoCo for a while and then diverges, I will tell you exactly when.',
+      notes: 'Is it real physics? Same tests as the pro simulator, MuJoCo. The textbook cases match: pendulum period off by less than a hundredth of a percent, friction stop within millimetres, the drop lands on the same frame. The hard one is the walker hitting the ground: it tracks MuJoCo within five centimetres for the first six to eight tenths of a second, then the contact models differ, and both end in the same pose.',
       staticT: 2.8,
-      shape(w, t) { pendulum(w, t); },
-      draw(ctx, t, a) {
-        if (!F()['validation.json']) return;
-        if (has('contact_validation.png')) { label(ctx, 'PENDULUM · DRIVEN BY THE RECORDED MACGYM ANGLE', 1010, 120, a, '#9A9A95'); label(ctx, 'WALKER VS MUJOCO · CONTACT CASES', 1090, 505, a, '#9A9A95'); return; }
-        label(ctx, 'PENDULUM ANGLE · RECORDED · THE TWO CURVES OVERLAP', 1010, 650, a, '#9A9A95');
-        label(ctx, '● MACGYM', 1590, 650, a, '#FF4D00');
-        label(ctx, '● MUJOCO RK4', 1700, 650, a, '#8C8C88');
-      },
+      shape(w, t) { for (let i = 0; i < 90; i++) w.push(1000 + i * 9.3, 182, 1.0, T.LIGHT); },
+      draw(ctx, t, a) { label(ctx, 'WALKER VS MUJOCO · SAME ROBOT, SAME TORQUES · HEIGHT, X, ANGLE', 1000, 170, a, '#9A9A95'); },
     },
     // ---------------------------------------------------------------- fast
     {
       id: 'fast', cls: 's-big',
       html: () => {
-        const m = mjWalker(), fb = fair();
-        const hero = m ? `${m.x >= 10 ? Math.round(m.x) : m.x.toFixed(1)}×` : '21×';
-        return kick(m ? 'Fast · same 2D walker model, MuJoCo on all 11 CPU cores' : 'Fast · vs MuJoCo on all 11 CPU cores (quiet run)') + hl(['^' + hero]) +
-          lede(m ? `more robot steps per second than MuJoCo running <b>the same walker</b> on all 11 cores of this laptop (${fmt(m.ours)} at ${m.n.toLocaleString()} walkers vs ${fmt(m.mj)} steps/s).` : 'more robot steps per second than MuJoCo on every core of this laptop (walker 6.27M vs HalfCheetah 294K steps/s).', 0.3) +
-          facts([fb ? `<b>where it comes from:</b> one compiled Metal kernel per robot vs the same physics step by step on CPU = <b>${Math.round(fb.x)}×</b>. About 4× is the GPU; ~30× is the kernel fusion.` : '<b>where it comes from:</b> one compiled Metal kernel per robot, on the GPU',
-            (() => { const p = F()['profile.json']; return p ? `<b>training:</b> ${fmt(p.plain_env_steps_per_s)} steps/s end-to-end · the <b>PPO update is ${Math.round(p.pieces_pct.ppo_update_backprop_adam)}%</b> of the time` : '<b>training:</b> the PPO update is the bottleneck'; })()], 0.42) +
-          `<p class="caveat big rv" style="transition-delay:.7s"><b>Simpler physics.</b> Planar 2D, maximal coordinates, impulse contacts. MuJoCo is a general 3D solver, run with its standard Python step loop.</p>` +
+        const r = rollout(), wf = waterfall();
+        const hero = r ? `${Math.floor(r.x16)}×` : '21×';
+        return kick('Fast · same 2D walker, MuJoCo’s fastest CPU path') + hl(['^' + hero]) +
+          lede('Your laptop gives a robot <b>~40× more practice per second</b> than the standard simulator does on the same laptop.'.replace('~40×', '~' + hero), 0.3) +
+          (r ? facts([`MacGym <b>${fmt(r.ours16)}</b> steps/s at 16,384 envs vs MuJoCo C rollout, all 11 threads, <b>${fmt(r.mj)}</b> (its best batch size) · <b>${Math.floor(r.x4)}× at 4,096</b>`], 0.42) : '') +
+          (wf ? `<div class="wfall rv" style="transition-delay:.6s"><div class="wcap">WHERE THE SPEED COMES FROM · SAME ALGORITHM, 16,384 WALKERS</div><div class="wrow"><div><b>${fmt(wf.c)}</b><i>CPU, array ops</i></div><span>×${wf.gpu.toFixed(1)}<i>GPU</i></span><div><b>${fmt(wf.g)}</b><i>GPU, same ops</i></div><span>×${wf.fuse.toFixed(1)}<i>one Metal kernel</i></span><div><b class="acc">${fmt(wf.k)}</b><i>compiled kernel</i></div><span class="eq">= ${Math.round(wf.gpu * wf.fuse)}×</span></div></div>` : '') +
+          `<p class="caveat big rv" style="transition-delay:.75s"><b>Simpler physics.</b> Planar 2D, impulse contacts, ground only. MuJoCo is a general 3D solver.</p>` +
           profileHTML();
       },
-      notes: 'One number. Same walker model, MuJoCo on all eleven cores of this laptop, versus MacGym on the GPU. Where does it come from? Mostly from compiling each robot into one Metal kernel, about thirty times, and about four times from the GPU itself. And honestly, training is limited by the PPO update now, not physics. Our physics is simpler: planar 2D.',
+      notes: 'One number. Same 2D walker model, against MuJoCo’s fastest CPU path, the C rollout module on all eleven threads: about forty times more practice per second, twenty two times at the 4,096 we train with. Where it comes from: the GPU alone is about 3.7 times, compiling each robot into one Metal kernel is another 33 times. Training is limited by the PPO update, not physics. And our physics is simpler, planar 2D.',
       shape(w, t) {
-        const m = mjWalker(), ratio = m ? m.mj / m.ours : QUIET.mujoco / QUIET.walker;
-        const bars = [[1, T.ACC], [ratio, T.GRAY]], base = 700, rowsMax = 50, sp = 9.5, cols = 14;
+        const r = rollout(), ratio = r ? r.mj / r.ours16 : QUIET.mujoco / QUIET.walker;
+        const bars = [[1, T.ACC], [ratio, T.GRAY]], base = 600, rowsMax = 40, sp = 9.5, cols = 14;
         bars.forEach((b, gi) => {
           const gx = 1130 + gi * 330, rows = Math.max(1, Math.round(rowsMax * b[0]));
-          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) w.push(gx + c * sp, base - r * sp, 2.9 + (r === rows - 1 ? 0.4 * Math.sin(t * 3 + c) : 0), b[1]);
+          for (let k = 0; k < rows; k++) for (let c = 0; c < cols; c++) w.push(gx + c * sp, base - k * sp, 2.9 + (k === rows - 1 ? 0.4 * Math.sin(t * 3 + c) : 0), b[1]);
         });
       },
       draw(ctx, t, a) {
-        const m = mjWalker();
-        const bars = [['MACGYM · M3 PRO GPU', '#FF4D00', m ? fmt(m.ours) : '6.3M'], [m ? 'MUJOCO · SAME WALKER · 11 CORES' : 'MUJOCO · 11 CORES', '#8C8C88', m ? fmt(m.mj) : '294K']];
-        bars.forEach((b, gi) => { label(ctx, b[2], 1130 + gi * 330 + 62, 742, a, b[1], 'center', 'big'); label(ctx, b[0], 1130 + gi * 330 + 62, 766, a, '#9A9A95', 'center'); });
-        label(ctx, 'WALKER · ENV-STEPS PER SECOND', 1130, 200, a, '#9A9A95');
+        const r = rollout();
+        const bars = [['MACGYM · M3 PRO GPU', '#FF4D00', r ? fmt(r.ours16) : '6.3M'], ['MUJOCO C ROLLOUT · 11 THREADS', '#8C8C88', r ? fmt(r.mj) : '294K']];
+        bars.forEach((b, gi) => { label(ctx, b[2], 1130 + gi * 330 + 62, 642, a, b[1], 'center', 'big'); label(ctx, b[0], 1130 + gi * 330 + 62, 666, a, '#9A9A95', 'center'); });
+        label(ctx, 'SAME WALKER · ENV-STEPS PER SECOND', 1130, 190, a, '#9A9A95');
       },
     },
     // ---------------------------------------------------------------- framework
@@ -359,10 +372,10 @@
         const tj = F()['tests.json'], tl = F()['timeline.json'];
         const hrs = Math.max(0, (Date.now() - new Date('2026-11-15T11:38:00-08:00').getTime()) / 3.6e6);
         return kick('Built today') + hl(['One day.', '~One laptop.'], 'sm') +
-          `<div class="bignums rv" style="transition-delay:.3s"><div><span>${hrs.toFixed(1)}</span><i>hours since 11:38 AM</i></div><div><span>${tl ? tl.count : 8}</span><i>commits</i></div><div><span class="acc">${tj ? tj.total_passed : 18}</span><i>checks passing · ${tj ? tj.total_failed : 0} failing</i></div></div>` +
-          facts(['^Built solo today with AI coding agents. <b>I picked the idea, designed the API, and directed the agents.</b>'], 0.5);
+          `<div class="bignums rv" style="transition-delay:.3s"><div><span>${hrs.toFixed(1)}</span><i>hours since 11:38 AM</i></div><div><span>${tl ? tl.count : 8}</span><i>commits</i></div><div><span class="acc">${tj ? tj.total_passed : 18}</span><i>checks passing</i></div></div>` +
+          facts(['<b>What I decided:</b> picked this idea after rejecting ~20 others; made it a framework, not a demo; scrapped the first UI because you couldn’t tell it was learning', '<b>Agents wrote most of the code;</b> I reviewed, tested and directed.', `^<b>the ${tj ? tj.total_passed : 18} checks:</b> CoreML/ONNX export vs MLX, CLI train + export, 6 robots step without NaNs, legacy parity`], 0.45);
       },
-      notes: 'Built today. The first commit was at eleven thirty eight. Eighteen checks pass. And to be straight: I built it solo with AI coding agents. I picked the idea, designed the API and the experiments, and directed the agents. The cheating robots are an example: the agents were happy with six metres a second, I was not.',
+      notes: 'Built today, since eleven thirty eight. What I decided: I picked this idea after rejecting about twenty others, made it a framework instead of a demo, and scrapped the first UI because you could not tell the robots were learning. The agents wrote most of the code; I reviewed, tested and directed it. The eighteen checks cover export round trips, the CLI, physics stepping for six robots, and parity with the old envs.',
       staticT: 3.0,
       shape(w, t) { timeline(w, t); },
       draw(ctx, t, a) { timelineLabels(ctx, a); },
@@ -370,35 +383,42 @@
     // ---------------------------------------------------------------- who
     {
       id: 'who',
-      html: () => kick('Who it’s for') + hl(['RL classes', 'on MacBooks.'], 'sm') +
-        facts(['<b>first users:</b> DVHS Computer Science Club (I’m an officer) and the Bay Area hackathons I organize (Cove Hacks, HackPilot)', '<b>vs free Colab:</b> runs offline on the laptop you already own · no quotas, no disconnects, live viewer', '^<b>open source</b> · later: a hosted classroom version and edu licenses'], 0.35) +
-        `<pre class="quick rv" style="transition-delay:.6s"><span class="n">1</span>pip install -e .\n<span class="n">2</span>macgym train walker\n<span class="n">3</span>macgym view walker</pre>`,
-      notes: 'The wedge is students. My first users are the DVHS Computer Science Club, where I am an officer, and the hackathons I run, Cove Hacks and HackPilot. Why not Colab? This runs offline on the laptop you already own, no quotas, no disconnects, and you watch the robots learn live. It is open source; later a hosted classroom version and edu licenses.',
-      shape(w, t) { classroom(w, t); },
-      draw(ctx, t, a) { label(ctx, 'A CLASSROOM OF MACBOOKS · EACH ONE A ROBOT LAB', 1390, 905, a, '#9A9A95', 'center'); },
+      html: () => {
+        const fi = freshInstall();
+        return kick('Who it’s for') + hl(['RL classes', 'on MacBooks.'], 'sm') +
+          (fi ? `<div class="bignums rv" style="transition-delay:.3s"><div><span class="acc">${fi}</span><i>git clone → pip install → trained walker, fresh venv (measured)</i></div></div>` : '') +
+          facts(['<b>first users:</b> DVHS Computer Science Club (I’m an officer) and my hackathons, Cove Hacks and HackPilot · <b>next: a DVHS CS Club workshop</b>'], 0.35) +
+          `<div class="vs rv" style="transition-delay:.5s"><div class="vcap">vs free Colab / MJX</div><div>runs <b>offline</b>, on the laptop you own</div><div><b>no GPU quota</b>, no disconnects</div><div><b>live viewer</b> + code playground</div><div><b>Mac-native</b>, nothing to rent</div></div>` +
+          `<p class="caveat rv" style="transition-delay:.7s">Open source now; later a hosted classroom version and edu licenses.</p>` +
+          `<img class="panel rv" style="left:1000px;top:200px;width:820px;transition-delay:.45s" src="data/${has('pg_t50.png') ? 'pg_t50.png' : 'docs.png'}?v=${V()}">`;
+      },
+      notes: 'Who it is for: RL classes and clubs where everyone has a MacBook. First users are the DVHS Computer Science Club, where I am an officer, and my hackathons; next is a club workshop. Versus free Colab or MJX: it runs offline on the laptop you own, no GPU quota, no disconnects, a live viewer and a code playground, nothing to rent.',
+      shape(w, t) { laptop(w, t, 1410, 182, 860, 500, false); },
+      draw(ctx, t, a) { label(ctx, 'THE PLAYGROUND, 48 S INTO A REAL RUN', 1410, 812, a, '#9A9A95', 'center'); },
     },
     // ---------------------------------------------------------------- next
     {
       id: 'next',
       html: () => {
-        const tr = transferSummary();
-        return kick('Done · next') + hl([tr ? 'Policy transfer:' : 'Sim-to-sim: done.', tr ? '~measured.' : '~Real arm: next.'], 'sm') +
-          facts([tr ? `^<b>measured</b> · our walker policy in MuJoCo: ${tr}` : '<b>done</b> · physics checked against MuJoCo', '<b>next</b> · 3D physics, same API', '<b>next</b> · CoreML policy on an iPhone driving a real SO-101 arm']) +
-          `<p class="caveat rv" style="transition-delay:.8s">Today: planar 2D only, no sim-to-real result yet.</p>`;
+        const tr = transfer(), rb = robustRows();
+        return kick('Done · next') + hl(['Sim-to-sim:', '~transfers.'], 'sm') + lede('(MacGym → MuJoCo, not real hardware)', 0.3) +
+          facts([(() => { const r = robust(); if (r) { const n0 = r.rows.find((x) => x.name === 'nominal'); return `^<b>${n0.m.toFixed(1)} ± ${n0.sd.toFixed(1)} m</b> in MuJoCo vs ${r.ref.mean_distance_m.toFixed(1)} m in MacGym · ${n0.n} episodes, ${n0.falls} fall${n0.falls === 1 ? '' : 's'}`; } return tr ? `^<b>${tr.mj.toFixed(1)} m</b> in MuJoCo vs ${tr.ours.toFixed(1)} m in MacGym · ${tr.n} episodes, ${tr.falls} falls` : '<b>done</b> · physics checked against MuJoCo'; })(),
+            ...rb,
+            '<b>next</b> · MJCF import, then 3D', '<b>next</b> · the compile-a-robot-to-one-GPU-kernel approach is backend-agnostic: Metal now, CUDA/ROCm codegen possible'], 0.4);
       },
-      notes: 'Done and next. We took the walker policy trained in MacGym and ran it inside MuJoCo, and that number is on the slide. Next: 3D with the same API, then a CoreML policy on an iPhone driving a real SO-101 arm. Today it is 2D only, and I want to be upfront about that.',
+      notes: 'Sim-to-sim: the walker policy trained in MacGym, run unchanged in MuJoCo, keeps about ninety percent of its distance with zero falls, and the robustness rows show it under changed friction, mass and starts. This is MuJoCo, not real hardware. Next: MJCF import, 3D, and since the approach is compile a robot into one GPU kernel, it is backend agnostic: Metal today, CUDA or ROCm codegen is possible.',
       shape(w, t) {
-        arm3d(w, t);
+        arm3d(w, t, true);
         const tr = transfer(); if (!tr) return;
-        [[tr.ours, T.INK, 190], [tr.mj, T.ACC, 270]].forEach(([d, tone, y]) => {
-          const n = Math.round((d / 22) * 70);
-          for (let i = 0; i < n; i++) for (let r = 0; r < 3; r++) w.push(1010 + i * 10.5, y + r * 9, 2.6 + (i === n - 1 ? 0.5 * Math.sin(t * 4) : 0), tone);
+        [[tr.ours, T.INK, 210], [tr.mj, T.ACC, 300]].forEach(([d, tone, y]) => {
+          const n = Math.round((d / 22) * 64);
+          for (let i = 0; i < n; i++) for (let r = 0; r < 3; r++) w.push(1010 + i * 11, y + r * 9, 2.6 + (i === n - 1 ? 0.5 * Math.sin(t * 4) : 0), tone);
         });
       },
       draw(ctx, t, a) {
         const tr = transfer();
-        if (tr) { label(ctx, 'SAME TRAINED WALKER POLICY · MEAN DISTANCE IN 8 S', 1010, 160, a, '#9A9A95'); label(ctx, 'MACGYM ' + tr.ours.toFixed(1) + ' M', 1810, 220, a, '#111', 'right', 'mono'); label(ctx, 'MUJOCO ' + tr.mj.toFixed(1) + ' M', 1810, 300, a, '#FF4D00', 'right', 'mono'); }
-        label(ctx, 'SO-101 ARM · 3D · NEXT', 1250, 930, a, '#9A9A95', 'center'); label(ctx, 'IPHONE · COREML', 1730, 690, a, '#FF4D00', 'center');
+        if (tr) { label(ctx, 'SAME TRAINED WALKER POLICY · MEAN DISTANCE IN 8 S', 1010, 150, a, '#9A9A95'); label(ctx, 'MACGYM ' + tr.ours.toFixed(1) + ' M', 1010, 198, a, '#111', 'left', 'mono'); label(ctx, 'MUJOCO ' + tr.mj.toFixed(1) + ' M', 1010, 288, a, '#FF4D00', 'left', 'mono'); }
+        label(ctx, 'NEXT · NOT BUILT · SO-101 ARM + IPHONE', 1300, 960, a, '#B3B3AE', 'center');
       },
     },
     // ---------------------------------------------------------------- close
@@ -527,9 +547,10 @@
     const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
     const start = 11 * 60 + 38, end = Math.max(toMin(new Date().toTimeString().slice(0, 5)) || 0, toMin(tl.commits[tl.commits.length - 1].hhmm) + 20);
     const x0 = 1010, x1 = 1800, y = 560, X = (m) => x0 + ((m - start) / (end - start)) * (x1 - x0);
-    const short = ['skeleton', 'physics + PPO', 'gait fix', 'replays + UI', 'framework spec', 'public API + CLI', 'docs', 'real physics'];
+    const short = ['first commit', 'physics + PPO', null, 'new UI', null, 'framework + CLI', null, 'real physics'];
     const dy = [0, 1, 0, 1, 0, 1, 0, 1], idx = {};
     tl.commits.forEach((c, i) => {
+      if (!short[i]) return;
       const tier = [0, 0, 0, 0, 0, 1, 1, 0][i] || 0, x = X(toMin(c.hhmm)), up = i % 2 === 0, yy = up ? y - 104 - tier * 52 : y + 112 + tier * 52;
       label(ctx, c.hhmm, x, yy, a, i === 0 ? '#FF4D00' : '#111', 'center', 'mono');
       label(ctx, (short[i] || c.message.slice(0, 18)).toUpperCase(), x, yy + 18, a, '#9A9A95', 'center');
@@ -611,7 +632,7 @@
   }
 
   // ---- 3D arm (slide 13) ----
-  function arm3d(w, t) {
+  function arm3d(w, t, grey) {
     const yaw = -0.6 + t * 0.35, tilt = 0.32, s = 520, ox = 1250, oy = 840;
     const sh = 0.55 + 0.22 * Math.sin(t * 0.9), el = -1.25 + 0.3 * Math.sin(t * 1.15 + 1);
     const cy = Math.cos(yaw), sy = Math.sin(yaw), ct = Math.cos(tilt), st = Math.sin(tilt);
@@ -647,19 +668,20 @@
     const elbow = [Math.cos(sh) * 0.42 * 1, 0.22 + Math.sin(sh) * 0.42, 0];
     const a2 = sh + el, wrist = [elbow[0] + Math.cos(a2) * 0.36, elbow[1] + Math.sin(a2) * 0.36, 0];
     const tip = [wrist[0] + Math.cos(a2 - 0.6) * 0.1, wrist[1] + Math.sin(a2 - 0.6) * 0.1, 0];
-    link(base, shoulder, 0.09, 8, 22, T.INK);
-    link(shoulder, elbow, 0.045, 18, 14, T.INK);
-    link(elbow, wrist, 0.038, 15, 12, T.INK);
-    link(wrist, [tip[0], tip[1], 0.03], 0.016, 5, 6, T.ACC);
-    link(wrist, [tip[0], tip[1], -0.03], 0.016, 5, 6, T.ACC);
+    const TI = grey ? T.GRAY : T.INK, TA = grey ? T.LIGHT : T.ACC;
+    link(base, shoulder, 0.09, 8, 22, TI);
+    link(shoulder, elbow, 0.045, 18, 14, TI);
+    link(elbow, wrist, 0.038, 15, 12, TI);
+    link(wrist, [tip[0], tip[1], 0.03], 0.016, 5, 6, TA);
+    link(wrist, [tip[0], tip[1], -0.03], 0.016, 5, 6, TA);
     // phone + signal
     const px = 1730, py = 520, pw = 96, ph = 190;
-    rectOutline(w, px - pw / 2, py - ph / 2, pw, ph, 7, 2.0, T.ACC);
-    for (let j = 0; j < 6; j++) for (let i = 0; i < 4; i++) w.push(px - 18 + i * 12, py - 30 + j * 12, 1.4 + 0.8 * Math.sin(t * 3 + i + j), T.ACC);
+    rectOutline(w, px - pw / 2, py - ph / 2, pw, ph, 7, 2.0, TA);
+    for (let j = 0; j < 6; j++) for (let i = 0; i < 4; i++) w.push(px - 18 + i * 12, py - 30 + j * 12, 1.4 + 0.8 * Math.sin(t * 3 + i + j), TA);
     const wp = proj(wrist[0], wrist[1], wrist[2]);
     for (let k = 0; k < 26; k++) {
       const f = ((k / 26) + t * 0.25) % 1, x = px - pw / 2 - 20 + (wp[0] + 30 - (px - pw / 2 - 20)) * f, y = py + (wp[1] - py) * f - Math.sin(f * Math.PI) * 60;
-      w.push(x, y, 1.6 * Math.sin(f * Math.PI), T.ACC);
+      w.push(x, y, 1.6 * Math.sin(f * Math.PI), TA);
     }
   }
   const Shapes_LIGHT = (() => { const v = [-0.55, -0.62, 0.56], l = Math.hypot(...v); return v.map((x) => x / l); })();
@@ -708,7 +730,7 @@
     el.className = 'slide ' + (sl.cls || '') + ' step' + step;
     el.innerHTML = `<div class="col">${sl.html()}</div>`;
     // pre-col elements that must be positioned absolutely (code block)
-    el.querySelectorAll('.codecap, .code, .panel, .prof, .screen, .screencap').forEach((n) => el.appendChild(n));
+    el.querySelectorAll('.codecap, .code, .panel, .prof, .screen, .screencap, .anno, .chartnote').forEach((n) => el.appendChild(n));
     const vid = el.querySelector('#pgvid'); if (vid) setupVideo(vid);
     return el;
   }
@@ -796,7 +818,7 @@
   addEventListener('resize', fit);
 
   // ---- evidence loader: polls deck/data/ so slides fill in as files land ----
-  const DATA_FILES = ['validation.json', 'validation.png', 'fair_bench.json', 'profile.json', 'profile.png', 'seeds.json', 'seeds.png', 'tripod_replay.json', 'kernel_excerpt.txt', 'timeline.json', 'tests.json', 'tests.txt', 'cli_train.txt', 'cli_export.txt', 'playground_tripod.mp4', 'playground_tripod_4x.mp4', 'playground_edit.mp4', 'docs.png', 'pg_t00.png', 'pg_t15.png', 'pg_t30.png', 'pg_t50.png', 'recordings.json', 'viewer.png', 'mujoco_walker_bench.json', 'contact_validation.json', 'contact_validation.png', 'transfer.json', 'transfer.mp4'];
+  const DATA_FILES = ['validation.json', 'validation.png', 'fair_bench.json', 'profile.json', 'profile.png', 'seeds.json', 'seeds.png', 'tripod_replay.json', 'kernel_excerpt.txt', 'timeline.json', 'tests.json', 'tests.txt', 'cli_train.txt', 'cli_export.txt', 'playground_tripod.mp4', 'playground_tripod_4x.mp4', 'playground_edit.mp4', 'docs.png', 'pg_t00.png', 'pg_t15.png', 'pg_t30.png', 'pg_t50.png', 'recordings.json', 'viewer.png', 'mujoco_walker_bench.json', 'contact_validation.json', 'contact_validation.png', 'transfer.json', 'transfer.mp4', 'mujoco_walker_bench_rollout.json', 'transfer_robust.json', 'fresh_install.json'];
   async function loadData() {
     const f = {}, v = Date.now();
     await Promise.all(DATA_FILES.map(async (n) => {

@@ -156,3 +156,27 @@ body.static #pager, body.static #brand { display: none; }
 .screencap { font-size: 15px; }
 .s-close .lede { font-size: 26px; color: #4A4A47; }
 .s-close .col { top: 640px; }
+/* ---- round 4 ---- */
+.tag.mute { color: var(--mute); font-size: 16px; letter-spacing: .12em; }
+.chartnote { position: absolute; left: 1000px; top: 800px; width: 830px; padding: 12px 16px; border-left: 3px solid var(--accent); font-size: 20px; color: var(--ink); font-weight: 500; }
+.wfall { margin-top: 26px; width: 760px; }
+.wfall .wcap { font-size: 13px; letter-spacing: .2em; color: #9A9A95; font-weight: 700; margin-bottom: 10px; }
+.wfall .wrow { display: flex; align-items: flex-end; gap: 14px; }
+.wfall .wrow div { display: flex; flex-direction: column; }
+.wfall .wrow b { font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: 46px; line-height: 1; color: var(--ink); }
+.wfall .wrow b.acc { color: var(--accent); }
+.wfall .wrow i, .wfall .wrow span i { font-style: normal; font-size: 13px; color: var(--mute); display: block; }
+.wfall .wrow span { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--accent); text-align: center; padding-bottom: 14px; }
+.wfall .wrow span.eq { font-family: 'Bebas Neue', sans-serif; font-size: 46px; color: var(--ink); padding-bottom: 0; }
+.s-big .hl { font-size: 240px; }
+.prof { top: 860px; transform: scale(.85); transform-origin: 0 0; }
+.vs { margin-top: 26px; width: 700px; border-top: 1px solid var(--hair); }
+.vs .vcap { font-size: 14px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); font-weight: 700; padding: 12px 0 4px; }
+.vs div:not(.vcap) { font-size: 22px; color: #3F3F3C; padding: 9px 0; border-bottom: 1px solid var(--hair); }
+.vs div:not(.vcap)::before { content: '✓'; color: var(--accent); font-weight: 700; margin-right: 12px; }
+.vs b { color: var(--ink); }
+.anno { top: 450px; text-align: left; width: 640px; }
+.rrow { color: var(--mute); }
+.rtab { display: grid; grid-template-columns: auto auto auto; gap: 2px 22px; margin-top: 8px; font-size: 19px; }
+.rtab span { color: var(--mute); }
+.rtab em { font-style: normal; color: var(--mute); }

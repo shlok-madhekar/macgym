@@ -1,0 +1,167 @@
+{
+ "temp_dir": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped",
+ "source_commit": "db227a8e444e66c7dca629b77780ed58858a8b38",
+ "note": "git clone copies committed files only (HEAD); uncommitted working-tree changes are not included.",
+ "machine": "Apple M3 Pro",
+ "uptime_at_end": "15:31  up  5:07, 1 user, load averages: 6.48 8.27 8.29",
+ "timestamp": "2026-11-15 15:31:47 PST",
+ "venv_python": "Python 3.14.7",
+ "install_seconds": 10.59,
+ "install_ok": true,
+ "train_seconds": 74.4,
+ "train_ok": true,
+ "final_distance_line": "done in 1m13s  |  best distance 54.26 m  |  saved runs/walker.npz",
+ "steps": [
+  {
+   "cwd": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped",
+   "command": "git clone /Users/shlok/macgym fresh",
+   "returncode": 0,
+   "wall_seconds": 0.31,
+   "last_lines": [
+    "Cloning into 'fresh'...",
+    "done."
+   ]
+  },
+  {
+   "cwd": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh",
+   "command": "/Users/shlok/.aside/runtime/bin/python3 -m venv --system-site-packages=false .venv",
+   "returncode": 2,
+   "wall_seconds": 0.44,
+   "last_lines": [
+    "usage: venv [-h] [--system-site-packages] [--symlinks | --copies] [--clear]",
+    "            [--upgrade] [--without-pip] [--prompt PROMPT] [--upgrade-deps]",
+    "            [--without-scm-ignore-files]",
+    "            ENV_DIR [ENV_DIR ...]",
+    "venv: error: argument --system-site-packages: ignored explicit argument 'false'"
+   ]
+  },
+  {
+   "cwd": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh",
+   "command": "/opt/homebrew/bin/python3 -m venv .venv",
+   "returncode": 0,
+   "wall_seconds": 1.76,
+   "last_lines": []
+  },
+  {
+   "cwd": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh",
+   "command": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh/.venv/bin/python --version",
+   "returncode": 0,
+   "wall_seconds": 0.02,
+   "last_lines": [
+    "Python 3.14.7"
+   ]
+  },
+  {
+   "cwd": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh",
+   "command": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh/.venv/bin/python -m pip install -e .",
+   "returncode": 0,
+   "wall_seconds": 10.59,
+   "last_lines": [
+    "Downloading yarl-1.25.1-cp314-cp314-macosx_11_0_arm64.whl (104 kB)",
+    "Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)",
+    "Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)",
+    "Downloading attrs-26.1.0-py3-none-any.whl (67 kB)",
+    "Downloading frozenlist-1.8.0-cp314-cp314-macosx_11_0_arm64.whl (49 kB)",
+    "Downloading idna-3.20-py3-none-any.whl (69 kB)",
+    "Downloading propcache-0.5.4-cp314-cp314-macosx_11_0_arm64.whl (51 kB)",
+    "Downloading mlx-0.32.4-cp314-cp314-macosx_26_0_arm64.whl (668 kB)",
+    "   \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 668.8/668.8 kB 49.8 MB/s  0:00:00",
+    "Downloading mlx_metal-0.32.4-py3-none-macosx_26_0_arm64.whl (78.1 MB)",
+    "   \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 78.1/78.1 MB 25.6 MB/s  0:00:03",
+    "Downloading numpy-2.5.5-cp314-cp314-macosx_14_0_arm64.whl (5.5 MB)",
+    "   \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 5.5/5.5 MB 24.5 MB/s  0:00:00",
+    "Building wheels for collected packages: macgym",
+    "  Building editable for macgym (pyproject.toml): started",
+    "  Building editable for macgym (pyproject.toml): finished with status 'done'",
+    "  Created wheel for macgym: filename=macgym-0.3.0-0.editable-py3-none-any.whl size=7849 sha256=f74c5a3960c1a15d61c0bc34a1bacf27269d7ff060ac170e69de10562641f37f",
+    "  Stored in directory: /Users/shlok/.aside/runtime/tmp/pip-ephem-wheel-cache-h9ixwne7/wheels/bd/c6/4a/a11f9e3dbe87290c16a667bf13df953a1d8fbe367f993317e2",
+    "Successfully built macgym",
+    "Installing collected packages: propcache, numpy, multidict, mlx-metal, idna, frozenlist, attrs, aiohappyeyeballs, yarl, mlx, aiosignal, aiohttp, macgym",
+    "",
+    "Successfully installed aiohappyeyeballs-2.7.1 aiohttp-3.14.5 aiosignal-1.4.0 attrs-26.1.0 frozenlist-1.8.0 idna-3.20 macgym-0.3.0 mlx-0.32.4 mlx-metal-0.32.4 multidict-7.2.1 numpy-2.5.5 propcache-0.5.4 yarl-1.25.1",
+    "",
+    "[notice] A new release of pip is available: 26.2.1 -> 26.3",
+    "[notice] To update, run: /Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh/.venv/bin/python -m pip install --upgrade pip"
+   ]
+  },
+  {
+   "cwd": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh",
+   "command": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh/.venv/bin/python -m pip freeze",
+   "returncode": 0,
+   "wall_seconds": 0.32,
+   "last_lines": [
+    "aiohappyeyeballs==2.7.1",
+    "aiohttp==3.14.5",
+    "aiosignal==1.4.0",
+    "attrs==26.1.0",
+    "frozenlist==1.8.0",
+    "idna==3.20",
+    "-e git+file:///Users/shlok/macgym@db227a8e444e66c7dca629b77780ed58858a8b38#egg=macgym",
+    "mlx==0.32.4",
+    "mlx-metal==0.32.4",
+    "multidict==7.2.1",
+    "numpy==2.5.5",
+    "propcache==0.5.4",
+    "yarl==1.25.1"
+   ]
+  },
+  {
+   "cwd": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh",
+   "command": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh/.venv/bin/macgym train walker --iters 150 --envs 4096",
+   "returncode": 0,
+   "wall_seconds": 74.4,
+   "last_lines": [
+    "  robot ready in 0.2s  |  obs 24  act 6  |  dt 0.020s",
+    "  iter     1/150  |  distance   -0.21 m  |  return       8.0  |  9k steps/s  |     0.10M steps  |     12s",
+    "  iter     7/150  |  distance    0.26 m  |  return      51.8  |  249k steps/s  |     0.69M steps  |     14s",
+    "  iter    14/150  |  distance    0.85 m  |  return      96.3  |  254k steps/s  |     1.38M steps  |     17s",
+    "  iter    21/150  |  distance    1.24 m  |  return     129.3  |  161k steps/s  |     2.06M steps  |     20s",
+    "  iter    28/150  |  distance    1.81 m  |  return     189.6  |  246k steps/s  |     2.75M steps  |     23s",
+    "  iter    35/150  |  distance    2.88 m  |  return     310.2  |  232k steps/s  |     3.44M steps  |     26s",
+    "  iter    42/150  |  distance    4.93 m  |  return     555.3  |  252k steps/s  |     4.13M steps  |     29s",
+    "  iter    49/150  |  distance    8.05 m  |  return     851.5  |  246k steps/s  |     4.82M steps  |     32s",
+    "  iter    56/150  |  distance   11.53 m  |  return    1121.4  |  217k steps/s  |     5.51M steps  |     35s",
+    "  iter    63/150  |  distance   15.76 m  |  return    1478.1  |  252k steps/s  |     6.19M steps  |     38s",
+    "  iter    70/150  |  distance   27.63 m  |  return    2389.9  |  240k steps/s  |     6.88M steps  |     40s",
+    "  iter    77/150  |  distance   31.49 m  |  return    2564.6  |  246k steps/s  |     7.57M steps  |     43s",
+    "  iter    84/150  |  distance   35.58 m  |  return    2760.0  |  214k steps/s  |     8.26M steps  |     46s",
+    "  iter    91/150  |  distance   34.97 m  |  return    2644.4  |  251k steps/s  |     8.95M steps  |     49s",
+    "  iter    98/150  |  distance   37.56 m  |  return    2791.6  |  252k steps/s  |     9.63M steps  |     52s",
+    "  iter   105/150  |  distance   39.47 m  |  return    2893.2  |  237k steps/s  |    10.32M steps  |     55s",
+    "  iter   112/150  |  distance   46.18 m  |  return    3316.2  |  248k steps/s  |    11.01M steps  |     58s",
+    "  iter   119/150  |  distance   44.90 m  |  return    3188.7  |  241k steps/s  |    11.70M steps  |   1m01s",
+    "  iter   126/150  |  distance   48.52 m  |  return    3406.7  |  184k steps/s  |    12.39M steps  |   1m04s",
+    "  iter   133/150  |  distance   49.15 m  |  return    3428.3  |  248k steps/s  |    13.07M steps  |   1m07s",
+    "  iter   140/150  |  distance   46.51 m  |  return    3218.7  |  238k steps/s  |    13.76M steps  |   1m09s",
+    "  iter   147/150  |  distance   51.13 m  |  return    3515.7  |  254k steps/s  |    14.45M steps  |   1m12s",
+    "  iter   150/150  |  distance   54.26 m  |  return    3719.1  |  233k steps/s  |    14.75M steps  |   1m13s",
+    "done in 1m13s  |  best distance 54.26 m  |  saved runs/walker.npz"
+   ]
+  },
+  {
+   "cwd": "/tmp",
+   "command": "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh/.venv/bin/python -c \"import macgym,sys;print(macgym.__file__)\"",
+   "returncode": 0,
+   "wall_seconds": 0.55,
+   "last_lines": [
+    "/Users/shlok/.aside/runtime/tmp/macgym_fresh__vs68ped/fresh/macgym/__init__.py"
+   ]
+  }
+ ],
+ "notes": [
+  "Requested venv command with runtime python 3.13 failed: argparse rejects '--system-site-packages=false' (store_true flag takes no value). Fell back to /opt/homebrew/bin/python3 (3.14.7) -m venv .venv, as instructed. venv creation 1.8 s.",
+  "Subprocess env stripped of the agent runtime's PYTHON*/PIP_* vars (a first attempt with them inherited broke the Homebrew venv with 'No module named encodings').",
+  "pip used the user's default pip cache (~/Library/Caches/pip); some wheels may have been served from cache rather than downloaded, so 10.6 s is a warm-ish-cache install on network.",
+  "Training wall time includes process start + MLX import/compile; 'best distance' is the CLI's training metric (best mean episode distance seen during training), not the 8 s deterministic eval used in transfer.json.",
+  "About 7 s of the training run overlapped with scripts/evidence/transfer_robust.py (mostly CPU MuJoCo), a minor contention source.",
+  "Checkpoint was written inside the temp clone (runs/walker.npz there) and deleted with it; the repo's runs/walker.npz is untouched.",
+  "Temp dir deleted after the run (verified not to exist)."
+ ],
+ "summary": {
+  "venv_seconds": 1.8,
+  "install_seconds": 10.59,
+  "train_seconds": 74.4,
+  "train_reported": "done in 1m13s | best distance 54.26 m | iter 150 distance 54.26 m, ~233-254k steps/s, 14.75M steps",
+  "python": "3.14.7 (Homebrew)"
+ }
+}
