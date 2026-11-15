@@ -1,0 +1,25 @@
+$ macgym train hopper --iters 40 --envs 4096 --save /tmp/macgym_cli/hopper.npz
+macgym train  hopper  |  4096 envs  |  40 iters
+  robot ready in 0.0s  |  obs 16  act 3  |  dt 0.020s
+  iter     1/40  |  distance   -0.05 m  |  return       4.1  |  129k steps/s  |     0.10M steps  |      0s
+  iter     2/40  |  distance   -0.04 m  |  return       6.1  |  287k steps/s  |     0.20M steps  |      1s
+  iter     4/40  |  distance    0.05 m  |  return      15.5  |  275k steps/s  |     0.39M steps  |      1s
+  iter     6/40  |  distance    0.30 m  |  return      36.6  |  260k steps/s  |     0.59M steps  |      2s
+  iter     8/40  |  distance    0.54 m  |  return      54.8  |  172k steps/s  |     0.79M steps  |      3s
+  iter    10/40  |  distance    0.66 m  |  return      63.8  |  322k steps/s  |     0.98M steps  |      5s
+  iter    12/40  |  distance    0.78 m  |  return      72.4  |  272k steps/s  |     1.18M steps  |      6s
+  iter    14/40  |  distance    0.94 m  |  return      84.9  |  281k steps/s  |     1.38M steps  |      6s
+  iter    16/40  |  distance    1.00 m  |  return      88.8  |  256k steps/s  |     1.57M steps  |      7s
+  iter    18/40  |  distance    1.14 m  |  return      99.1  |  260k steps/s  |     1.77M steps  |      8s
+  iter    20/40  |  distance    1.23 m  |  return     104.4  |  337k steps/s  |     1.97M steps  |      9s
+  iter    22/40  |  distance    1.30 m  |  return     109.6  |  185k steps/s  |     2.16M steps  |     10s
+  iter    24/40  |  distance    1.39 m  |  return     117.2  |  315k steps/s  |     2.36M steps  |     11s
+  iter    26/40  |  distance    1.43 m  |  return     120.4  |  237k steps/s  |     2.56M steps  |     11s
+  iter    28/40  |  distance    1.51 m  |  return     128.2  |  282k steps/s  |     2.75M steps  |     12s
+  iter    30/40  |  distance    1.71 m  |  return     142.9  |  99k steps/s  |     2.95M steps  |     14s
+  iter    32/40  |  distance    1.82 m  |  return     152.2  |  295k steps/s  |     3.15M steps  |     15s
+  iter    34/40  |  distance    2.06 m  |  return     172.0  |  341k steps/s  |     3.34M steps  |     15s
+  iter    36/40  |  distance    2.33 m  |  return     195.6  |  314k steps/s  |     3.54M steps  |     16s
+  iter    38/40  |  distance    2.78 m  |  return     235.9  |  379k steps/s  |     3.74M steps  |     16s
+  iter    40/40  |  distance    3.17 m  |  return     275.2  |  365k steps/s  |     3.93M steps  |     17s
+done in 17s  |  best distance 3.17 m  |  saved /tmp/macgym_cli/hopper.npz

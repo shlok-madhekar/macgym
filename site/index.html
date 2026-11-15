@@ -16,21 +16,61 @@
   </div>
 </header>
 
-<section class="hero">
-  <div class="l">
-    <div class="eyebrow mono-label"><span class="dot"></span>Open-source robot learning for Apple Silicon</div>
-    <h1>Robot learning, on the Mac you already own.</h1>
-    <p class="sub">Define a robot in fifteen lines of Python. MacGym compiles it to a Metal kernel, trains 4,096 copies on your Mac's GPU, and exports the policy to CoreML.</p>
-    <div class="ctas">
-      <a class="btn" href="quickstart.html">Get started</a>
-      <a class="btn ghost" href="/playground">Open Playground</a>
-      <a class="btn ghost" href="https://github.com/shlokmadhekar/macgym"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>&nbsp;GitHub</a>
+<section class="lead">
+  <div class="lead-l">
+    <h1>4,096 robots learn to walk.<br>On a MacBook.</h1>
+    <p class="sub">MacGym turns the Mac you already own into a robot-learning lab. Describe a robot in a few lines of Python, and your Mac's GPU trains thousands of copies of it at once while you watch them get better.</p>
+  </div>
+  <div class="lead-r">
+    <a class="btn big" href="/playground">Try it in your browser</a>
+    <a class="btn ghost big" href="quickstart.html">Install in 5 minutes</a>
+    <span class="req">Free and open source · any Apple Silicon Mac (M1 or newer)</span>
+  </div>
+</section>
+<section class="track">
+  <canvas id="swarm" aria-label="Animated illustration: walkers going further at each stage of training"></canvas>
+  <div class="track-foot"><span id="swarm-cap">Illustration, not recorded data. Run <code>macgym view walker</code> to watch a real run.</span><span id="swarm-gen"></span><span class="acc" id="swarm-best"></span></div>
+</section>
+
+<section class="paths">
+  <div class="path">
+    <div class="path-k">New to robot learning?</div>
+    <h2>It learns the way you learned to ride a bike: by trying.</h2>
+    <ol class="steps">
+      <li><b>Build a body.</b> Sticks joined by motors. No physics degree needed: each part is one line of Python.</li>
+      <li><b>Say what "good" means.</b> For walking, that is "move forward without falling over".</li>
+      <li><b>Press Run.</b> Thousands of copies flail, the ones that get further teach the rest, and in about a minute they walk.</li>
+    </ol>
+    <a class="arrow" href="/playground">Open the Playground and press Run &rarr;</a>
+  </div>
+  <div class="path tech">
+    <div class="path-k">Want the details?</div>
+    <h2>Batched planar rigid-body sim + PPO, on one chip.</h2>
+    <dl class="spec">
+      <div><dt>Physics</dt><dd>2D capsule bodies, motorized hinges, joint limits, contact with friction. Each body plan compiles to its own Metal kernel, one GPU thread per robot.</dd></div>
+      <div><dt>Learning</dt><dd>PPO in MLX. Sim state and network weights share unified memory, so nothing is copied between simulator and learner.</dd></div>
+      <div><dt>Throughput</dt><dd><b>3.0M</b> env-steps/s, 4,096 walkers (sim only) · <b>272K</b> steps/s end to end with PPO updates · Apple M3 Pro.</dd></div>
+      <div><dt>vs MuJoCo</dt><dd><b>~21x</b> the env-steps/s of MuJoCo on all 11 CPU cores of the same laptop, on a quiet run. Different physics (2D impulse vs 3D constraint solver), so read it as RL experience per second, not identical sims.</dd></div>
+      <div><dt>Export</dt><dd>CoreML and ONNX, checked against the trained network: max error 3.6e-7 / 4.8e-7.</dd></div>
+      <div><dt>Interop</dt><dd><code>mg.to_gymnasium(env)</code> for your own trainer. CLI: <code>new · train · view · export · bench</code>.</dd></div>
+      <div><dt>Limits</dt><dd>Planar (2D) only. No sim-to-real transfer yet; next step is a sim-to-sim test in MuJoCo.</dd></div>
+    </dl>
+    <a class="arrow" href="benchmarks.html">Full benchmark and method &rarr;</a>
+  </div>
+</section>
+
+<section class="code-row">
+  <div class="code-l">
+    <h2>A whole robot, and its goal, in one file.</h2>
+    <p>This is the complete definition of a two-legged walker. Change a number, press Run, and watch what the robots do with the new body.</p>
+    <div class="after-code">
+      <div><span class="mono-label">Train</span><code>macgym train strider.py</code></div>
+      <div><span class="mono-label">Watch</span><code>macgym view strider.py</code></div>
+      <div><span class="mono-label">Ship</span><code>--format coreml</code></div>
     </div>
     <div class="install"><span class="p">$</span><code id="inst">pip install -e .</code><button type="button" data-copy="#inst">Copy</button></div>
-    <div class="req mono-label">Apple Silicon (M1 or newer) · Python 3.10+ · MLX</div>
   </div>
-  <div class="r">
-    <div class="codeblock"><div class="cap"><span class="mono-label">strider.py</span><button class="copy" type="button" data-copy="#hero-code">Copy</button></div>
+  <div class="code-r"><div class="codeblock"><div class="cap"><span class="mono-label">strider.py</span><button class="copy" type="button" data-copy="#hero-code">Copy</button></div>
     <pre><code id="hero-code" data-lang="py" data-lines>import macgym as mg
 
 robot = mg.Robot(&quot;strider&quot;)   # planar (2D): x forward, y up
@@ -48,31 +88,9 @@ task = mg.Task(
 if __name__ == &quot;__main__&quot;:   # `macgym train strider.py` only reads robot + task
     env = mg.make(robot, task, num_envs=4096)
     result = mg.train(env, iters=200, save=&quot;runs/strider.npz&quot;)
-    print(mg.evaluate(env, result.policy))   # {'dist': ..., 'return': ..., 'survived': ...}</code></pre></div>
-    <div class="after-code">
-      <div><span class="mono-label">Train</span><code>macgym train strider.py</code></div>
-      <div><span class="mono-label">Watch</span><code>macgym view strider.py</code></div>
-      <div><span class="mono-label">Ship</span><code>--format coreml</code></div>
-    </div>
-  </div>
+    print(mg.evaluate(env, result.policy))   # {'dist': ..., 'return': ..., 'survived': ...}</code></pre></div></div>
 </section>
-<section class="track">
-  <div class="track-head"><span class="mono-label" id="swarm-gen">iteration 0</span><span class="mono-label" id="swarm-cap">Illustration, not recorded data. Run <code>macgym view walker</code> to watch a real run.</span><span class="mono-label" style="color:var(--accent)" id="swarm-best">best 0.0 m</span></div>
-  <canvas id="swarm" aria-label="Animated illustration: overlaid walkers going further each training iteration"></canvas>
-</section>
-<section class="numbers">
-  <div><div class="v acc">21<small>x</small></div><div class="k">more env-steps per second than MuJoCo running on all 11 CPU cores of the same laptop.</div><div class="fine mono-label">Walker, 2D vs 3D physics. See notes.</div></div>
-  <div><div class="v">3.0<small>M/s</small></div><div class="k">env-steps per second with 4,096 walkers on one M3 Pro GPU, physics and auto-reset included.</div><div class="fine mono-label">MLX on Metal, median of 5 windows</div></div>
-  <div><div class="v">6.3<small>M/s</small></div><div class="k">env-steps per second at 16,384 walkers. Unified memory means no copies between sim and policy.</div><div class="fine mono-label">Apple M3 Pro, 18 GB</div></div>
-</section>
-<div class="numbers-note"><span>Measured 2026-11-15 12:02:33 PST on Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2. MacGym uses simplified 2D planar dynamics; MuJoCo solves full 3D with a constraint solver. Read the ratio as RL experience per second on this laptop, not identical physics.</span><a href="benchmarks.html">Full benchmark</a></div>
-<section class="feature-grid">
-  <a href="api.html#robot"><div class="n">01 · DEFINE</div><h3>Robots are Python</h3><p>Capsules, hinges, motors, limits. No XML, no URDF. A Robot is a few method calls you can read in one screen.</p><div class="go">mg.Robot &rarr;</div></a>
-  <a href="how-it-works.html"><div class="n">02 · COMPILE</div><h3>One GPU thread per robot</h3><p>Each body plan becomes its own Metal kernel. Thousands of copies step in parallel with no Python loop over environments.</p><div class="go">How it works &rarr;</div></a>
-  <a href="api.html#train"><div class="n">03 · TRAIN</div><h3>PPO, on the same chip</h3><p>Rollouts, advantages and updates run in MLX. Sim state and network weights share one pool of unified memory.</p><div class="go">mg.train &rarr;</div></a>
-  <a href="api.html#export"><div class="n">04 · SHIP</div><h3>CoreML or ONNX</h3><p>Export a trained policy for a native app or any runtime. Or wrap the env for Gymnasium and bring your own trainer.</p><div class="go">Policy.export &rarr;</div></a>
-</section>
-<div class="section-head"><h2>Everything is a command away.</h2><a class="mono-label" href="cli.html" style="color:var(--ink)">CLI reference &rarr;</a></div>
+<div class="section-head"><h2>The whole loop from a terminal</h2><a class="mono-label" href="cli.html" style="color:var(--ink)">CLI reference &rarr;</a></div>
 <div class="cli-strip">
   <div><span class="cap mono-label">Terminal</span><pre><code data-lang="sh">$ macgym new strider
 $ macgym train strider.py --envs 4096 --iters 200

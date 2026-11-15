@@ -1,0 +1,602 @@
+[
+ {
+  "id": 1,
+  "persona": "YRI research-scholarship mentor (PhD) judging research depth",
+  "kind": "research",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 2,
+  "persona": "Apple Silicon / Metal GPU engineer",
+  "kind": "expert",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 3,
+  "persona": "open-source maintainer of a popular Python ML library",
+  "kind": "technical",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 4,
+  "persona": "robotics engineer at a humanoid startup who uses Isaac Lab daily",
+  "kind": "expert",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 5,
+  "persona": "tech journalist looking for a story",
+  "kind": "story",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 6,
+  "persona": "college hackathon veteran (won Cal Hacks), hates fluff, loves live proof",
+  "kind": "technical",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 7,
+  "persona": "college hackathon veteran (won Cal Hacks), hates fluff, loves live proof",
+  "kind": "technical",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 8,
+  "persona": "YRI research-scholarship mentor (PhD) judging research depth",
+  "kind": "research",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 9,
+  "persona": "senior software engineer at a Bay Area big-tech company",
+  "kind": "technical",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 10,
+  "persona": "college hackathon veteran (won Cal Hacks), hates fluff, loves live proof",
+  "kind": "technical",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 11,
+  "persona": "senior software engineer at a Bay Area big-tech company",
+  "kind": "technical",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 12,
+  "persona": "high-school student organizer, judges on gut reaction and clarity",
+  "kind": "non-technical-ish",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 13,
+  "persona": "college hackathon veteran (won Cal Hacks), hates fluff, loves live proof",
+  "kind": "technical",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 14,
+  "persona": "YRI research-scholarship mentor (PhD) judging research depth",
+  "kind": "research",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 15,
+  "persona": "robotics engineer at a humanoid startup who uses Isaac Lab daily",
+  "kind": "expert",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 16,
+  "persona": "high-school CS teacher",
+  "kind": "educator",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 17,
+  "persona": "NVIDIA developer-relations engineer, skeptical of non-CUDA claims",
+  "kind": "expert-skeptic",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 18,
+  "persona": "robotics engineer at a humanoid startup who uses Isaac Lab daily",
+  "kind": "expert",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 19,
+  "persona": "game developer who uses physics engines",
+  "kind": "technical",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 20,
+  "persona": "open-source maintainer of a popular Python ML library",
+  "kind": "technical",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 21,
+  "persona": "seed-stage VC who asks who pays and why now",
+  "kind": "business",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 22,
+  "persona": "senior software engineer at a Bay Area big-tech company",
+  "kind": "technical",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 23,
+  "persona": "product manager at a developer platform",
+  "kind": "product",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 24,
+  "persona": "tech journalist looking for a story",
+  "kind": "story",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 25,
+  "persona": "parent volunteer judge with no coding background",
+  "kind": "non-technical",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 26,
+  "persona": "YC founder of a dev-tools company",
+  "kind": "business-technical",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 27,
+  "persona": "product designer who cares about visual polish and storytelling",
+  "kind": "design",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 28,
+  "persona": "AMD developer-cloud sponsor representative (sponsor of the AI/ML and Fintech prizes)",
+  "kind": "sponsor",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 29,
+  "persona": "game developer who uses physics engines",
+  "kind": "technical",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 30,
+  "persona": "parent volunteer judge with no coding background",
+  "kind": "non-technical",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 31,
+  "persona": "Apple Silicon / Metal GPU engineer",
+  "kind": "expert",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 32,
+  "persona": "high-school CS teacher",
+  "kind": "educator",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 33,
+  "persona": "senior software engineer at a Bay Area big-tech company",
+  "kind": "technical",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 34,
+  "persona": "open-source maintainer of a popular Python ML library",
+  "kind": "technical",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 35,
+  "persona": "YC founder of a dev-tools company",
+  "kind": "business-technical",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 36,
+  "persona": "tech journalist looking for a story",
+  "kind": "story",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 37,
+  "persona": "NVIDIA developer-relations engineer, skeptical of non-CUDA claims",
+  "kind": "expert-skeptic",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 38,
+  "persona": "product manager at a developer platform",
+  "kind": "product",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 39,
+  "persona": "startup accelerator program manager who has seen 1,000 pitches",
+  "kind": "pitch",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 40,
+  "persona": "high-school CS teacher",
+  "kind": "educator",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 41,
+  "persona": "high-school student organizer, judges on gut reaction and clarity",
+  "kind": "non-technical-ish",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 42,
+  "persona": "seed-stage VC who asks who pays and why now",
+  "kind": "business",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 43,
+  "persona": "parent volunteer judge with no coding background",
+  "kind": "non-technical",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 44,
+  "persona": "high-school student organizer, judges on gut reaction and clarity",
+  "kind": "non-technical-ish",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 45,
+  "persona": "product manager at a developer platform",
+  "kind": "product",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 46,
+  "persona": "YRI research-scholarship mentor (PhD) judging research depth",
+  "kind": "research",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 47,
+  "persona": "ML researcher (RL / robotics PhD student at Berkeley)",
+  "kind": "expert",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 48,
+  "persona": "ML researcher (RL / robotics PhD student at Berkeley)",
+  "kind": "expert",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 49,
+  "persona": "game developer who uses physics engines",
+  "kind": "technical",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 50,
+  "persona": "NVIDIA developer-relations engineer, skeptical of non-CUDA claims",
+  "kind": "expert-skeptic",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 51,
+  "persona": "Apple Silicon / Metal GPU engineer",
+  "kind": "expert",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 52,
+  "persona": "senior software engineer at a Bay Area big-tech company",
+  "kind": "technical",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 53,
+  "persona": "tech journalist looking for a story",
+  "kind": "story",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 54,
+  "persona": "ML researcher (RL / robotics PhD student at Berkeley)",
+  "kind": "expert",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 55,
+  "persona": "AMD developer-cloud sponsor representative (sponsor of the AI/ML and Fintech prizes)",
+  "kind": "sponsor",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 56,
+  "persona": "high-school student organizer, judges on gut reaction and clarity",
+  "kind": "non-technical-ish",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 57,
+  "persona": "game developer who uses physics engines",
+  "kind": "technical",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 58,
+  "persona": "seed-stage VC who asks who pays and why now",
+  "kind": "business",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 59,
+  "persona": "product manager at a developer platform",
+  "kind": "product",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 60,
+  "persona": "high-school student organizer, judges on gut reaction and clarity",
+  "kind": "non-technical-ish",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 61,
+  "persona": "ML researcher (RL / robotics PhD student at Berkeley)",
+  "kind": "expert",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 62,
+  "persona": "AMD developer-cloud sponsor representative (sponsor of the AI/ML and Fintech prizes)",
+  "kind": "sponsor",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 63,
+  "persona": "first-time hackathon student judge, 15 years old",
+  "kind": "student",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 64,
+  "persona": "open-source maintainer of a popular Python ML library",
+  "kind": "technical",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 65,
+  "persona": "first-time hackathon student judge, 15 years old",
+  "kind": "student",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 66,
+  "persona": "tech journalist looking for a story",
+  "kind": "story",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 67,
+  "persona": "game developer who uses physics engines",
+  "kind": "technical",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 68,
+  "persona": "startup accelerator program manager who has seen 1,000 pitches",
+  "kind": "pitch",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 69,
+  "persona": "startup accelerator program manager who has seen 1,000 pitches",
+  "kind": "pitch",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 70,
+  "persona": "Apple Silicon / Metal GPU engineer",
+  "kind": "expert",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 71,
+  "persona": "product designer who cares about visual polish and storytelling",
+  "kind": "design",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 72,
+  "persona": "first-time hackathon student judge, 15 years old",
+  "kind": "student",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 73,
+  "persona": "startup accelerator program manager who has seen 1,000 pitches",
+  "kind": "pitch",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 74,
+  "persona": "startup accelerator program manager who has seen 1,000 pitches",
+  "kind": "pitch",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 75,
+  "persona": "YC founder of a dev-tools company",
+  "kind": "business-technical",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 76,
+  "persona": "first-time hackathon student judge, 15 years old",
+  "kind": "student",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 77,
+  "persona": "AMD developer-cloud sponsor representative (sponsor of the AI/ML and Fintech prizes)",
+  "kind": "sponsor",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 78,
+  "persona": "high-school CS teacher",
+  "kind": "educator",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 79,
+  "persona": "parent volunteer judge with no coding background",
+  "kind": "non-technical",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 80,
+  "persona": "product designer who cares about visual polish and storytelling",
+  "kind": "design",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 81,
+  "persona": "Apple Silicon / Metal GPU engineer",
+  "kind": "expert",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 82,
+  "persona": "product designer who cares about visual polish and storytelling",
+  "kind": "design",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 83,
+  "persona": "YC founder of a dev-tools company",
+  "kind": "business-technical",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 84,
+  "persona": "YRI research-scholarship mentor (PhD) judging research depth",
+  "kind": "research",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 85,
+  "persona": "first-time hackathon student judge, 15 years old",
+  "kind": "student",
+  "mood": "wants to be impressed by ambition"
+ },
+ {
+  "id": 86,
+  "persona": "product manager at a developer platform",
+  "kind": "product",
+  "mood": "tired after judging 40 projects"
+ },
+ {
+  "id": 87,
+  "persona": "robotics engineer at a humanoid startup who uses Isaac Lab daily",
+  "kind": "expert",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 88,
+  "persona": "seed-stage VC who asks who pays and why now",
+  "kind": "business",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 89,
+  "persona": "robotics engineer at a humanoid startup who uses Isaac Lab daily",
+  "kind": "expert",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 90,
+  "persona": "seed-stage VC who asks who pays and why now",
+  "kind": "business",
+  "mood": "strict and contrarian"
+ },
+ {
+  "id": 91,
+  "persona": "parent volunteer judge with no coding background",
+  "kind": "non-technical",
+  "mood": "enthusiastic"
+ },
+ {
+  "id": 92,
+  "persona": "NVIDIA developer-relations engineer, skeptical of non-CUDA claims",
+  "kind": "expert-skeptic",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 93,
+  "persona": "AMD developer-cloud sponsor representative (sponsor of the AI/ML and Fintech prizes)",
+  "kind": "sponsor",
+  "mood": "loves underdogs"
+ },
+ {
+  "id": 94,
+  "persona": "YC founder of a dev-tools company",
+  "kind": "business-technical",
+  "mood": "values honesty about limitations"
+ },
+ {
+  "id": 95,
+  "persona": "high-school CS teacher",
+  "kind": "educator",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 96,
+  "persona": "NVIDIA developer-relations engineer, skeptical of non-CUDA claims",
+  "kind": "expert-skeptic",
+  "mood": "skims fast and decides in 10 seconds"
+ },
+ {
+  "id": 97,
+  "persona": "ML researcher (RL / robotics PhD student at Berkeley)",
+  "kind": "expert",
+  "mood": "detail-obsessed"
+ },
+ {
+  "id": 98,
+  "persona": "product designer who cares about visual polish and storytelling",
+  "kind": "design",
+  "mood": "fair but busy"
+ },
+ {
+  "id": 99,
+  "persona": "open-source maintainer of a popular Python ML library",
+  "kind": "technical",
+  "mood": "suspicious of AI-generated work"
+ },
+ {
+  "id": 100,
+  "persona": "college hackathon veteran (won Cal Hacks), hates fluff, loves live proof",
+  "kind": "technical",
+  "mood": "tired after judging 40 projects"
+ }
+]

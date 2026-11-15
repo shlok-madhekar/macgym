@@ -141,7 +141,7 @@
   }
   function renderXp() {
     const t = S.frame && xpText(S.envSteps, S.ctrlDt, S.trainSeconds, S.env);
-    if (t) $("heroLabel").innerHTML = t; else $("heroLabel").textContent = "Track";
+    if (t) $("heroLabel").innerHTML = t; else $("heroLabel").textContent = showRecorded() ? "" : "Track";
   }
   function onMetrics(m) {
     if (m.env_steps != null) S.envSteps = m.env_steps;
@@ -250,7 +250,11 @@
   function renderReady() {
     const show = S.state === "idle" && !S.frame;
     $("ready").classList.toggle("hide", !show);
-    $("readyMain").textContent = S.state === "measuring" ? `Measuring raw simulation speed…` : `${fmtInt(S.numEnvs)} robots ready. Press Train.`;
+    const rec = showRecorded();
+    $("ready").classList.toggle("over-replay", !!rec);
+    $("readyMain").textContent = S.state === "measuring" ? `Measuring raw simulation speed…`
+      : rec ? `A real run, recorded on an M3 Pro. Press Train to run ${fmtInt(S.numEnvs)} live on this Mac.` : `${fmtInt(S.numEnvs)} robots ready. Press Train.`;
+    $("heroHelp").textContent = S.frame && isLoco(S.env) ? "Each faint figure is one robot trying to move right. Orange is the one furthest ahead right now." : "";
     $("readySub").textContent = {
       walker: "Every robot starts at 0 m. As they learn, the crowd moves right.",
       cheetah: "Every robot starts at 0 m. As they learn, the crowd moves right.",
@@ -285,9 +289,10 @@
     const parts = [];
     parts.push(`<b>${fmtInt(S.numEnvs)}</b> robots in parallel`);
     parts.push(`${S.machine} (MLX)`);
-    parts.push(`sim only <b>${S.simSps ? fmtSI(S.simSps) : "–"}</b> steps/s`);
-    parts.push(`training (sim + PPO) <b>${S.sps ? fmtSI(S.sps) : "–"}</b> steps/s`);
-    parts.push(`iteration ${S.iter ? `<b>${fmtInt(S.iter)}</b>` : "–"}`);
+    if (S.simSps) parts.push(`sim only <b>${fmtSI(S.simSps)}</b> steps/s`);
+    if (S.sps) parts.push(`training (sim + PPO) <b>${fmtSI(S.sps)}</b> steps/s`);
+    if (S.iter) parts.push(`PPO iteration <b>${fmtInt(S.iter)}</b>`);
+    if (!S.sps && !S.iter) parts.push("press Train to start");
     if (DEMO) parts.push("demo data");
     else if (!S.connected) parts.push("server offline, reconnecting");
     $("foot").innerHTML = parts.map((x) => `<span>${x}</span>`).join('<span class="sep">·</span>');
@@ -316,10 +321,40 @@
     return f;
   }
 
+  // Idle state: play a real recorded run (site/replay.json) instead of an empty screen.
+  let recorded = null, recT0 = performance.now();
+  fetch("/docs/replay.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    const list = j && (Array.isArray(j) ? j : j.replays || j.generations);
+    if (!list || !list.length) return;
+    const want = ["0:00", "0:10", "0:30", "1:00"];
+    let gens = want.map((l) => list.find((r) => r.label === l)).filter((r) => r && r.frames && r.frames.length);
+    if (gens.length < 2) gens = list.filter((r) => r.frames && r.frames.length).slice(0, 4);
+    gens = gens.map((r) => ({ ...r, K: r.K || j.K, dt: r.dt || j.dt || 0.04 }));
+    recorded = { gens, env: j.robot || j.env || "walker" };
+    renderReady();
+  }).catch(() => {});
+  function showRecorded() { return recorded && !S.frame && S.state === "idle" && recorded.env === S.env; }
+  function drawRecorded(ctx, w, h, now) {
+    const g = recorded.gens, top = 118, bot = h - 34, laneH = (bot - top) / g.length;
+    let laneMax = 2, dur = 1;
+    for (const r of g) { const x0 = r.frames[0][0]; for (const f of r.frames) laneMax = Math.max(laneMax, f[0] - x0 + 0.8); dur = Math.max(dur, r.frames.length * r.dt + 1.4); }
+    const labW = 150, resW = 210, x = 32 + labW, lw = w - 64 - labW - resW;
+    g.forEach((r, i) => {
+      const y = top + i * laneH, isNew = i === g.length - 1;
+      const shifted = { ...r, frames: r.frames.map((f) => { const o = f.slice(); const x0 = r.frames[0][0]; for (let q = 0; q < o.length; q += 5) { o[q] -= x0; o[q + 2] -= x0; } return o; }) };
+      T.drawLaneRect(ctx, x, y + 6, lw, laneH - 10, shifted, now, isNew, { robotH: 1.7, laneMax, t0: recT0, dur });
+      ctx.font = `600 15px ${T.SANS}`; ctx.fillStyle = isNew ? C.accent : C.ink; ctx.textAlign = "left";
+      ctx.fillText(r.label === "0:00" ? "0:00 untrained" : `after ${r.label}`, 32, y + laneH / 2 + 5);
+      ctx.font = `600 15px ${T.SANS}`; ctx.fillText(r.result != null ? `${(+r.result).toFixed(1)} m` : "", x + lw + 24, y + laneH / 2);
+      ctx.font = `500 12px ${T.SANS}`; ctx.fillStyle = C.muted; ctx.fillText(r.result_text || "", x + lw + 24, y + laneH / 2 + 18);
+    });
+  }
+
   function drawTrack(now, dt) {
     const { ctx, w, h } = fit(trackCv);
     ctx.clearRect(0, 0, w, h);
     const pad = 32;
+    if (showRecorded()) { drawRecorded(ctx, w, h, now); return; }
     const f = interpolated(now);
     if (isLoco(S.env)) drawLoco(ctx, w, h, pad, f, dt);
     else if (S.env === "arm") drawArm(ctx, w, h, pad, f);
@@ -414,7 +449,7 @@
     const lastT = shown.length ? (shown[shown.length - 1].train_seconds ?? 0) : -1;
     const upcoming = REPLAY_AT.filter((t) => t > lastT + 0.5);
     const longest = shown.reduce((a, r) => Math.max(a, (r.frames || []).length * (r.dt || 0.04)), 0);
-    $("gensNote").textContent = "saved policy replayed for up to 8 s, ends early on a fall";
+    $("gensNote").textContent = "one robot, fresh start, no exploration noise, up to 8 s";
     void longest;
     for (let i = 0; i < 5; i++) {
       const rep = shown[i];

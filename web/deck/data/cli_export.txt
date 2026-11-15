@@ -1,0 +1,4 @@
+$ macgym export hopper.npz --format coreml
+scikit-learn version 1.9.1 is not supported. Minimum required version: 0.17. Maximum required version: 1.5.1. Disabling scikit-learn conversion API.
+
+exported coreml  hopper.mlpackage  |  max |diff| vs MLX 3.6e-07  |  2.4s

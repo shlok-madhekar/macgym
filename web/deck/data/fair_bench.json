@@ -1,0 +1,169 @@
+{
+ "what": "env-steps/s of one control step (dt=0.02 s, 8 substeps x 4 solver iters) of the walker model, physics only (no policy). Same algorithm on CPU and GPU. MuJoCo cheetah via scripts/bench.py (frame_skip 5, includes resets).",
+ "machine": "Apple M3 Pro",
+ "cpu_count": 11,
+ "rows": [
+  {
+   "steps": 3820,
+   "seconds": 1.500631874998362,
+   "env_steps_per_s": 2545.594335055804,
+   "warmup_s": 0.27866158400138374,
+   "finite": true,
+   "backend": "GPU Metal kernel (step_metal)",
+   "num_envs": 1,
+   "uptime": "14:59  up  4:35, 1 user, load averages: 13.31 11.66 13.38"
+  },
+  {
+   "steps": 3596,
+   "seconds": 1.5111736250000831,
+   "env_steps_per_s": 152294.87610994227,
+   "warmup_s": 0.1441411670020898,
+   "finite": true,
+   "backend": "GPU Metal kernel (step_metal)",
+   "num_envs": 64,
+   "uptime": "14:59  up  4:35, 1 user, load averages: 13.31 11.66 13.38"
+  },
+  {
+   "steps": 4044,
+   "seconds": 1.5004234169973643,
+   "env_steps_per_s": 2759924.933914354,
+   "warmup_s": 0.006369750000885688,
+   "finite": true,
+   "backend": "GPU Metal kernel (step_metal)",
+   "num_envs": 1024,
+   "uptime": "14:59  up  4:35, 1 user, load averages: 12.72 11.57 13.34"
+  },
+  {
+   "steps": 3800,
+   "seconds": 1.5002037919985014,
+   "env_steps_per_s": 10375123.75519682,
+   "warmup_s": 0.001629709000553703,
+   "finite": true,
+   "backend": "GPU Metal kernel (step_metal)",
+   "num_envs": 4096,
+   "uptime": "14:59  up  4:35, 1 user, load averages: 12.72 11.57 13.34"
+  },
+  {
+   "steps": 1496,
+   "seconds": 1.5019758329981414,
+   "env_steps_per_s": 16318813.832759138,
+   "warmup_s": 0.0025194160007231403,
+   "finite": true,
+   "backend": "GPU Metal kernel (step_metal)",
+   "num_envs": 16384,
+   "uptime": "14:59  up  4:35, 1 user, load averages: 12.72 11.57 13.34"
+  },
+  {
+   "steps": 52,
+   "seconds": 1.5554168329981621,
+   "env_steps_per_s": 33.431552813895415,
+   "warmup_s": 70.46360591700068,
+   "finite": true,
+   "backend": "CPU same solver, mx ops (Model.step on mx.cpu)",
+   "num_envs": 1,
+   "uptime": "14:59  up  4:35, 1 user, load averages: 12.72 11.57 13.34"
+  },
+  {
+   "steps": 60,
+   "seconds": 1.587147541999002,
+   "env_steps_per_s": 2419.4348026167404,
+   "warmup_s": 8.4554170420015,
+   "finite": true,
+   "backend": "CPU same solver, mx ops (Model.step on mx.cpu)",
+   "num_envs": 64,
+   "uptime": "15:00  up  4:36, 1 user, load averages: 10.16 11.07 13.00"
+  },
+  {
+   "steps": 68,
+   "seconds": 1.5612563750000845,
+   "env_steps_per_s": 44599.97801449889,
+   "warmup_s": 0.29133420899961493,
+   "finite": true,
+   "backend": "CPU same solver, mx ops (Model.step on mx.cpu)",
+   "num_envs": 1024,
+   "uptime": "15:01  up  4:36, 1 user, load averages: 10.33 11.08 12.98"
+  },
+  {
+   "steps": 44,
+   "seconds": 1.5638522909976018,
+   "env_steps_per_s": 115243.62053722654,
+   "warmup_s": 0.2925846250000177,
+   "finite": true,
+   "backend": "CPU same solver, mx ops (Model.step on mx.cpu)",
+   "num_envs": 4096,
+   "uptime": "15:01  up  4:36, 1 user, load averages: 10.33 11.08 12.98"
+  },
+  {
+   "steps": 16,
+   "seconds": 1.938665416000731,
+   "env_steps_per_s": 135218.7942470116,
+   "warmup_s": 0.4456137499983015,
+   "finite": true,
+   "backend": "CPU same solver, mx ops (Model.step on mx.cpu)",
+   "num_envs": 16384,
+   "uptime": "15:01  up  4:36, 1 user, load averages: 10.54 11.12 12.98"
+  },
+  {
+   "steps": 48,
+   "seconds": 1.6183356250003271,
+   "env_steps_per_s": 29.660102180590815,
+   "warmup_s": 0.6430570830016222,
+   "finite": true,
+   "backend": "GPU same solver, mx ops (Model.step on mx.gpu)",
+   "num_envs": 1,
+   "uptime": "15:01  up  4:37, 1 user, load averages: 10.54 11.12 12.98"
+  },
+  {
+   "steps": 40,
+   "seconds": 1.566177916000015,
+   "env_steps_per_s": 1634.5524820948729,
+   "warmup_s": 0.37642095899718697,
+   "finite": true,
+   "backend": "GPU same solver, mx ops (Model.step on mx.gpu)",
+   "num_envs": 64,
+   "uptime": "15:01  up  4:37, 1 user, load averages: 10.50 11.10 12.97"
+  },
+  {
+   "steps": 48,
+   "seconds": 1.5321692500001518,
+   "env_steps_per_s": 32080.00682691885,
+   "warmup_s": 0.2989671250034007,
+   "finite": true,
+   "backend": "GPU same solver, mx ops (Model.step on mx.gpu)",
+   "num_envs": 1024,
+   "uptime": "15:01  up  4:37, 1 user, load averages: 10.50 11.10 12.97"
+  },
+  {
+   "steps": 56,
+   "seconds": 1.5449043340013304,
+   "env_steps_per_s": 148472.62380701074,
+   "warmup_s": 0.2510209579995717,
+   "finite": true,
+   "backend": "GPU same solver, mx ops (Model.step on mx.gpu)",
+   "num_envs": 4096,
+   "uptime": "15:01  up  4:37, 1 user, load averages: 10.50 11.10 12.97"
+  },
+  {
+   "steps": 48,
+   "seconds": 1.5805960409998079,
+   "env_steps_per_s": 497554.0742861418,
+   "warmup_s": 0.34384187500108965,
+   "finite": true,
+   "backend": "GPU same solver, mx ops (Model.step on mx.gpu)",
+   "num_envs": 16384,
+   "uptime": "15:01  up  4:37, 1 user, load averages: 10.06 11.00 12.92"
+  },
+  {
+   "backend": "MuJoCo cheetah, 1 thread",
+   "num_envs": 1,
+   "env_steps_per_s": 41342.321543194645,
+   "uptime": "15:01  up  4:37, 1 user, load averages: 10.06 11.00 12.92"
+  },
+  {
+   "backend": "MuJoCo cheetah, 11 processes",
+   "num_envs": 11,
+   "env_steps_per_s": 106678.4697423702,
+   "uptime": "15:01  up  4:37, 1 user, load averages: 9.57 10.88 12.87"
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+$ python3 -m pytest tests/test_cli_export.py -q
+.......                                                                  [100%]
+7 passed in 9.39s
+
+$ python3 tests/test_api.py --quick
+build + step 200 @ N=4096:
+  walker   bodies=7 joints=6 obs= 24 act=6 |  6.65M steps/s | nan=False
+  cheetah  bodies=7 joints=6 obs= 17 act=6 |  3.82M steps/s | nan=False
+  hopper   bodies=4 joints=3 obs= 16 act=3 |  4.27M steps/s | nan=False
+  tripod   bodies=7 joints=6 obs= 25 act=6 |  4.69M steps/s | nan=False
+  worm     bodies=5 joints=4 obs= 19 act=4 |  5.52M steps/s | nan=False
+  biped2   bodies=5 joints=4 obs= 19 act=4 |  4.17M steps/s | nan=False
+errors:
+  ok: duplicate body name 'a'
+  ok: joint parent and child must be different bodies
+  ok: robot 'bad' has no joints (nothing to actuate)
+legacy parity:
+  walker: obs parity max err 0.00e+00 | runs/walker.npz on public-API env: 16.01 m in 6 s
+  cheetah: obs parity max err 0.00e+00 | runs/cheetah.npz on public-API env: 21.36 m in 6 s
+(exit 0: all checks passed)

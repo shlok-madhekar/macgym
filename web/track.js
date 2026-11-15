@@ -287,8 +287,8 @@
       ctx.strokeStyle = C.rule; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, T + ph); ctx.stroke(); ctx.setLineDash([]);
     }
     if (hist.length < 1) {
-      mono(ctx, 11, C.faint);
-      tracked(ctx, opts.emptyText || (st.state === "idle" ? "PROGRESS APPEARS HERE ONCE TRAINING STARTS" : "WAITING FOR FIRST FINISHED EPISODES"), L + pw / 2, T + ph / 2, "center");
+      ctx.font = `500 13px ${SANS}`; ctx.fillStyle = C.faint; ctx.textAlign = "center";
+      ctx.fillText(opts.emptyText || (st.state === "idle" ? "The learning curve draws here once training starts" : "Waiting for the first robots to finish an episode"), L + pw / 2, T + ph / 2);
       return;
     }
     ctx.strokeStyle = C.ink; ctx.lineWidth = 1.75; ctx.lineJoin = "round";
@@ -362,6 +362,13 @@
   function drawLane(cv, rep, now, isNew, opts) {
     const { ctx, w, h } = fit(cv);
     ctx.clearRect(0, 0, w, h);
+    laneBody(ctx, w, h, rep, now, isNew, opts);
+  }
+  // same lane, drawn into a sub-rectangle of an existing canvas (viewer idle state)
+  function drawLaneRect(ctx, x, y, w, h, rep, now, isNew, opts) {
+    ctx.save(); ctx.translate(x, y); laneBody(ctx, w, h, rep, now, isNew, opts); ctx.restore();
+  }
+  function laneBody(ctx, w, h, rep, now, isNew, opts) {
     const frames = rep.frames || [];
     if (!frames.length) return;
     const K = rep.K || frames[0].length / 5;
@@ -401,5 +408,5 @@
     ctx.fillRect(Math.round(xNow) - 0.5, gy - 1, 2, 3);
   }
 
-  window.MacGymTrack = { C, SANS, MONO, clamp, mmss, fit, strokeRobots, strokeOne, mono, tracked, dashed, label, niceStep, median, Interp, drawLoco, drawChart, drawReplay, drawLane };
+  window.MacGymTrack = { C, SANS, MONO, clamp, mmss, fit, strokeRobots, strokeOne, mono, tracked, dashed, label, niceStep, median, Interp, drawLoco, drawChart, drawReplay, drawLane, drawLaneRect };
 })();

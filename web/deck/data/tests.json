@@ -1,0 +1,8 @@
+{
+ "pytest_cli_export": {"passed": 7, "failed": 0, "seconds": 9.39, "summary": "7 passed in 9.39s"},
+ "test_api_quick": {"exit": 0, "robot_step_checks_passed": 6, "error_checks_passed": 3, "legacy_parity_checks_passed": 2, "total_passed": 11,
+   "steps_per_sec_at_4096": {"walker": "6.65M", "cheetah": "3.82M", "hopper": "4.27M", "tripod": "4.69M", "worm": "5.52M", "biped2": "4.17M"},
+   "parity": {"walker": "16.01 m in 6 s", "cheetah": "21.36 m in 6 s"}},
+ "total_passed": 18, "total_failed": 0,
+ "note": "An earlier test_api run failed the >1M steps/s tripod check (0.99M) only because it ran concurrently with a CLI training job; the clean solo rerun above passed."
+}

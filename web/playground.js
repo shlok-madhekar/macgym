@@ -386,6 +386,7 @@ function renderStageText() {
   else if (!training && p) hint = `Edits redraw live. <b>⌘↵</b> trains ${fmtInt(S.numEnvs)} copies of it.`;
   else if (training && S.previewErr) hint = `Line ${S.previewErr.line ?? "?"} has an error. The current run keeps training.`;
   else if (training && S.state === "training" && S.ranCode !== S.code) hint = `Code edited. <b>⌘↵</b> retrains from scratch.`;
+  else if (training) hint = `Each faint figure is one copy trying to move right. <b>Orange</b> is the one furthest ahead right now.`;
   $("stageHint").innerHTML = hint;
 }
 function renderHeadline() {
@@ -395,15 +396,16 @@ function renderHeadline() {
   $("hlUnit").textContent = S.unit;
   $("hlLabel").textContent = S.humanSource === "live" ? "average distance so far (no episode finished yet)" : "average distance per finished episode";
   let sub = "press Run to train";
-  if (S.hist.length > 1) sub = `was ${fmtM(S.hist[0][1])} at ${mmss(S.hist[0][0])}${S.humanBest != null ? ` · best ${fmtM(S.humanBest)}` : ""}`;
+  if (S.hist.length > 1 && S.ranCode == null) sub = `joined a run in progress at ${mmss(S.hist[0][0])}${S.humanBest != null ? ` · best ${fmtM(S.humanBest)}` : ""}`;
+  else if (S.hist.length > 1) sub = `was ${fmtM(S.hist[0][1])} at ${mmss(S.hist[0][0])}${S.humanBest != null ? ` · best ${fmtM(S.humanBest)}` : ""}`;
   else if (S.state === "training" || S.state === "starting") sub = "first episodes finishing…";
   $("hlSub").textContent = sub;
 }
 function renderFoot() {
   const parts = [`<b>${fmtInt(S.numEnvs)}</b> copies in parallel`, `${S.machine} (MLX)`,
-    `sim only <b>${S.simSps ? fmtSI(S.simSps) : "–"}</b> steps/s`,
-    `training (sim + PPO) <b>${S.sps ? fmtSI(S.sps) : "–"}</b> steps/s`,
-    `iteration ${S.iter ? `<b>${fmtInt(S.iter)}</b>` : "–"}`];
+    S.simSps ? `sim only <b>${fmtSI(S.simSps)}</b> steps/s` : null,
+    S.sps ? `training (sim + PPO) <b>${fmtSI(S.sps)}</b> steps/s` : null,
+    S.iter ? `PPO iteration <b>${fmtInt(S.iter)}</b>` : "press Run to train"].filter(Boolean);
   if (!S.connected) parts.push("server offline");
   $("foot").innerHTML = parts.map((x) => `<span>${x}</span>`).join('<span class="sep">·</span>');
 }
@@ -565,7 +567,8 @@ function buildGens() {
   const upcoming = REPLAY_AT.filter((t) => t > lastT + 0.5);
   laneT0 = performance.now();
   const longest = shown.reduce((a, r) => ((r.frames || []).length * (r.dt || 0.04) > (a.frames || []).length * (a.dt || 0.04) ? r : a), {});
-  $("gensNote").textContent = longest.frames ? "up to 8 s each, one start, side by side" : "up to 8 s each, one start, side by side";
+  void longest;
+  $("gensNote").textContent = "one robot, fresh start, no exploration noise";
   for (let i = 0; i < GEN_SLOTS; i++) {
     const rep = shown[i];
     const cell = document.createElement("div");
@@ -610,7 +613,7 @@ let lastNow = performance.now(), chartTick = 0;
 function loop(now) {
   const dt = Math.min(0.1, (now - lastNow) / 1000); lastNow = now;
   drawStage(now, dt);
-  if (now - chartTick > 100) { T.drawChart(chartCv, S, { tMin: 60, emptyText: S.state === "idle" ? "PRESS RUN TO TRAIN" : "WAITING FOR FIRST EPISODES" }); chartTick = now; }
+  if (now - chartTick > 100) { T.drawChart(chartCv, S, { tMin: 60, emptyText: S.state === "idle" ? "Press Run and the learning curve draws here" : "Waiting for the first copies to finish an episode" }); chartTick = now; }
   drawGens(now);
   requestAnimationFrame(loop);
 }

@@ -1,0 +1,82 @@
+{
+ "commits": [
+  {
+   "time": "2026-11-15 11:38:20 -0800",
+   "hhmm": "11:38",
+   "message": "contract + skeleton"
+  },
+  {
+   "time": "2026-11-15 11:51:59 -0800",
+   "hhmm": "11:51",
+   "message": "MacGym: MLX envs (cartpole, arm, walker, cheetah), Metal 2D multibody physics, PPO, websocket server, three.js viewer"
+  },
+  {
+   "time": "2026-11-15 12:03:25 -0800",
+   "hhmm": "12:03",
+   "message": "Gait fix (hip limit), trained checkpoints, viewer focus mode + polish, bench + Devpost docs"
+  },
+  {
+   "time": "2026-11-15 13:33:50 -0800",
+   "hhmm": "13:33",
+   "message": "v2: human-unit metrics, track view, generation replays, paper/ink UI"
+  },
+  {
+   "time": "2026-11-15 13:33:52 -0800",
+   "hhmm": "13:33",
+   "message": "framework spec"
+  },
+  {
+   "time": "2026-11-15 13:55:54 -0800",
+   "hhmm": "13:55",
+   "message": "v3 framework: public API (Robot/Task/make/train), built-in robots, CLI, CoreML/ONNX export, gymnasium wrapper, code Playground, docs site, /docs route, macgym view"
+  },
+  {
+   "time": "2026-11-15 14:02:13 -0800",
+   "hhmm": "14:02",
+   "message": "docs match code, build timeout, label fixes"
+  },
+  {
+   "time": "2026-11-15 14:25:54 -0800",
+   "hhmm": "14:25",
+   "message": "Physics realism (warm-start contacts, motor torque-speed curve), retrained checkpoints, real docs replay, UI consistency, framework bench rows, pitch + video script"
+  }
+ ],
+ "count": 8,
+ "first": "2026-11-15 11:38:20 -0800",
+ "latest": "2026-11-15 14:25:54 -0800",
+ "milestones": [
+  {
+   "time": "11:38",
+   "label": "contract + skeleton"
+  },
+  {
+   "time": "11:51",
+   "label": "MLX envs + Metal 2D physics + PPO + live viewer"
+  },
+  {
+   "time": "12:03",
+   "label": "gait fix, trained checkpoints, bench + docs"
+  },
+  {
+   "time": "13:33",
+   "label": "v2: human-unit metrics, track view, generation replays"
+  },
+  {
+   "time": "13:33",
+   "label": "framework spec"
+  },
+  {
+   "time": "13:55",
+   "label": "v3 framework: Robot/Task API, CLI, CoreML/ONNX export, Playground, docs site"
+  },
+  {
+   "time": "14:02",
+   "label": "docs match code, build timeout, label fixes"
+  },
+  {
+   "time": "14:25",
+   "label": "physics realism (warm-start contacts, motor curves), retrained, pitch"
+  }
+ ],
+ "span": "11:38 to 14:25"
+}

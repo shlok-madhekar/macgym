@@ -125,3 +125,13 @@ button, select { font: inherit; color: inherit; background: none; border: 0; cur
 .gens-head .muted { font-family: var(--sans); font-size: 12.5px; letter-spacing: 0; text-transform: none; }
 .hero-note { font-family: var(--sans); font-size: 12.5px; letter-spacing: 0; text-transform: none; }
 .ready-sub { font-family: var(--sans); font-size: 14px; letter-spacing: 0; text-transform: none; }
+
+.hero-help { position: absolute; left: var(--pad); top: 58px; z-index: 2; font-size: 13px; color: var(--muted); }
+.ready.over-replay { top: 30px; text-align: left; left: var(--pad); right: auto; }
+.ready.over-replay .ready-main { font-size: 20px; }
+.ready.over-replay .ready-sub { display: none; }
+.mono { text-transform: none; letter-spacing: 0.02em; }
+.foot { font-size: 11.5px; }
+.gen.empty .gen-box { border: 0; background: repeating-linear-gradient(90deg, transparent 0 7px, rgba(18,18,18,0.035) 7px 8px); }
+.gen.empty .gen-box { background: #ECE8DE; }
+.links a { text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: 13.5px; }

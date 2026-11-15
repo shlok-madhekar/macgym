@@ -1,0 +1,32 @@
+{
+ "setup": "walker (mg.robots.walker), N=4096, rollout T=24, PPO 4 epochs x 4 minibatches, MLP 256x256, 98304 env-steps/iter; mx.eval barrier after every piece; mean of 8 iterations after 8 warm iters",
+ "uptime_start": "15:01  up  4:37, 1 user, load averages: 12.31 11.41 13.03",
+ "uptime_end": "15:01  up  4:37, 1 user, load averages: 14.13 11.80 13.16",
+ "plain_train_iter_s_mean": 0.33277289999969073,
+ "plain_train_iter_s_all": [
+  0.32415833299819496,
+  0.34217904199977056,
+  0.33741770800043014,
+  0.32299691700245603,
+  0.33711249999760184
+ ],
+ "plain_env_steps_per_s": 295408.67059815075,
+ "instrumented_iter_s": 0.3755356302508517,
+ "pieces_s": {
+  "policy_forward_rollout": 0.040495588123121706,
+  "env_step_physics_reward_reset": 0.03726616687572459,
+  "rollout_buffer_writes": 0.01784890062390332,
+  "reward_norm_gae_advnorm": 0.0032760520002739213,
+  "ppo_update_backprop_adam": 0.27191225524984475,
+  "stats_sync_obsnorm_host_copy": 0.004668770749049145
+ },
+ "pieces_pct": {
+  "policy_forward_rollout": 10.783421028803929,
+  "env_step_physics_reward_reset": 9.923470337776312,
+  "rollout_buffer_writes": 4.752918015257446,
+  "reward_norm_gae_advnorm": 0.8723678224847992,
+  "ppo_update_backprop_adam": 72.40651308324905,
+  "stats_sync_obsnorm_host_copy": 1.2432297691514602
+ },
+ "unaccounted_s": 6.789662893424975e-05
+}

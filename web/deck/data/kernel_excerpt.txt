@@ -1,0 +1,20 @@
+// motor torque-speed curve (walker_kernel.metal lines 46-50)
+        for (int j = 0; j < J; j++) {
+            float a_ = clamp((float)action[e * J + j], -1.0f, 1.0f);
+            float qd = w[JB[j]] - w[JA[j]];
+            float t = GEAR[j] * a_ * clamp(1.0f - (a_ >= 0.0f ? qd : -qd) / QDMAX, 0.0f, 1.0f);
+            tau[JB[j]] += t; tau[JA[j]] -= t;
+    ...
+// ground contact: normal impulse (non-negative) + Coulomb-clamped friction (lines 125-136)
+                    int k = c >> 1;
+                    float vn = vy[k] + w[k] * ox[c];
+                    float nw = max(cn[c] + kn[c] * (cb[c] - vn), 0.0f);
+                    float dn = nw - cn[c]; cn[c] = nw;
+                    vy[k] += IM[k] * dn; w[k] += II[k] * ox[c] * dn;
+                    float vt = vx[k] - w[k] * oy[c];
+                    float lim = MU * nw;
+                    float nt = clamp(ct[c] - kt[c] * vt, -lim, lim);
+                    float dt_ = nt - ct[c]; ct[c] = nt;
+                    vx[k] += IM[k] * dt_; w[k] -= II[k] * oy[c] * dt_;
+                }
+            }

@@ -1,161 +1,161 @@
 {
   "machine": "Apple M3 Pro, 18 GB unified memory, 11 CPU cores (5P+6E), macOS 26.5.2",
-  "generated_at": "2026-11-15 14:04:50 PST",
-  "load_avg_1m_at_end": 16.4,
+  "generated_at": "2026-11-15 14:40:43 PST",
+  "load_avg_1m_at_end": 17.2,
   "results": [
     {
       "task": "cartpole",
       "backend": "MLX GPU (Metal)",
       "num_envs": 1024,
-      "steps_per_sec": 3617662.2
+      "steps_per_sec": 2503749.8
     },
     {
       "task": "cartpole",
       "backend": "MLX GPU (Metal)",
       "num_envs": 4096,
-      "steps_per_sec": 14066869.5
+      "steps_per_sec": 9506379.2
     },
     {
       "task": "cartpole",
       "backend": "MLX GPU (Metal)",
       "num_envs": 16384,
-      "steps_per_sec": 42858270.6
+      "steps_per_sec": 35492056.1
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal)",
       "num_envs": 1024,
-      "steps_per_sec": 1224240.5
+      "steps_per_sec": 985045.6
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal)",
       "num_envs": 4096,
-      "steps_per_sec": 4610621.1
+      "steps_per_sec": 2847760.4
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal)",
       "num_envs": 16384,
-      "steps_per_sec": 13202072.8
+      "steps_per_sec": 8755423.8
     },
     {
       "task": "cheetah",
       "backend": "MLX GPU (Metal)",
       "num_envs": 1024,
-      "steps_per_sec": 2110874.3
+      "steps_per_sec": 1171221.7
     },
     {
       "task": "cheetah",
       "backend": "MLX GPU (Metal)",
       "num_envs": 4096,
-      "steps_per_sec": 2037532.2
+      "steps_per_sec": 3420340.8
     },
     {
       "task": "cheetah",
       "backend": "MLX GPU (Metal)",
       "num_envs": 16384,
-      "steps_per_sec": 11128162.2
+      "steps_per_sec": 8514355.9
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 1024,
-      "steps_per_sec": 892199.2,
+      "steps_per_sec": 906805.8,
       "path": "mg.make(mg.robots.walker())"
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 4096,
-      "steps_per_sec": 3193890.7,
+      "steps_per_sec": 3726107.5,
       "path": "mg.make(mg.robots.walker())"
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 16384,
-      "steps_per_sec": 2995791.5,
+      "steps_per_sec": 9742425.9,
       "path": "mg.make(mg.robots.walker())"
     },
     {
       "task": "tripod",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 1024,
-      "steps_per_sec": 725502.9,
+      "steps_per_sec": 439855.9,
       "path": "mg.make(mg.robots.tripod())"
     },
     {
       "task": "tripod",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 4096,
-      "steps_per_sec": 2764401.2,
+      "steps_per_sec": 2746754.0,
       "path": "mg.make(mg.robots.tripod())"
     },
     {
       "task": "tripod",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 16384,
-      "steps_per_sec": 8106501.7,
+      "steps_per_sec": 8027707.5,
       "path": "mg.make(mg.robots.tripod())"
     },
     {
       "task": "hopper",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 1024,
-      "steps_per_sec": 1085328.3,
+      "steps_per_sec": 991696.8,
       "path": "mg.make(mg.robots.hopper())"
     },
     {
       "task": "hopper",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 4096,
-      "steps_per_sec": 2854852.2,
+      "steps_per_sec": 3511938.5,
       "path": "mg.make(mg.robots.hopper())"
     },
     {
       "task": "hopper",
       "backend": "MLX GPU (Metal), framework path",
       "num_envs": 16384,
-      "steps_per_sec": 10217217.2,
+      "steps_per_sec": 12095027.0,
       "path": "mg.make(mg.robots.hopper())"
     },
     {
       "task": "walker",
       "backend": "MLX GPU (Metal), training (sim + PPO)",
       "num_envs": 4096,
-      "steps_per_sec": 271589.4,
+      "steps_per_sec": 302634.2,
       "path": "mg.train(mg.make(mg.robots.walker()), iters=12)"
     },
     {
       "task": "cartpole",
       "backend": "CPU MuJoCo 1 thread",
       "num_envs": 1,
-      "steps_per_sec": 53243.9
+      "steps_per_sec": 75797.3
     },
     {
       "task": "cartpole",
       "backend": "CPU MuJoCo 11 procs",
       "num_envs": 11,
-      "steps_per_sec": 238231.3
+      "steps_per_sec": 147143.0
     },
     {
       "task": "cheetah",
       "backend": "CPU MuJoCo 1 thread",
       "num_envs": 1,
-      "steps_per_sec": 35600.8
+      "steps_per_sec": 39152.7
     },
     {
       "task": "cheetah",
       "backend": "CPU MuJoCo 11 procs",
       "num_envs": 11,
-      "steps_per_sec": 135887.2
+      "steps_per_sec": 132614.3
     }
   ],
   "speedup_best_gpu_vs_best_cpu": {
-    "cartpole": 179.9,
-    "cheetah": 81.9,
-    "walker": 97.2
+    "cartpole": 241.2,
+    "cheetah": 64.2,
+    "walker": 66.0
   },
-  "notes": "env-steps/s = control steps per second summed over all environments (physics substeps / frame-skip included). MLX sim rows: median of 5 timing windows, random actions generated on GPU, full mx.eval every step, auto-reset included, mx.compile on the physics step. Rows marked 'framework path' build the env exactly the way a user does (mg.make(mg.robots.walker()), mg.robots.tripod(), mg.robots.hopper()), so they include the generic Robot/Task layer, reward and obs functions. The 'training (sim + PPO)' row is end-to-end mg.train: rollout, GAE and gradient updates, first (compile) iteration excluded; this is the number that decides how long training actually takes. Why walker is about the same speed as cheetah at small N: at 1024 envs the GPU is not the bottleneck. Each step pays a roughly fixed cost for Python and MLX graph dispatch, so per-step time barely depends on how heavy the robot is. As N grows that fixed cost is amortized, the GPU saturates, and throughput starts to reflect the actual physics work (more bodies and contacts means fewer steps/s). MuJoCo: Gymnasium-style models written inline (InvertedPendulum-like cartpole, timestep 0.02 frame_skip 2; HalfCheetah-like model, timestep 0.01 frame_skip 5), plain Python mj_step loop with random ctrl, then one process per core (11 processes, spawn, warm). CAVEAT: not an apples-to-apples physics comparison. Both sides are planar for locomotion (MuJoCo HalfCheetah is also constrained to the x-z plane). The real difference is the solver: MuJoCo integrates generalized coordinates with a convex, constraint-based contact solver, while MacGym uses maximal coordinates (each body has its own position and angle, joints held together by constraints) with a simpler impulse-based contact solver and few substeps. MuJoCo numbers also include Python loop overhead per step. Walker is compared against MuJoCo HalfCheetah as the nearest planar locomotion model. Read speedups as 'how much RL experience per second this laptop can generate for these tasks', not 'MLX is X times faster than MuJoCo at the same physics'. Numbers vary run to run (roughly +/-30% on the GPU side) because the laptop was not idle during the hackathon. MLX sim rows measured via: {'cartpole': 'macgym.envs', 'walker': 'macgym.envs', 'cheetah': 'macgym.envs'}. mlx 0.32.4, mujoco 4.0.1, Python 3.13.12."
+  "notes": "env-steps/s = control steps per second summed over all environments (physics substeps / frame-skip included). MLX sim rows: median of 5 timing windows, random actions generated on GPU, full mx.eval every step, auto-reset included, mx.compile on the physics step. Rows marked 'framework path' build the env exactly the way a user does (mg.make(mg.robots.walker()), mg.robots.tripod(), mg.robots.hopper()), so they include the generic Robot/Task layer, reward and obs functions. The 'training (sim + PPO)' row is end-to-end mg.train: rollout, GAE and gradient updates, first (compile) iteration excluded; this is the number that decides how long training actually takes. Why walker is about the same speed as cheetah at small N: at 1024 envs the GPU is not the bottleneck. Each step pays a roughly fixed cost for Python and MLX graph dispatch, so per-step time barely depends on how heavy the robot is. As N grows that fixed cost is amortized, the GPU saturates, and throughput starts to reflect the actual physics work (more bodies and contacts means fewer steps/s). MuJoCo: Gymnasium-style models written inline (InvertedPendulum-like cartpole, timestep 0.02 frame_skip 2; HalfCheetah-like model, timestep 0.01 frame_skip 5), plain Python mj_step loop with random ctrl, then one process per core (11 processes, spawn, warm). CAVEAT: not an apples-to-apples physics comparison. Both sides are planar for locomotion (MuJoCo HalfCheetah is also constrained to the x-z plane). The real difference is the solver: MuJoCo integrates generalized coordinates with a convex, constraint-based contact solver, while MacGym uses maximal coordinates (each body has its own position and angle, joints held together by constraints) with a simpler impulse-based contact solver and few substeps. MuJoCo numbers also include Python loop overhead per step. Walker is compared against MuJoCo HalfCheetah as the nearest planar locomotion model. Read speedups as 'how much RL experience per second this laptop can generate for these tasks', not 'MLX is X times faster than MuJoCo at the same physics'. Numbers vary run to run (roughly +/-30% on the GPU side, and the CPU MuJoCo rows drop by up to 2x when other jobs are using the cores) because the laptop was not idle during the hackathon; load_avg_1m_at_end records how busy it was. MLX sim rows measured via: {'cartpole': 'macgym.envs', 'walker': 'macgym.envs', 'cheetah': 'macgym.envs'}. mlx 0.32.4, mujoco 4.0.1, Python 3.13.12."
 }

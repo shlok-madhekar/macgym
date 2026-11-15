@@ -213,7 +213,7 @@
     // labels
     ctx.textAlign = "left"; ctx.font = "500 10px 'JetBrains Mono', monospace";
     ctx.fillStyle = "#6B665C"; ctx.fillText("AVG " + avg.toFixed(1) + " M", X(avg) + 6, 22);
-    if (label) label.textContent = "illustration · " + g.name;
+    if (label) label.textContent = g.name;
     if (best) best.textContent = "best " + poses[bi].dist.toFixed(1) + " m";
     requestAnimationFrame(frame);
   }
@@ -247,17 +247,17 @@
     cv.closest(".track").classList.add("real");
     cv.setAttribute("aria-label", "Recorded replays of one robot's policy at four moments of a real training run");
     const cap = document.getElementById("swarm-cap");
-    if (cap) cap.textContent = "Recorded from a real training run on an M3 Pro.";
-    if (label) label.textContent = `${real.env} · same start · policy saved at ${lanes.length} moments`;
+    if (cap) cap.textContent = `Recorded from a real training run on an M3 Pro. The same ${real.env}, same start, using what it had learned after ${lanes.map((l) => l.r.label).join(", ")} of training.`;
+    if (label) label.textContent = "";
     resize();
     return true;
   }
-  function laneLabel(r) { return r.label === "0:00" ? "0:00 untrained" : r.label === "now" ? "now" : r.label; }
+  function laneLabel(r) { return r.label === "0:00" ? "Untrained" : r.label === "now" ? "Now" : `After ${r.label}`; }
 
   function drawReal(now) {
     const { lanes, dur, maxX, robotH } = real;
     const hold = 1.4; // pause on the final pose before looping
-    const t = ((now - real.t0) / 1000) % (dur + hold);
+    const t = (Math.max(0, now - real.t0) / 1000) % (dur + hold); // rAF time can precede t0 on the first frame
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     const padL = 56, padR = 56, labW = 150, resW = 230;
@@ -278,7 +278,7 @@
     let bestNow = 0;
     lanes.forEach((L, i) => {
       const fr = L.r.frames, n = fr.length;
-      const fi = Math.min(n - 1, Math.floor(Math.min(t, dur) / L.dt));
+      const fi = Math.max(0, Math.min(n - 1, Math.floor(Math.min(t, dur) / L.dt)));
       const gy = Math.round(top + laneH * (i + 1) - 6) + 0.5;
       const newest = i === lanes.length - 1;
       const col = newest ? "#FF4D00" : "#121212";
@@ -306,18 +306,18 @@
       const d = Math.max(0, fr[fi][0] - L.x0);
       bestNow = Math.max(bestNow, d);
       // left label + right result
-      ctx.textAlign = "left"; ctx.font = `500 11px ${MONO}`; ctx.fillStyle = newest ? "#FF4D00" : "#121212";
-      ctx.fillText(laneLabel(L.r).toUpperCase(), padL, gy - laneH / 2 + 10);
+      ctx.textAlign = "left"; ctx.font = `600 15px ${SANS}`; ctx.fillStyle = newest ? "#FF4D00" : "#121212";
+      ctx.fillText(laneLabel(L.r), padL, gy - laneH / 2 + 10);
       const done = t >= n * L.dt;
       // once finished, show the recorded result (same number as result_text), never a second estimate
       const recM = L.r.result != null ? +L.r.result : parseFloat((/(-?[\d.]+) m/.exec(L.r.result_text || "") || [])[1]);
       const shown = done && isFinite(recM) ? recM : d;
       ctx.font = `600 15px ${SANS}`; ctx.textAlign = "left";
       ctx.fillText(`${shown.toFixed(1)} m`, x1 + 28, gy - laneH / 2 + 4);
-      ctx.font = `500 10px ${MONO}`; ctx.fillStyle = "#6B665C";
+      ctx.font = `500 12px ${SANS}`; ctx.fillStyle = "#6B665C";
       ctx.fillText(done ? (L.r.result_text || "") : `replaying… ${(fi * L.dt).toFixed(1)} s`, x1 + 28, gy - laneH / 2 + 22);
     });
-    if (best) best.textContent = `replay t = ${Math.min(t, dur).toFixed(1)} s of ${dur.toFixed(0)} s`;
+    if (best) best.textContent = `${Math.min(t, dur).toFixed(1)} s of ${dur.toFixed(0)} s`;
   }
 
   let tries = 0;
