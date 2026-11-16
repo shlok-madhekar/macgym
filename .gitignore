@@ -33,3 +33,5 @@ dist/
 
 # OS
 .DS_Store
+video/build/
+video/*.mp4
