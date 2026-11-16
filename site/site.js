@@ -200,14 +200,14 @@
       p.legs.forEach(([k, f]) => { seg(p.hip, k); seg(k, f); });
       ctx.stroke();
       if (solid) {
-        ctx.fillStyle = "#FF4D00";
+        ctx.fillStyle = "#1F9D55";
         [p.hip, p.legs[0][0], p.legs[1][0]].forEach((j) => { ctx.beginPath(); ctx.arc(X(j[0]), Y(j[1]), 2.4, 0, 6.29); ctx.fill(); });
       }
     };
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     ctx.strokeStyle = "rgba(18,18,18,0.16)"; ctx.lineWidth = Math.min(3, Math.max(1.2, sc * 0.035));
     poses.forEach((p, i) => { if (i !== bi) draw(p, false); });
-    ctx.strokeStyle = "#FF4D00"; ctx.lineWidth = Math.min(4, Math.max(2, sc * 0.05));
+    ctx.strokeStyle = "#1F9D55"; ctx.lineWidth = Math.min(4, Math.max(2, sc * 0.05));
     draw(poses[bi], true);
 
     // labels
@@ -281,7 +281,7 @@
       const fi = Math.max(0, Math.min(n - 1, Math.floor(Math.min(t, dur) / L.dt)));
       const gy = Math.round(top + laneH * (i + 1) - 6) + 0.5;
       const newest = i === lanes.length - 1;
-      const col = newest ? "#FF4D00" : "#121212";
+      const col = newest ? "#1F9D55" : "#121212";
       // lane ground
       ctx.strokeStyle = "#121212"; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x0 - 8, gy); ctx.lineTo(x1 + 8, gy); ctx.stroke();
@@ -306,7 +306,7 @@
       const d = Math.max(0, fr[fi][0] - L.x0);
       bestNow = Math.max(bestNow, d);
       // left label + right result
-      ctx.textAlign = "left"; ctx.font = `600 15px ${SANS}`; ctx.fillStyle = newest ? "#FF4D00" : "#121212";
+      ctx.textAlign = "left"; ctx.font = `600 15px ${SANS}`; ctx.fillStyle = newest ? "#1F9D55" : "#121212";
       ctx.fillText(laneLabel(L.r), padL, gy - laneH / 2 + 10);
       const done = t >= n * L.dt;
       // once finished, show the recorded result (same number as result_text), never a second estimate

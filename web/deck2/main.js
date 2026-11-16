@@ -4,7 +4,7 @@ import { loadReplay } from './shapes3d.js';
 import { buildSlides } from './slides.js';
 
 const Q = new URLSearchParams(location.search);
-await Promise.all([document.fonts.load('400 200px "Bebas Neue"'), document.fonts.load('500 60px "JetBrains Mono"'), document.fonts.load('400 30px "DM Sans"')]).catch(() => {});
+await Promise.all([document.fonts.load('600 92px "Geist"'), document.fonts.load('500 60px "Geist Mono"')]).catch(() => {}); await document.fonts.ready.catch(() => {});
 await loadReplay('data/replay.json');
 const slides = buildSlides();
 const main = slides.filter((s) => !s.appendix).map((s) => slides.indexOf(s));

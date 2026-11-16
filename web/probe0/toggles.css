@@ -1,0 +1,288 @@
+/*
+ * Checkboxes, switches and sliders.
+ *
+ * Each is a real form element under `appearance: none`; a div with an onClick
+ * would lose Space-to-toggle, label association, form submission and the
+ * correct VoiceOver announcement ("on/off" rather than "checked").
+ *
+ * Knobs on switches and sliders are white in BOTH appearances — they are
+ * physical objects floating over a track, not themed surfaces — and they carry
+ * one of the few legitimate shadows in this design system.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Checkbox (NSButton .switch style is separate — this is the box)         */
+/* ---------------------------------------------------------------------- */
+
+.px-check {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  cursor: default;
+}
+
+.px-check__box {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 var(--box-h);
+  width: var(--box-h);
+  height: var(--box-h);
+}
+
+/* A single-line label centres against its control; a label with a description
+   under it hangs from the top so the control aligns with the first line. */
+.px-check--center {
+  align-items: center;
+}
+
+.px-check__input {
+  appearance: none;
+  margin: 0;
+  width: var(--box-h);
+  height: var(--box-h);
+  border: 0;
+  border-radius: var(--radius-checkbox);
+  background: var(--control-fill);
+  box-shadow: var(--shadow-bezel), var(--shadow-bezel-lip);
+  cursor: default;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.px-check__input:checked,
+.px-check__input:indeterminate {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+body.window-inactive .px-check__input:checked,
+body.window-inactive .px-check__input:indeterminate {
+  background: var(--unemphasized-selected-bg);
+}
+
+.px-check__input:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.px-check__input:disabled {
+  opacity: 0.5;
+}
+
+.px-check__glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--on-accent);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-emphasized);
+}
+
+.px-check__input:checked ~ .px-check__glyph--check,
+.px-check__input:indeterminate ~ .px-check__glyph--mixed {
+  opacity: 1;
+  transform: none;
+}
+.px-check__input:indeterminate ~ .px-check__glyph--check {
+  opacity: 0;
+}
+
+body.window-inactive .px-check__glyph {
+  color: var(--label-primary);
+}
+
+.px-check__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.px-check__label {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  color: var(--label-primary);
+}
+
+.px-check__description {
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  color: var(--label-secondary);
+}
+
+.px-check--disabled .px-check__label,
+.px-check--disabled .px-check__description {
+  color: var(--control-text-disabled);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Switch (NSSwitch)                                                       */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * 54x24 with a 20px knob, per intrinsicContentSize. The knob is white in both
+ * appearances — it is a physical object floating over the track, not a themed
+ * surface — and it is one of the few places a real shadow belongs.
+ */
+.px-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: var(--switch-w);
+  height: var(--switch-h);
+}
+
+.px-switch--small {
+  width: var(--switch-w-small);
+  height: var(--switch-h-small);
+}
+
+.px-switch__input {
+  appearance: none;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--control-track);
+  box-shadow: var(--shadow-bezel);
+  cursor: default;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+/*
+ * A dimmer track than --accent, so the white knob stays visible.
+ *
+ * --accent is now near-white, and a white knob on a near-white track is a
+ * control you cannot read the state of. macOS solves this with a saturated
+ * track; the achromatic equivalent is a mid grey that keeps the knob distinct
+ * while still reading as clearly "on" against the off state.
+ */
+.px-switch__input:checked {
+  background: var(--switch-on);
+  box-shadow: none;
+}
+
+body.window-inactive .px-switch__input:checked {
+  background: var(--unemphasized-selected-bg);
+}
+
+.px-switch__input:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.px-switch__input:disabled {
+  opacity: 0.5;
+}
+
+.px-switch__knob {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: calc(var(--switch-h) - 4px);
+  height: calc(var(--switch-h) - 4px);
+  border-radius: 50%;
+  /*
+   * Always white, never --on-accent.
+   *
+   * A switch knob is white on every macOS switch regardless of the track
+   * colour. Tying it to --on-accent worked while the accent was blue and broke
+   * the instant the accent became near-white: a white knob on a white track is
+   * an invisible control that still reports its state to VoiceOver.
+   */
+  background: #ffffff;
+  box-shadow: var(--shadow-knob);
+  pointer-events: none;
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+
+.px-switch--small .px-switch__knob {
+  width: calc(var(--switch-h-small) - 4px);
+  height: calc(var(--switch-h-small) - 4px);
+}
+
+.px-switch__input:checked ~ .px-switch__knob {
+  transform: translateX(calc(var(--switch-w) - var(--switch-h)));
+}
+
+.px-switch--small .px-switch__input:checked ~ .px-switch__knob {
+  transform: translateX(calc(var(--switch-w-small) - var(--switch-h-small)));
+}
+
+/* ---------------------------------------------------------------------- */
+/* Slider (NSSlider)                                                       */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * `--px-slider-pct` is written inline by the component so the filled portion
+ * of the track can be a gradient stop rather than a second painted element.
+ */
+.px-slider {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  width: 100%;
+}
+
+.px-slider__input {
+  appearance: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--slider-row-h);
+  margin: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.px-slider__input::-webkit-slider-runnable-track {
+  height: var(--slider-track-h);
+  border-radius: calc(var(--slider-track-h) / 2);
+  background: linear-gradient(
+    to right,
+    var(--accent) 0 var(--px-slider-pct, 0%),
+    var(--control-track) var(--px-slider-pct, 0%) 100%
+  );
+}
+
+.px-slider__input::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--slider-knob);
+  height: var(--slider-knob);
+  border-radius: 50%;
+  background: var(--on-accent);
+  box-shadow: var(--shadow-knob);
+  margin-top: calc((var(--slider-track-h) - var(--slider-knob)) / 2);
+}
+
+.px-slider__input:focus-visible {
+  outline: none;
+  border-radius: var(--radius-control);
+  box-shadow: var(--focus-ring);
+}
+
+.px-slider__input:disabled {
+  opacity: 0.5;
+}
+
+body.window-inactive .px-slider__input::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    var(--unemphasized-selected-bg) 0 var(--px-slider-pct, 0%),
+    var(--control-track) var(--px-slider-pct, 0%) 100%
+  );
+}
+
+.px-slider__value {
+  flex: 0 0 auto;
+  min-width: 40px;
+  text-align: right;
+  font-size: var(--text-callout);
+  line-height: var(--lh-callout);
+  font-variant-numeric: tabular-nums;
+  color: var(--label-secondary);
+}

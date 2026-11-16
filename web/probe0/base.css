@@ -1,0 +1,325 @@
+/*
+ * Geist, bundled.
+ *
+ * The token file used to argue for the system stack ("never bundle a UI font"),
+ * which is the right call for an app trying to disappear into macOS. This one
+ * is trying to look like Probe0, and the marketing site is set in Geist. A
+ * native-looking app that shares no type with its own product reads as two
+ * different companies, so brand wins here.
+ *
+ * Variable files, so every weight from 100-900 costs one 68KB download that is
+ * already on disk. Loaded from disk inside the app bundle: no network, no FOUT.
+ *
+ * The two `.woff2` files in `../fonts/` are vendored, not a dependency. The
+ * `geist` npm package pulls `next`, which was the sole source of both of this
+ * repo's `pnpm audit` criticals — a whole framework in the tree to deliver two
+ * font files. See `../fonts/README.md`; the OFL text sits next to them.
+ *
+ * `font-display: block`, not `swap`, and deliberately so: the file is on local
+ * disk and preloaded from `index.html`, so the block period is over before it
+ * can be seen, whereas `swap` would guarantee a visible reflow from the system
+ * face on every cold window. Only the UI face is preloaded — the mono face
+ * first paints below the fold.
+ */
+@font-face {
+  font-family: 'Geist';
+  src: url('./fonts/Geist-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('./fonts/GeistMono-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}
+
+/*
+ * Global reset and window-level behaviour.
+ *
+ * Loaded immediately after `tokens.css` (see the @import header in shell.css).
+ *
+ * THE ONE RULE THAT MAKES OR BREAKS THIS APP
+ * ------------------------------------------
+ * Vibrancy is drawn by AppKit *behind* the web contents. If any element paints
+ * an opaque background over the window, the material is invisible and you get a
+ * flat grey rectangle. html, body and #root are therefore transparent here, and
+ * exactly one surface — the content pane — is opaque. Verify by moving a
+ * colourful window behind the app: the sidebar must visibly pick it up.
+ *
+ * There is deliberately no `backdrop-filter` in this renderer. CSS blur cannot
+ * sample the desktop wallpaper; only the OS material can, and a CSS
+ * approximation next to a real one looks obviously fake.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-regular);
+  color: var(--label-primary);
+  /* macOS 10.14+ dropped subpixel AA system-wide; grayscale is what native
+     controls use, and it is the only option on a transparent web layer. */
+  -webkit-font-smoothing: antialiased;
+  /* App chrome is not text-selectable and shows no I-beam. Being able to
+     drag-select a sidebar label is an instant "this is a web page" tell. */
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+  overflow: hidden;
+  /* SF is a variable font with an optical-size axis; macOS applies tracking
+     automatically. Manual letter-spacing makes text look non-native. */
+  letter-spacing: normal;
+}
+
+/* Re-enable text interaction only where a user genuinely expects it: real
+   content, header values, log bodies, and every input. */
+input,
+textarea,
+[contenteditable],
+.px-selectable,
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: auto;
+}
+
+::selection {
+  background: var(--text-selection-bg);
+}
+
+/* Inputs and buttons do not inherit the system font by default. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+dl,
+dd,
+ul,
+ol {
+  margin: 0;
+}
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--separator);
+  margin: 0;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Focus                                                                   */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * Keyboard path only. macOS draws a 3px accent halo at zero offset that hugs
+ * the control's own radius — not the browser default 2px ring at 2px offset,
+ * and never `outline: none` with nothing in its place.
+ */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Scrollbars — macOS overlay style                                        */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * The thumb is invisible until the scroller is hovered, matching the system
+ * "Show scroll bars: automatically" default. An always-visible custom bar is
+ * one of the loudest Electron tells.
+ *
+ * Note: `scrollbar-width` / `scrollbar-color` are deliberately NOT set —
+ * Chromium ignores every ::-webkit-scrollbar rule the moment either appears.
+ */
+::-webkit-scrollbar {
+  width: 15px;
+  height: 15px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  /* 15px track minus 2x4px border leaves a 7px thumb, which is the native
+     overlay width. */
+  border: 4px solid transparent;
+  border-radius: 8px;
+  background-color: transparent;
+  background-clip: padding-box;
+  transition: background-color var(--dur-normal) var(--ease-standard);
+}
+
+/* One selector, not a list: `::-webkit-scrollbar-thumb` must attach directly to
+   the scrolling element, and an invalid selector anywhere in a comma list
+   drops the WHOLE rule — which would silently mean the thumb never appears. */
+*:hover::-webkit-scrollbar-thumb {
+  background-color: light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.3));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: light-dark(rgba(0, 0, 0, 0.48), rgba(255, 255, 255, 0.48));
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: light-dark(rgba(0, 0, 0, 0.58), rgba(255, 255, 255, 0.58));
+}
+
+/* ---------------------------------------------------------------------- */
+/* Utilities                                                               */
+/* ---------------------------------------------------------------------- */
+
+/* Icons never stretch and never shrink; the slot is reserved by the layout. */
+.px-icon {
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* Numbers are the product. Every numeric column gets this so digits do not
+   jitter as values tick. */
+.px-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.px-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Right-align numerics so magnitudes line up on the decimal. */
+.px-num-cell {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.px-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Announced to assistive tech, invisible on screen. */
+.px-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Titlebar drag regions. Draggable areas swallow ALL pointer events, so every
+   interactive descendant must opt out — that omission is the single most
+   common bug in an Electron custom title bar. */
+.px-drag {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.px-no-drag {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Accessibility                                                           */
+/* ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * With Reduce Transparency on, macOS renders every material as flat grey.
+ * Paint the measured opaque equivalent ourselves so translucent surfaces keep
+ * their identity instead of dissolving into the content pane.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  .px-material {
+    background: var(--material-sidebar);
+  }
+}
+
+/* Probe0 lockup. Mono wordmark so it carries the interface-name reading
+   (probe0 next to eth0, lo0) that the marketing site established. */
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand-lockup__word {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.03em;
+  color: var(--label-primary);
+}
+.brand-lockup__zero {
+  color: var(--label-secondary);
+}

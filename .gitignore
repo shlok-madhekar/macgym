@@ -35,3 +35,6 @@ dist/
 .DS_Store
 video/build/
 video/*.mp4
+
+# Packaged Electron bundle (rebuild from desktop/main.js)
+desktop/MacGym.app/

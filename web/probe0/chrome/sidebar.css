@@ -1,0 +1,371 @@
+/*
+ * Source list.
+ *
+ * ================= DO NOT GIVE THIS ELEMENT A BACKGROUND =================
+ * The window's `vibrancy: 'sidebar'` material is composited by AppKit behind
+ * the web contents. Any opaque paint here — including a "subtle" 2% white —
+ * occludes it, and the app stops being a Mac app. Selection and hover are drawn
+ * as translucent overlays on the *row*, never as a fill on this container.
+ * =========================================================================
+ */
+
+.source-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  /* The scrim. Without it AppKit's material passes wallpaper hue straight
+     through and the sidebar becomes a coloured smear. See --glass-scrim. */
+  background: var(--glass-scrim);
+  box-shadow: var(--glass-specular);
+}
+
+.source-list__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: var(--sp-4);
+  /* Overlay scrollbars, as the system draws them. */
+  scrollbar-width: thin;
+}
+
+.source-list__group {
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * Section header: 11px, semibold, tertiary — Title Case, untracked.
+ *
+ * Finder ("Favorites", "iCloud", "Locations"), Mail and Notes all set sidebar
+ * section headers in Title Case at the system's own tracking. Uppercase +
+ * `letter-spacing` micro-caps is a dashboard idiom, not an AppKit one, and the
+ * tracking only ever existed to compensate for the uppercasing — so both go.
+ */
+.source-list__header {
+  display: flex;
+  align-items: center;
+  height: var(--chrome-sidebar-header-h);
+  margin: var(--sp-5) 0 var(--sp-1);
+  padding: 0 var(--sidebar-header-inset);
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  font-weight: 600;
+  color: var(--label-tertiary);
+  user-select: none;
+}
+
+.source-list__group:first-child .source-list__header {
+  margin-top: var(--sp-3);
+}
+
+/* --- rows -------------------------------------------------------------- */
+
+.source-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: calc(100% - var(--sidebar-pill-inset) * 2);
+  height: var(--chrome-sidebar-row-h);
+  margin: 0 var(--sidebar-pill-inset);
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--radius-selection);
+  background: transparent;
+  color: var(--label-primary);
+  font: inherit;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  text-align: left;
+  cursor: default;
+  /*
+   * Press feedback, then settle.
+   *
+   * Two curves doing different jobs. The press uses `--ease-out` over 80ms so
+   * the dip tracks the finger and feels mechanical. The release uses
+   * `--ease-emphasized`, a decelerating curve, so the row comes back up and the
+   * selection fill arrives together and land softly rather than snapping.
+   *
+   * 0.98, not 0.95: the row is 220px wide, and a scale that reads as a
+   * satisfying press on a 60px button becomes a visible lurch across a full
+   * sidebar row.
+   */
+  transform-origin: center;
+  transition:
+    background var(--dur-normal) var(--ease-emphasized),
+    color var(--dur-fast) var(--ease-standard),
+    transform 320ms var(--ease-spring);
+}
+
+/*
+ * A press you can feel, and a release that overshoots.
+ *
+ * The first attempt used 0.98 and a decelerating curve, which was so restrained
+ * it read as nothing happening. This dips to 0.955 on a fast ease-out so the
+ * press tracks the click, then releases on a spring that overshoots to ~1.02
+ * before settling. The overshoot is the part that makes it feel like a physical
+ * button rather than an opacity change.
+ */
+.source-list__row:active {
+  transform: scale(0.955);
+  transition:
+    background 60ms var(--ease-out),
+    transform 60ms var(--ease-out);
+}
+
+/* The selected pill lands with the same spring, from slightly under. */
+@keyframes source-list-select {
+  0% {
+    transform: scale(0.94);
+  }
+  55% {
+    transform: scale(1.025);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.source-list__row[aria-current='page'] {
+  animation: source-list-select 380ms var(--ease-spring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .source-list__row,
+  .source-list__row:active,
+  .source-list__row[aria-current='page'] {
+    transform: none;
+    animation: none;
+  }
+}
+
+/* 4% overlay only. No lift, no shadow, no border — those are web hover states. */
+.source-list__row:hover:not(:disabled):not([aria-current='page']) {
+  background: var(--hover-overlay);
+}
+
+.source-list__row:disabled {
+  color: var(--label-tertiary);
+}
+
+/*
+ * Selection is a SOLID fill, and it has to be.
+ *
+ * A translucent accent tint is legible over a known grey, but this pill sits on
+ * a vibrancy material — the thing behind it is the user's wallpaper, which we
+ * do not control. A 16% tint over a magenta desktop reads as a muddy plum and
+ * you cannot tell at a glance which row is selected. Finder and Mail use an
+ * opaque `--selected-content-bg` for exactly this reason: it is the only fill
+ * that survives an arbitrary backdrop. The pill inset keeps it from reading as
+ * a full-bleed web nav bar.
+ */
+.source-list__row[aria-current='page'] {
+  /*
+   * An OPAQUE fill, and its own text colour.
+   *
+   * Two things were wrong here. The fill had become
+   * rgba(255,255,255,0.11) when the palette went achromatic, and a translucent
+   * pill on a vibrancy material composites against the user's wallpaper — over
+   * a purple desktop it read as a muddy plum. And `--on-accent` flipped to near
+   * black at the same time (correct for a white button, wrong here), so the
+   * label was dark text on a dark pill.
+   *
+   * A solid surface colour survives any backdrop, which is the whole reason
+   * Finder and Mail use one.
+   */
+  background: var(--sidebar-selection);
+  /* A hairline and a top highlight, so the lit fill still has an edge and does
+     not blur into the panel behind it. */
+  box-shadow:
+    inset 0 0 0 1px var(--sidebar-selection-edge),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: var(--label-primary);
+  font-weight: var(--weight-medium);
+}
+
+/*
+ * Focused vs unfocused selection is mandatory. When the window loses key, the
+ * selection desaturates to the neutral system fill. Web UIs never do this, and
+ * its absence is noticeable the moment you click another app.
+ */
+body.window-inactive .source-list__row[aria-current='page'] {
+  background: var(--unemphasized-selected-bg);
+  color: var(--label-primary);
+}
+
+.source-list__icon {
+  display: grid;
+  place-items: center;
+  /* Fixed slot: SF Symbols have variable widths, so labels would otherwise
+     stagger by a pixel or two per row. */
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  /* Not `--accent`. A navigation glyph is not an accent surface, and tying it
+     to one made every row's icon hostage to whatever the user picked in System
+     Settings — on this Mac, a near-white that vanished in light mode. */
+  color: var(--label-secondary);
+}
+
+.source-list__row[data-tone] .source-list__icon {
+  color: var(--tone-color);
+}
+
+/* The glyph and count follow the row's own colour on a selected row. This used
+   to be --on-accent, which was right when the pill was blue and became dark-on-
+   dark the moment the pill became a dark surface. Specificity has to beat the
+   `[data-tone]` rule above. */
+.source-list__row[aria-current='page'] .source-list__icon,
+.source-list__row[aria-current='page'][data-tone] .source-list__icon,
+.source-list__row[aria-current='page'] .chrome-num {
+  color: var(--label-primary);
+}
+
+body.window-inactive .source-list__row[aria-current='page'] .source-list__icon,
+body.window-inactive .source-list__row[aria-current='page'][data-tone] .source-list__icon {
+  color: var(--label-primary);
+}
+
+body.window-inactive .source-list__row[aria-current='page'] .chrome-num {
+  color: var(--label-secondary);
+}
+
+body.window-inactive .source-list__icon,
+.source-list__row:disabled .source-list__icon {
+  color: var(--label-tertiary);
+}
+
+.source-list__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-list__row .chrome-num {
+  flex: 0 0 auto;
+  font-size: var(--text-footnote);
+  color: var(--label-tertiary);
+}
+
+/* --- footer ------------------------------------------------------------ */
+
+/*
+ * Sidebar-scoped state lives in a sidebar bottom bar, not in the toolbar. The
+ * toolbar is for the current view; the daemon and the spend cap are properties
+ * of the app.
+ */
+.source-list__footer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sidebar-pill-inset) var(--sp-4);
+  border-top: 1px solid var(--separator);
+  background: transparent;
+}
+
+.source-list__daemon {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: var(--chrome-hit-min);
+  padding: var(--sp-1) var(--sp-4);
+  border: 0;
+  border-radius: var(--radius-selection);
+  background: transparent;
+  color: var(--label-secondary);
+  font: inherit;
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  text-align: left;
+  cursor: default;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+
+.source-list__daemon:not(:disabled):hover {
+  background: var(--hover-overlay);
+  color: var(--label-primary);
+}
+
+.source-list__daemon-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-list__daemon .chrome-num--mono {
+  flex: 0 0 auto;
+  color: var(--label-tertiary);
+  font-size: var(--text-footnote);
+}
+
+/* --- spend cap --------------------------------------------------------- */
+
+.source-list__cap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: 0;
+  border-radius: var(--radius-selection);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+
+.source-list__cap:not(:disabled):hover {
+  background: var(--hover-overlay);
+}
+
+.source-list__cap-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.source-list__cap-label {
+  font-size: var(--text-footnote);
+  line-height: var(--lh-footnote);
+  color: var(--label-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-list__cap-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-1);
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  white-space: nowrap;
+}
+
+.source-list__cap-limit {
+  color: var(--label-tertiary);
+  font-size: var(--text-footnote);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * With Reduce Transparency on, AppKit renders the material as flat grey. Paint
+ * the measured opaque equivalent so the sidebar keeps its identity instead of
+ * dissolving into the content pane.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  .source-list {
+    background: var(--material-sidebar);
+  }
+}

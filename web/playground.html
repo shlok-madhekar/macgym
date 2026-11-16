@@ -1,102 +1,100 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MacGym Playground</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>if (new URLSearchParams(location.search).get("embed") === "1") document.documentElement.classList.add("embed");</script>
+<link rel="stylesheet" href="/probe0/tokens.css">
+<link rel="stylesheet" href="/probe0/base.css">
+<link rel="stylesheet" href="/probe0/buttons.css">
+<link rel="stylesheet" href="/probe0/inputs.css">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="playground.css">
 </head>
 <body class="pg">
 <div class="pg-page">
-  <header class="top pg-top">
-    <div class="brand">
-      <span class="wordmark">MacGym</span>
-      <span class="subtitle">Define a robot in Python. Train thousands of copies on your Mac's GPU.</span>
-    </div>
+  <!-- minimal title row, hidden when embedded in the shell (?embed=1) -->
+  <header class="pg-title">
+    <span class="wordmark">MacGym</span>
     <nav class="tabs">
       <a class="on" href="/playground">Playground</a>
       <a href="/viewer">Viewer</a>
       <a href="/docs/">Docs</a>
     </nav>
-    <div class="controls pg-machine mono muted" id="machine">Apple Silicon · MLX</div>
   </header>
 
-  <main class="pg-main">
-    <!-- left: code -->
-    <section class="pg-left">
-      <div class="ed-bar">
-        <label class="file">
-          <span class="mono muted">Robot</span>
-          <select id="preset">
-            <option value="walker">walker.py</option>
-            <option value="cheetah">cheetah.py</option>
-            <option value="hopper">hopper.py</option>
-            <option value="tripod" selected>tripod.py</option>
-            <option value="worm">worm.py</option>
-            <option value="blank">blank.py</option>
+  <!-- toolbar row -->
+  <div class="pg-toolbar">
+    <div class="tb-left">
+      <span class="px-select px-select--plain file-select">
+        <select id="preset" class="px-select__input">
+          <option value="walker">walker.py</option>
+          <option value="cheetah">cheetah.py</option>
+          <option value="hopper">hopper.py</option>
+          <option value="tripod" selected>tripod.py</option>
+          <option value="worm">worm.py</option>
+          <option value="blank">blank.py</option>
+        </select>
+      </span>
+      <span class="tb-meta" id="meta"></span>
+      <span class="dirty" id="dirty">edited</span>
+    </div>
+    <div class="tb-right ed-actions">
+      <label class="count">
+        <span class="lbl">Copies</span>
+        <span class="px-select">
+          <select id="count" class="px-select__input">
+            <option value="1024">1,024</option>
+            <option value="4096" selected>4,096</option>
+            <option value="16384">16,384</option>
           </select>
-          <span class="dirty mono" id="dirty" title="edited">edited</span>
-        </label>
-        <div class="ed-actions">
-          <label class="count">
-            <span class="mono muted">Copies</span>
-            <select id="count">
-              <option value="1024">1,024</option>
-              <option value="4096" selected>4,096</option>
-              <option value="16384">16,384</option>
-            </select>
-          </label>
-          <button id="run" class="primary run"><span class="run-label">Run</span><kbd>⌘↵</kbd></button>
-        </div>
-      </div>
+        </span>
+      </label>
+      <button id="run" class="px-btn px-btn--push px-btn--accent run"><span class="run-label">Run</span><kbd>⌘↵</kbd></button>
+    </div>
+  </div>
+
+  <main class="pg-main">
+    <section class="pg-left">
       <div class="editor" id="editor"></div>
-      <div class="ed-status mono" id="edStatus"><span id="edPos">Ln 1, Col 1</span><span id="edMsg" class="muted">Python · macgym</span></div>
       <div class="console">
-        <div class="console-head">
-          <span class="mono">Console</span>
-          <span class="mono muted" id="conn">connecting…</span>
-        </div>
+        <div class="console-head"><span class="sec-h">Console</span><span class="conn" id="conn"></span></div>
         <div class="console-body" id="console"></div>
       </div>
     </section>
 
-    <!-- right: robots -->
     <section class="pg-right">
       <div class="pg-stage">
         <div class="stage-head">
-          <span class="xp" id="stageLabel">Rest pose</span>
-          <span class="mono muted" id="stageNote"></span>
+          <div class="stat" id="stageLabel"></div>
+          <div class="stage-hint" id="stageHint"></div>
         </div>
         <canvas id="stage"></canvas>
-        <div class="stage-hint" id="stageHint"></div>
       </div>
       <div class="pg-lower">
         <div class="progress pg-progress">
+          <div class="sec-h">Progress</div>
           <div class="headline">
             <div class="hl-value"><span id="hlNum">–</span><span class="hl-unit" id="hlUnit">m</span></div>
-            <div class="hl-label">
-              <span id="hlLabel">average distance per episode</span>
-              <span class="mono muted" id="hlSub">press Run to train</span>
-            </div>
+            <div class="hl-label"><span id="hlLabel">average distance</span></div>
           </div>
           <canvas id="chart"></canvas>
         </div>
         <div class="gens pg-gens">
-          <div class="gens-head">
-            <span class="mono">Generations</span>
-            <span class="mono muted" id="gensNote">one robot, fresh start, no exploration noise</span>
-          </div>
+          <div class="gens-head"><span class="sec-h">Generations</span></div>
           <div class="gens-row" id="gens"></div>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="foot mono" id="foot">connecting…</footer>
+  <!-- legacy hooks (kept so playground.js keeps working; intentionally not shown) -->
+  <div hidden>
+    <span id="machine"></span><span id="stageNote"></span><span id="hlSub"></span><span id="gensNote"></span>
+    <div id="edStatus"><span id="edPos"></span><span id="edMsg"></span></div>
+    <footer id="foot"></footer>
+  </div>
 </div>
 <script src="track.js"></script>
 <script type="module" src="playground.js"></script>

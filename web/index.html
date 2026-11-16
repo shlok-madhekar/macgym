@@ -1,12 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MacGym</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>if (new URLSearchParams(location.search).get("embed") === "1") document.documentElement.classList.add("embed");</script>
+<link rel="stylesheet" href="/probe0/tokens.css">
+<link rel="stylesheet" href="/probe0/base.css">
+<link rel="stylesheet" href="/probe0/buttons.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -32,8 +33,8 @@
           <option value="16384">16,384</option>
         </select>
       </label>
-      <button id="load" class="textbtn">Load trained</button>
-      <button id="train" class="primary">Train</button>
+      <button id="load" class="textbtn px-btn px-btn--plain">Load trained</button>
+      <button id="train" class="primary px-btn px-btn--push px-btn--accent">Train</button>
     </div>
   </header>
 

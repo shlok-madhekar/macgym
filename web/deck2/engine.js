@@ -5,8 +5,8 @@ import * as THREE from 'three';
 import { Cloud, hilbert, hash, clamp, easeIO } from './shapes3d.js';
 
 export const NP = 64000;
-const PALETTE = ['#111111', '#8f8f8b', '#cfcfc9', '#ff4d00', '#d23a24', '#f3b08f', '#e6e6e1'];
-const PAPER = '#fafaf7';
+const PALETTE = ['#F2F2F2', '#8a8a8a', '#3a3a3a', '#FFFFFF', '#d0d0d0', '#4a4a4a', '#2e2e2e'];
+const PAPER = '#1e1e1e';
 
 const VERT = /* glsl */ `
 attribute vec4 aP0; attribute vec4 aN0; attribute vec4 aP1; attribute vec4 aN1; attribute vec2 aR;
@@ -42,7 +42,7 @@ void main(){
     float lam = max(dot(n, uLight), 0.0);
     vec3 V = normalize(uCamPos - p);
     float f = dot(n, V);
-    size *= 0.22 + 1.08*(1.0-lam)*(1.0-lam*0.2);
+    size *= 0.3 + 1.0*lam; // dark mode: lit side = dense bright dots
     if (f < 0.0) { size *= 0.6; c = mix(c, uCol[2], 0.55*(1.0-sin(3.14159*s))); }
     else size *= 0.75 + 0.25*smoothstep(0.0, 0.35, f);
   }

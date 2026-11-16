@@ -1,0 +1,173 @@
+/*
+ * Text fields and form rows.
+ *
+ * The field is a real `<input>` with `appearance: none`, so keyboard
+ * interaction, VoiceOver, form association and the OS focus model all come for
+ * free. Bezeled text fields are 24px tall at every control size (measured),
+ * which is 40% shorter than the web's habitual 40px input.
+ *
+ * Checkboxes, switches and sliders live in `toggles.css`.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Text field (NSTextField / NSSearchField)                                */
+/* ---------------------------------------------------------------------- */
+
+.px-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+
+  height: var(--field-h);
+  padding: 0 var(--sp-3);
+  border-radius: var(--radius-field);
+  background: var(--text-bg);
+  /* Text fields are recessed wells: a hairline ring, never a coloured border. */
+  box-shadow: inset 0 0 0 1px var(--control-hairline);
+  cursor: text;
+  transition: box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.px-field--block {
+  display: flex;
+  width: 100%;
+}
+
+.px-field:focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--accent),
+    var(--focus-ring);
+}
+
+.px-field--invalid {
+  box-shadow: inset 0 0 0 1px var(--system-red);
+}
+.px-field--invalid:focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--system-red),
+    0 0 0 3px color-mix(in srgb, var(--system-red) 40%, transparent);
+}
+
+.px-field--disabled {
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 1px var(--separator);
+  cursor: default;
+}
+
+/* Borderless variant for a toolbar or an inline editable cell. */
+.px-field--plain {
+  background: transparent;
+  box-shadow: none;
+}
+.px-field--plain:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.px-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--label-primary);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+.px-field__input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.px-field__input:disabled {
+  color: var(--control-text-disabled);
+}
+
+/* Chromium's own search decorations duplicate ours. */
+.px-field__input::-webkit-search-decoration,
+.px-field__input::-webkit-search-cancel-button {
+  appearance: none;
+  display: none;
+}
+
+.px-field--mono .px-field__input {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.px-field--numeric .px-field__input {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Leading icon / trailing unit. Fixed slot so labels stay aligned. */
+.px-field__affix {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  color: var(--label-secondary);
+  font-size: var(--text-callout);
+  line-height: var(--lh-callout);
+  pointer-events: none;
+}
+
+.px-field__clear {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--label-tertiary);
+  color: var(--text-bg);
+  cursor: default;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+.px-field__clear:hover {
+  background: var(--label-secondary);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Form rows                                                               */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * macOS aligns a form's labels on their trailing edge against a single control
+ * column. 8px label-to-control, 10px between rows, 20px between titled groups.
+ */
+.px-form {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--sp-4);
+  row-gap: var(--sp-5);
+  align-items: center;
+}
+
+.px-form__label {
+  justify-self: end;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  color: var(--label-primary);
+  white-space: nowrap;
+}
+
+/* Explanatory text belongs under the control, in the control column. */
+.px-form__hint {
+  grid-column: 2;
+  margin-top: calc(var(--sp-3) * -1);
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  color: var(--label-secondary);
+}
+
+.px-form__control {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+}

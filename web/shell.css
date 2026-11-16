@@ -1,0 +1,146 @@
+/*
+ * MacGym window shell.
+ *
+ * Everything structural comes from Probe0's own sheets (tokens, base,
+ * chrome/frame, titlebar, sidebar, content). This file only sets the few
+ * MacGym-specific metrics and the three things Probe0 has no class for: the
+ * app-name row, the machine footer row and the iframe that fills the pane.
+ *
+ * html, body, the frame and the sidebar stay transparent so AppKit's
+ * `vibrancy: 'sidebar'` material shows through. Exactly one opaque surface:
+ * the content pane.
+ */
+
+:root {
+  --toolbar-h: 52px;
+  --sidebar-w: 236px;
+  --chrome-sidebar-w: 236px;
+  --chrome-sidebar-row-h: 36px;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* The whole 52px strip drags; the traffic lights sit in its leading 86px. */
+.titlebar {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/* --- app name row ------------------------------------------------------ */
+
+.shell-brand {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: var(--chrome-sidebar-row-h);
+  margin: var(--sp-2) var(--sidebar-pill-inset) 0;
+  padding: 0 var(--sp-4);
+  color: var(--label-primary);
+}
+
+.shell-brand__mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--label-primary);
+}
+
+.shell-brand__name {
+  font-size: var(--text-headline);
+  line-height: var(--lh-headline);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+body.window-inactive .shell-brand,
+body.window-inactive .shell-brand__mark {
+  color: var(--label-secondary);
+}
+
+/* --- machine footer row ------------------------------------------------ */
+
+.shell-machine {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 24px;
+  padding: 0 var(--sp-4);
+  color: var(--label-tertiary);
+  font-size: var(--text-footnote);
+  line-height: var(--lh-footnote);
+}
+
+.shell-machine svg {
+  flex: 0 0 16px;
+}
+
+/* --- content pane ------------------------------------------------------ */
+
+/* Opaque, per the style pass: one solid pane next to the vibrant sidebar. The
+   rim gradient is Probe0's own, kept so the pane still has its lit edge. */
+.shell-content {
+  position: relative;
+  background:
+    linear-gradient(var(--window-bg), var(--window-bg)) padding-box,
+    linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.055) 45%,
+        rgba(255, 255, 255, 0.03) 100%
+      )
+      border-box;
+}
+
+.shell-view {
+  flex: 1 1 auto;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--window-bg);
+  color-scheme: dark;
+}
+
+/* --- presenting (native full screen on Slides) -------------------------- */
+
+/* Full screen has no traffic lights, so the reserve goes away. */
+body.is-fullscreen .titlebar {
+  padding-left: var(--sp-6);
+}
+
+/* Present mode: the deck owns the whole display. */
+body.is-presenting .chrome-frame {
+  grid-template-rows: 0 minmax(0, 1fr);
+}
+
+body.is-presenting .titlebar,
+body.is-presenting .chrome-frame__sidebar {
+  display: none;
+}
+
+body.is-presenting .chrome-frame__body {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+body.is-presenting .shell-content {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+}

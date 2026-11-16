@@ -1,0 +1,150 @@
+/*
+ * Press feedback.
+ *
+ * Every interactive surface answers a press with movement, not only with a
+ * colour change. A tint swap alone is the flattest possible acknowledgement:
+ * it registers, but nothing about it feels like a control being operated. The
+ * app previously had `:active` on five selectors and all five of them only
+ * changed a background.
+ *
+ * ON REAL HAPTICS: macOS trackpad haptics are `NSHapticFeedbackManager`, which
+ * Electron does not bind; `native/haptics.swift` and `lib/haptics.ts` carry
+ * them. What is here is the visual half of the same idea, and it is the half
+ * that carries on machines without a Force Touch trackpad.
+ *
+ * The rules:
+ *  - Press is FAST IN, SLOW OUT. A press should land instantly and release
+ *    with some ease, which is what makes it read as physical rather than as an
+ *    animation being played at you.
+ *  - Scale, never position. Moving a control on press shifts what is under the
+ *    cursor and makes a drag feel like it slipped.
+ *  - Amounts are small. 0.97 on a button is felt more than seen; anything
+ *    larger reads as a web page bouncing.
+ *  - Every rule collapses under `prefers-reduced-motion`.
+ */
+
+:root {
+  /* Fast in: a press has to land on the same frame as the click. */
+  --press-in: 60ms;
+  /* Slow out, on the spring curve, so release has a little overshoot. */
+  --press-out: 260ms;
+}
+
+/* --- Buttons ----------------------------------------------------------- */
+
+.px-btn,
+.btn,
+.tbr-button {
+  transition:
+    transform var(--press-out) var(--ease-spring),
+    background-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.px-btn:not(:disabled):active,
+.btn:not(:disabled):active,
+.tbr-button:not(:disabled):active {
+  transform: scale(0.97);
+  transition-duration: var(--press-in);
+  transition-timing-function: var(--ease-out);
+}
+
+/* --- Switches ---------------------------------------------------------- */
+
+/*
+ * The knob squashes toward the direction of travel while held, then springs to
+ * the far end on release — the standard iOS/macOS switch feel. Width rather
+ * than scale, because a scaled circle stops touching both edges of the track
+ * and immediately looks wrong.
+ */
+.px-switch__knob {
+  transition:
+    transform var(--press-out) var(--ease-spring),
+    width var(--press-out) var(--ease-spring);
+}
+
+.px-switch:active .px-switch__knob {
+  width: calc(var(--switch-h) - 4px + 4px);
+}
+
+/* Held while already on: the knob stretches back toward the track's start,
+   which is what makes the release read as the knob being let go. */
+.px-switch:active .px-switch__input:checked + .px-switch__knob {
+  margin-left: -4px;
+}
+
+/* --- Sidebar rows ------------------------------------------------------ */
+
+/*
+ * A source-list row is wide, so it gets less scale than a button — the same
+ * 0.97 across 200px is a visible lurch. The inset keeps the row's leading edge
+ * still while the fill contracts around the label.
+ */
+.source-list__row {
+  transition:
+    transform var(--press-out) var(--ease-spring),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+.source-list__row:active {
+  transform: scale(0.985);
+  transition-duration: var(--press-in);
+  transition-timing-function: var(--ease-out);
+}
+
+/* --- Segmented, checkboxes, disclosure rows ---------------------------- */
+
+.px-seg__option,
+.px-check,
+.mrow__disclose,
+.cfg-row__control > .px-btn {
+  transition:
+    transform var(--press-out) var(--ease-spring),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+.px-seg__option:not(:disabled):active,
+.px-check:not(:disabled):active {
+  transform: scale(0.96);
+  transition-duration: var(--press-in);
+  transition-timing-function: var(--ease-out);
+}
+
+/* A whole row scales least of all; it is the largest press target in the app. */
+.mrow__disclose:active {
+  transform: scale(0.99);
+  transition-duration: var(--press-in);
+  transition-timing-function: var(--ease-out);
+}
+
+/* --- Reduced motion ---------------------------------------------------- */
+
+/*
+ * Everything above becomes a no-op. The `:active` background tints stay, so a
+ * press is still acknowledged — this removes the movement, not the feedback.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .px-btn,
+  .btn,
+  .tbr-button,
+  .source-list__row,
+  .px-seg__option,
+  .px-check,
+  .mrow__disclose,
+  .px-switch__knob {
+    transition: background-color var(--dur-fast) var(--ease-standard);
+  }
+
+  .px-btn:not(:disabled):active,
+  .btn:not(:disabled):active,
+  .tbr-button:not(:disabled):active,
+  .source-list__row:active,
+  .px-seg__option:not(:disabled):active,
+  .px-check:not(:disabled):active,
+  .mrow__disclose:active,
+  .px-switch:active .px-switch__knob {
+    transform: none;
+    width: calc(var(--switch-h) - 4px);
+    margin-left: 0;
+  }
+}

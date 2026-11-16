@@ -1,0 +1,183 @@
+/*
+ * Surfaces and separators.
+ *
+ * The material each surface uses is SEMANTIC, chosen by role, never by "how
+ * frosted do I want this". The load-bearing rule for this window:
+ *
+ *   Exactly ONE behind-window vibrant surface exists — the sidebar. The content
+ *   pane is opaque. Two adjacent translucent panes is the glassmorphism
+ *   mistake; Finder, Mail, Xcode and Notes all pair a vibrant sidebar with a
+ *   solid content area.
+ *
+ * `--sidebar` and `--plain` therefore paint nothing at all: they exist to make
+ * "this surface is deliberately transparent" explicit at the call site.
+ */
+
+.px-surface {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The single opaque pane. */
+.px-surface--content {
+  background: var(--window-bg);
+}
+
+/* Grouped box / inspector card. A translucent FILL plus a hairline, and no
+   resting shadow — macOS reserves shadows for floating layers. */
+.px-surface--card {
+  background: var(--fill-quaternary);
+  border-radius: var(--radius-card);
+  box-shadow: inset 0 0 0 1px var(--separator);
+}
+
+/* A recessed well: log bodies, code blocks, empty drop targets. */
+.px-surface--inset {
+  background: var(--under-page-bg);
+  border-radius: var(--radius-field);
+}
+
+/* Table header row / filter bar. `vibrancy: header` is within-window, so the
+   measured tint is the right approximation when the OS is not drawing it. */
+.px-surface--header {
+  background: var(--material-header);
+}
+
+/* Deliberately unpainted, so the OS material shows through. */
+.px-surface--sidebar,
+.px-surface--plain {
+  background: transparent;
+}
+
+/* Floating layers — the only place a real shadow belongs. */
+.px-surface--popover {
+  background: var(--material-popover);
+  border-radius: var(--radius-popover);
+  box-shadow: var(--shadow-popover);
+}
+
+.px-surface--hud {
+  background: var(--material-hud);
+  border-radius: var(--radius-popover);
+  box-shadow: var(--shadow-popover);
+}
+
+.px-surface--sheet {
+  background: var(--material-sheet);
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-sheet);
+}
+
+/* Padding steps. Card padding is 12-16px, not the web's habitual 24px. */
+.px-surface--pad-sm {
+  padding: var(--sp-4);
+}
+.px-surface--pad-md {
+  padding: var(--sp-6);
+}
+.px-surface--pad-lg {
+  padding: var(--sp-7);
+}
+
+.px-surface--scroll {
+  overflow: auto;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Divider                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.px-divider {
+  flex: 0 0 auto;
+  border: 0;
+  background: var(--separator);
+}
+
+.px-divider--horizontal {
+  width: 100%;
+  height: 1px;
+}
+
+.px-divider--vertical {
+  width: 1px;
+  align-self: stretch;
+  min-height: var(--sp-7);
+}
+
+/* Leaves the hairline clear of a pane's edge inset. */
+.px-divider--inset.px-divider--horizontal {
+  width: auto;
+  margin-inline: var(--sp-6);
+}
+.px-divider--inset.px-divider--vertical {
+  margin-block: var(--sp-3);
+}
+
+.px-divider--labeled {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  background: none;
+  height: auto;
+}
+
+.px-divider__label {
+  flex: 0 0 auto;
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  font-weight: var(--weight-semibold);
+  color: var(--label-secondary);
+}
+
+.px-divider__rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--separator);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Group headings                                                          */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * Title Case, untracked. Uppercase letter-spaced micro-caps are a web/dashboard
+ * idiom; modern macOS sidebars and inspectors read "Favorites", "Locations".
+ */
+.px-section-label {
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  font-weight: var(--weight-semibold);
+  color: var(--label-secondary);
+}
+
+.px-title-2 {
+  font-size: var(--text-title-2);
+  line-height: var(--lh-title-2);
+  font-weight: var(--weight-semibold);
+  color: var(--label-primary);
+}
+
+.px-title-3 {
+  font-size: var(--text-title-3);
+  line-height: var(--lh-title-3);
+  font-weight: var(--weight-semibold);
+  color: var(--label-primary);
+}
+
+.px-headline {
+  font-size: var(--text-headline);
+  line-height: var(--lh-headline);
+  font-weight: var(--weight-semibold);
+  color: var(--label-primary);
+}
+
+.px-secondary {
+  color: var(--label-secondary);
+}
+
+.px-footnote {
+  font-size: var(--text-footnote);
+  line-height: var(--lh-footnote);
+  color: var(--label-secondary);
+}

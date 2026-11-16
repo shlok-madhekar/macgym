@@ -22,11 +22,17 @@ const S = {
 
 
 // Simulated experience = env steps x control dt (dt from the replay message: replay dt = 2 x control dt).
+// m:ss under an hour, h:mm:ss above
+function fmtWall(secs) {
+  secs = Math.max(0, Math.floor(secs));
+  const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s2 = String(secs % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${s2}` : `${m}:${s2}`;
+}
 function xpText(steps, ctrlDt, secs, noun) {
   if (!steps || !ctrlDt) return null;
   const h = steps * ctrlDt / 3600;
   const v = h >= 48 ? `${(h / 24).toFixed(h >= 240 ? 0 : 1)} days` : h >= 1 ? `${h.toFixed(h >= 10 ? 0 : 1)} hours` : `${Math.round(h * 60)} minutes`;
-  return `<b>${v}</b> of ${noun} experience in ${Math.floor(secs / 60)}:${String(Math.floor(secs % 60)).padStart(2, "0")} of wall time`;
+  return `<span class="sv">${v}</span><span class="sl">of practice in ${fmtWall(secs)}</span>`;
 }
 
 // ======================================================================
@@ -72,34 +78,33 @@ async function makeCodeMirror(host, onChange, onRun) {
   });
 
   const theme = EditorView.theme({
-    "&": { height: "100%", fontSize: "12.5px", backgroundColor: "#F7F5EF", color: C.ink },
-    ".cm-scroller": { fontFamily: MONO, lineHeight: "1.65", paddingTop: "6px" },
-    ".cm-content": { caretColor: C.ink, padding: "8px 0 40px" },
-    ".cm-line": { padding: "0 16px 0 14px" },
-    ".cm-gutters": { backgroundColor: "#F7F5EF", color: "#ABA496", border: "none", borderRight: `1px solid ${C.rule}`, paddingLeft: "10px" },
-    ".cm-lineNumbers .cm-gutterElement": { padding: "0 12px 0 6px", minWidth: "28px" },
-    ".cm-activeLine": { backgroundColor: "rgba(18,18,18,0.035)" },
-    ".cm-activeLineGutter": { backgroundColor: "transparent", color: C.ink },
-    ".cm-cursor, .cm-dropCursor": { borderLeft: `2px solid ${C.ink}` },
-    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": { backgroundColor: "rgba(255,77,0,0.16) !important" },
-    ".cm-matchingBracket": { backgroundColor: "rgba(18,18,18,0.08)", outline: "none" },
-    ".cm-foldGutter .cm-gutterElement": { color: "#C9C2B4" },
-    ".cm-tooltip": { border: `1px solid ${C.rule}`, backgroundColor: C.paper, fontFamily: MONO, fontSize: "12px" },
-    ".cm-tooltip-autocomplete ul li[aria-selected]": { backgroundColor: C.ink, color: C.paper },
-    ".cm-panels": { backgroundColor: C.paper, color: C.ink, borderTop: `1px solid ${C.rule}` },
-    ".cm-searchMatch": { backgroundColor: "rgba(255,77,0,0.18)" },
-  }, { dark: false });
+    "&": { height: "100%", fontSize: "12px", backgroundColor: "var(--window-bg)", color: "var(--label-primary)" },
+    ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "18px", paddingTop: "4px" },
+    ".cm-content": { caretColor: "var(--label-primary)", padding: "8px 0 40px" },
+    ".cm-line": { padding: "0 18px 0 10px" },
+    ".cm-gutters": { backgroundColor: "var(--window-bg)", color: "var(--label-tertiary)", border: "none", paddingLeft: "8px" },
+    ".cm-lineNumbers .cm-gutterElement": { padding: "0 8px 0 4px", minWidth: "24px" },
+    ".cm-activeLine": { backgroundColor: "var(--fill-quaternary)" },
+    ".cm-activeLineGutter": { backgroundColor: "transparent", color: "var(--label-secondary)" },
+    ".cm-cursor, .cm-dropCursor": { borderLeft: "1.5px solid var(--label-primary)" },
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": { backgroundColor: "var(--text-selection-bg) !important" },
+    ".cm-matchingBracket": { backgroundColor: "var(--fill-tertiary)", outline: "none" },
+    ".cm-foldGutter .cm-gutterElement": { color: "var(--label-quaternary)" },
+    ".cm-tooltip": { border: "1px solid var(--separator)", backgroundColor: "var(--window-bg)", fontFamily: "var(--font-mono)", fontSize: "12px" },
+    ".cm-tooltip-autocomplete ul li[aria-selected]": { backgroundColor: "var(--selection-fill)", color: "var(--label-primary)" },
+    ".cm-panels": { backgroundColor: "var(--window-bg)", color: "var(--label-primary)", borderTop: "1px solid var(--separator)" },
+    ".cm-searchMatch": { backgroundColor: "var(--fill-tertiary)" },
+  }, { dark: true });
   const highlight = lang.HighlightStyle.define([
-    { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword], color: C.ink, fontWeight: "600" },
-    { tag: [t.string, t.special(t.string), t.docString], color: "#76603A" },
-    { tag: [t.number, t.bool, t.null], color: "#2F5D8A" },
-    { tag: [t.comment, t.lineComment], color: "#968F80", fontStyle: "italic" },
-    { tag: [t.function(t.variableName), t.function(t.propertyName)], color: C.ink, fontWeight: "500" },
-    { tag: [t.definition(t.variableName), t.definition(t.function(t.variableName))], color: C.ink, fontWeight: "600" },
-    { tag: [t.propertyName], color: "#3B3934" },
-    { tag: [t.variableName], color: C.ink },
-    { tag: [t.operator, t.punctuation, t.bracket, t.separator], color: "#6B665C" },
-    { tag: [t.self, t.className], color: C.ink, fontWeight: "600" },
+    { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword], color: "var(--label-primary)", fontWeight: "600" },
+    { tag: [t.string, t.special(t.string), t.docString], color: "var(--label-secondary)" },
+    { tag: [t.number, t.bool, t.null], color: "var(--label-secondary)" },
+    { tag: [t.comment, t.lineComment], color: "var(--label-tertiary)" },
+    { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "var(--label-primary)" },
+    { tag: [t.definition(t.variableName), t.definition(t.function(t.variableName))], color: "var(--label-primary)", fontWeight: "500" },
+    { tag: [t.propertyName, t.variableName], color: "var(--label-primary)" },
+    { tag: [t.operator, t.punctuation, t.bracket, t.separator], color: "var(--label-tertiary)" },
+    { tag: [t.self, t.className], color: "var(--label-primary)", fontWeight: "500" },
   ]);
   const ed = new EditorView({
     parent: host,
@@ -215,6 +220,7 @@ function onPreview(m) {
   for (const c of caps) { x0 = Math.min(x0, c[0] - c[4], c[2] - c[4]); x1 = Math.max(x1, c[0] + c[4], c[2] + c[4]); }
   S.robotH = Math.max(0.8, top);
   S.robotW = caps.length ? x1 - x0 : 1;
+  $("meta").textContent = `${m.bodies} bodies, ${m.joints} motors`;
   setStatusMsg(`${m.name || "robot"} · ${m.bodies} bodies · ${m.joints} joints · preview ${m.ms ?? "–"} ms`, false);
   renderStageText();
 }
@@ -290,7 +296,7 @@ function onMetrics(m) {
 function renderXp() {
   const t = S.hasFrame && xpText(S.envSteps, S.ctrlDt, S.trainSeconds, S.robotName || "robot");
   const el = $("stageLabel");
-  if (t) el.innerHTML = t; else el.textContent = S.hasFrame ? "Track" : "Rest pose";
+  if (t) el.innerHTML = t; else el.innerHTML = "";
 }
 function onReplay(m) {
   if (S.ranCode == null && S.state !== "training") return; // stale replays of a finished run
@@ -367,7 +373,7 @@ function renderControls() {
   b.querySelector(".run-label").textContent = busy ? "Building…" : training ? (stale ? "Rerun" : "Stop") : "Run";
   b.querySelector("kbd").style.display = training && !stale ? "none" : "";
 }
-function renderConn() { $("conn").textContent = S.connected ? "connected · localhost" : "server offline, reconnecting"; }
+function renderConn() { const c = $("conn"); c.textContent = ""; c.classList.toggle("on", S.connected); c.title = S.connected ? "connected" : "offline"; }
 
 function renderStageText() {
   const training = S.hasFrame;
@@ -380,13 +386,10 @@ function renderStageText() {
     $("stageNote").textContent = p ? `${p.bodies} bodies · ${p.joints} joints · ${p.joints} motors` : "";
   }
   let hint = "";
-  if (S.state === "building") hint = `Building robot and compiling a Metal kernel for it…`;
-  else if (S.state === "measuring") hint = `Measuring raw simulation speed…`;
-  else if (!training && S.previewErr) hint = `<b>Can't build this robot yet.</b> Fix line ${S.previewErr.line ?? "?"} to see it.`;
-  else if (!training && p) hint = `Edits redraw live. <b>⌘↵</b> trains ${fmtInt(S.numEnvs)} copies of it.`;
-  else if (training && S.previewErr) hint = `Line ${S.previewErr.line ?? "?"} has an error. The current run keeps training.`;
-  else if (training && S.state === "training" && S.ranCode !== S.code) hint = `Code edited. <b>⌘↵</b> retrains from scratch.`;
-  else if (training) hint = `Each faint figure is one copy trying to move right. <b>Orange</b> is the one furthest ahead right now.`;
+  if (S.state === "building") hint = `Building…`;
+  else if (S.state === "measuring") hint = `Measuring speed…`;
+  else if (!training && S.previewErr) hint = `Error on line ${S.previewErr.line ?? "?"}`;
+  else if (training && S.previewErr) hint = `Error on line ${S.previewErr.line ?? "?"}`;
   $("stageHint").innerHTML = hint;
 }
 function renderHeadline() {
@@ -394,7 +397,7 @@ function renderHeadline() {
   $("hlNum").textContent = v == null ? "–" : v.toFixed(v < 10 ? 2 : 1);
   $("hlNum").parentElement.classList.toggle("empty", v == null);
   $("hlUnit").textContent = S.unit;
-  $("hlLabel").textContent = S.humanSource === "live" ? "average distance so far (no episode finished yet)" : "average distance per finished episode";
+  $("hlLabel").textContent = "average distance";
   let sub = "press Run to train";
   if (S.hist.length > 1 && S.ranCode == null) sub = `joined a run in progress at ${mmss(S.hist[0][0])}${S.humanBest != null ? ` · best ${fmtM(S.humanBest)}` : ""}`;
   else if (S.hist.length > 1) sub = `was ${fmtM(S.hist[0][1])} at ${mmss(S.hist[0][0])}${S.humanBest != null ? ` · best ${fmtM(S.humanBest)}` : ""}`;
@@ -424,7 +427,7 @@ function log(line, level, ts) {
   let text = level === "prog" ? line : esc(line);
   // make "line N" clickable: jumps the editor to that line
   text = text.replace(/\(line (\d+)\)|line (\d+)/g, (mm, a, b) => `<a data-line="${a || b}">${mm}</a>`);
-  el.innerHTML = `<span class="ts">${mmss(secs)}</span><span class="mk">${mark}</span><span class="tx">${text}</span>`;
+  el.innerHTML = `<span class="tx">${text}</span>`;
   consoleEl.appendChild(el);
   while (consoleEl.children.length > 400) consoleEl.firstChild.remove();
   consoleEl.scrollTop = consoleEl.scrollHeight;
@@ -475,13 +478,10 @@ function drawPreview(ctx, w, h, now) {
   const caps = previewCaps(now);
   const pad = 28;
   const groundY = Math.round(h - 78) + 0.5;
-  // ground + hatching (technical-drawing convention for a fixed surface)
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 1;
+  ctx.strokeStyle = C.ground; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(pad, groundY); ctx.lineTo(w - pad, groundY); ctx.stroke();
-  ctx.strokeStyle = C.rule;
-  for (let x = pad; x < w - pad; x += 9) { ctx.beginPath(); ctx.moveTo(x, groundY + 1); ctx.lineTo(x - 7, groundY + 8); ctx.stroke(); }
   if (!caps || !caps.length) {
-    mono(ctx, 11, C.faint); tracked(ctx, S.connected ? "WAITING FOR A VALID ROBOT" : "SERVER OFFLINE", w / 2, groundY - 80, "center");
+    mono(ctx, 13, C.faint); tracked(ctx, S.connected ? "" : "Server offline", w / 2, groundY - 80, "center");
     return;
   }
   let x0 = Infinity, x1 = -Infinity, top = 0, bot = Infinity;
@@ -496,62 +496,30 @@ function drawPreview(ctx, w, h, now) {
   const X = (x) => cx + x * s, Y = (y) => groundY - y * s;
   const dim = !!S.previewErr;
 
-  // metre grid behind the robot (10 cm minor)
-  const gx0 = Math.floor(x0 * 10) - 3, gx1 = Math.ceil(x1 * 10) + 3, gyTop = Math.ceil(top * 10) + 2;
-  ctx.lineWidth = 1;
-  for (let i = gx0; i <= gx1; i++) {
-    const x = Math.round(X(i / 10)) + 0.5;
-    ctx.strokeStyle = i % 5 === 0 ? "#E2DCD0" : "#EBE6DC";
-    ctx.beginPath(); ctx.moveTo(x, Y(gyTop / 10)); ctx.lineTo(x, groundY); ctx.stroke();
-    ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.moveTo(x, groundY); ctx.lineTo(x, groundY + (i % 5 === 0 ? 0 : 0)); ctx.stroke();
-  }
-  for (let j = 1; j <= gyTop; j++) {
-    const y = Math.round(Y(j / 10)) + 0.5;
-    ctx.strokeStyle = j % 5 === 0 ? "#E2DCD0" : "#EBE6DC";
-    ctx.beginPath(); ctx.moveTo(X(gx0 / 10), y); ctx.lineTo(X(gx1 / 10), y); ctx.stroke();
-  }
   ctx.globalAlpha = dim ? 0.35 : 1;
-  // capsules: ink outline, paper fill, dashed centre line
-  ctx.lineCap = "round";
+  ctx.lineCap = "round"; ctx.strokeStyle = C.ink;
   for (const c of caps) {
-    ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(3, c[4] * 2 * s);
+    ctx.lineWidth = Math.max(3, c[4] * 2 * s * 0.6);
     ctx.beginPath(); ctx.moveTo(X(c[0]), Y(c[1])); ctx.lineTo(X(c[2]), Y(c[3])); ctx.stroke();
   }
-  for (const c of caps) {
-    ctx.strokeStyle = "#EEEAE1"; ctx.lineWidth = Math.max(1, c[4] * 2 * s - 3);
-    ctx.beginPath(); ctx.moveTo(X(c[0]), Y(c[1])); ctx.lineTo(X(c[2]), Y(c[3])); ctx.stroke();
-  }
-  ctx.save(); ctx.setLineDash([3, 3]); ctx.strokeStyle = C.muted; ctx.lineWidth = 1; ctx.lineCap = "butt";
-  for (const c of caps) { ctx.beginPath(); ctx.moveTo(X(c[0]), Y(c[1])); ctx.lineTo(X(c[2]), Y(c[3])); ctx.stroke(); }
-  ctx.restore();
-  // joints: ring + centre dot; the first body (root) gets a small label
   const jp = (S.preview && S.preview.joint_points) || [];
-  for (const [jx, jy] of jp) {
-    ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(X(jx), Y(jy), 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.accent; ctx.beginPath(); ctx.arc(X(jx), Y(jy), 2, 0, Math.PI * 2); ctx.fill();
-  }
+  ctx.fillStyle = C.paper;
+  for (const [jx, jy] of jp) { ctx.beginPath(); ctx.arc(X(jx), Y(jy), 2.5, 0, Math.PI * 2); ctx.fill(); }
   ctx.globalAlpha = 1;
-  // dimensions
-  const right = X(x1) + 34, left = X(x0);
-  dimLine(ctx, right, groundY, right, Y(top), `${top.toFixed(2)} M`, true);
-  ctx.save(); ctx.setLineDash([2, 3]); ctx.strokeStyle = C.rule; ctx.beginPath(); ctx.moveTo(X(x1) + 4, Math.round(Y(top)) + 0.5); ctx.lineTo(right + 6, Math.round(Y(top)) + 0.5); ctx.stroke(); ctx.restore();
-  dimLine(ctx, left, groundY + 34, X(x1), groundY + 34, `${bw.toFixed(2)} M`, false);
-  // scale bar
-  const bar = s * 0.1;
-  ctx.fillStyle = C.ink; ctx.fillRect(pad, groundY + 50, bar, 3);
-  mono(ctx, 10, C.muted); tracked(ctx, "10 CM", pad + bar + 8, groundY + 54, "left", 0.6);
-  if (bot > 0.02 && !dim) { mono(ctx, 10, C.muted); tracked(ctx, `DROPS ${bot.toFixed(2)} M AT START`, w - pad, groundY + 54, "right", 0.6); }
 }
 
 function drawStage(now, dt) {
   const { ctx, w, h } = fit(stageCv);
   ctx.clearRect(0, 0, w, h);
-  if (!S.hasFrame) return drawPreview(ctx, w, h, now);
+  // full-bleed canvas behind the glass panels; the track lives right of the editor, above the card
+  const RX = 0, RH = h;
+  ctx.save(); ctx.translate(RX, 0);
+  if (!S.hasFrame) { drawPreview(ctx, w - RX, RH, now); ctx.restore(); return; }
   const f = S.interp.at(now);
   // many small robots spread over a long runway: lighter strokes, smaller figures than the viewer
   const alpha = clamp(0.5 / Math.sqrt(f.R) * Math.sqrt(6 / Math.max(6, f.K)) * 1.6, 0.05, 0.2);
-  T.drawLoco(ctx, w, h, 28, f, S.interp.buf, S.interp.dist, S, dt, { robotH: S.robotH, minRange: 6, alpha, figScale: 0.36 });
+  T.drawLoco(ctx, w - RX, RH, 28, f, S.interp.buf, S.interp.dist, S, dt, { robotH: S.robotH, minRange: 6, alpha: alpha * 1.2, figScale: 0.36, groundFrom: 18 });
+  ctx.restore();
 }
 
 // ======================================================================
@@ -578,7 +546,7 @@ function buildGens() {
       const res = rep.result != null ? `walked ${fmtM(rep.result)}` : "";
       cell.innerHTML = `<span class="lt mono">${rep.label === "now" ? "NOW" : rep.label}</span><div class="lbox"><canvas></canvas></div><div class="lr"><b></b><span></span></div>`;
       cell.querySelector(".lr b").textContent = res;
-      cell.querySelector(".lr span").textContent = `${replaySecs(rep)} s replay${/fell/.test(rep.result_text || "") ? " · fell" : ""}`;
+      cell.querySelector(".lr span").textContent = "";
       cell.title = rep.result_text || "";
       genCells.push({ rep, cv: cell.querySelector("canvas"), isNew: i === shown.length - 1 });
     } else {
@@ -613,7 +581,7 @@ let lastNow = performance.now(), chartTick = 0;
 function loop(now) {
   const dt = Math.min(0.1, (now - lastNow) / 1000); lastNow = now;
   drawStage(now, dt);
-  if (now - chartTick > 100) { T.drawChart(chartCv, S, { tMin: 60, emptyText: S.state === "idle" ? "Press Run and the learning curve draws here" : "Waiting for the first copies to finish an episode" }); chartTick = now; }
+  if (now - chartTick > 100) { T.drawChart(chartCv, S, { tMin: 60, emptyText: " " }); chartTick = now; }
   drawGens(now);
   requestAnimationFrame(loop);
 }

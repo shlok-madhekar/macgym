@@ -50,7 +50,7 @@ let GLYPH = null;
 function glyphs() {
   if (GLYPH) return GLYPH; GLYPH = {};
   for (const ch of '0123456789.') {
-    const { pts } = textPoints([ch], '400 760px "Bebas Neue"', 820, 11, 'center');
+    const { pts } = textPoints([ch], '500 760px "Geist Mono", ui-monospace, monospace', 820, 11, 'center');
     const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
     GLYPH[ch] = resample(pts.map((p) => [p[0] - cx, p[1]]), ch === '.' ? 300 : 2400);
   }
@@ -72,7 +72,7 @@ let CODE = null;
 const CODE_LINES = ['robot.joint(torso, leg, motor=80)', 'env = mg.make(robot, task, num_envs=4096)', 'mg.train(env)'];
 function codePts() {
   if (CODE) return CODE;
-  const r = textPoints(CODE_LINES, '500 66px "JetBrains Mono"', 110, 4);
+  const r = textPoints(CODE_LINES, '500 66px "Geist Mono", ui-monospace, monospace', 110, 4);
   CODE = r; return r;
 }
 
@@ -104,10 +104,8 @@ export function buildSlides() {
         { at: 0, trans: 0.01, cam, shape: sphereShape(5.2, 4.8, 0, 6.2, 16000, 0.165, T.INK, 0.25) },
         { at: 0.2, trans: 2.0, cam, sweep: 'y', spread: 0.22, shape: { frame(t, cl) { heroRobot(cl, t, Sx, 0.08, { x: 5.2 }); ground(cl, t, loopSpd() * Sx, { x0: -22, x1: 34, z0: -9, z1: 9, sp: 0.62, dot: 0.1 }); } } },
       ],
-      html: `<div class="kicker fx" data-d="0.3" style="left:110px;top:120px">Bay-Valley Hacks · Elevate the Ordinary</div>
-        <div class="h xxl slam" data-d="1.3" style="left:104px;top:160px">MACGYM</div>
-        <div class="ln sub big" data-d="2.5" style="left:110px;top:470px;width:720px"><span>An ordinary MacBook.</span></div>
-        <div class="ln sub big gray" data-d="2.65" style="left:110px;top:522px;width:720px"><span>A robot-learning lab.</span></div>`,
+      html: `<div class="hb title"><div class="ln " data-d="1.2"><span>MacGym</span></div></div>
+        <div class="top fx" data-d="2.3">An ordinary MacBook.<br><span class="sec">A robot-learning lab.</span></div>`,
     });
   }
   // 02 THE ORDINARY THING -------------------------------------------
@@ -117,11 +115,7 @@ export function buildSlides() {
     S.push({
       id: 'ordinary', dur: 8,
       states: [{ at: 0, trans: 2.4, cam, spread: 0.16, shape: { frame(t, cl) { laptop(cl, t, { yaw: yaw(t), x: 1.5, chip: 0.85 + 0.25 * Math.sin(t * 2.4) + smooth(6, 8, t) * 0.6, chipTone: t > 6.6 ? T.ACC : T.DIM }); } } }],
-      html: `<div class="kicker fx" data-d="0.6" style="left:110px;top:120px">The ordinary thing</div>
-        <div class="h m" style="left:104px;top:160px">
-          <div class="ln" data-d="0.8"><span>Every laptop here</span></div><div class="ln" data-d="0.92"><span>has a GPU.</span></div>
-          <div class="ln gray" data-d="1.8"><span>For robots,</span></div><div class="ln gray" data-d="1.92"><span>it sits idle.</span></div></div>
-        <div class="fx sub" data-d="2.6" style="left:110px;top:780px;width:760px">Fast robot simulators need NVIDIA. Apple's GPU has no maintained robot-RL backend.</div>`,
+      html: `<div class="hb"><div class="ln " data-d="0.8"><span>Every laptop here</span></div><div class="ln " data-d="0.92"><span>has a GPU.</span></div><div class="ln sec" data-d="1.8"><span>For robots,</span></div><div class="ln sec" data-d="1.92"><span>it sits idle.</span></div></div>`,
     });
   }
   // 03 SO I BUILT ----------------------------------------------------
@@ -146,12 +140,8 @@ export function buildSlides() {
         } },
       }],
       cls: 'veil',
-      html: `<div class="kicker fx" data-d="1.5" style="left:110px;top:120px">So I built</div>
-        <div class="h xl" style="left:104px;top:160px"><div class="ln" data-d="1.55"><span>MACGYM.</span></div></div>
-        <div class="fx sub big" data-d="2.1" style="left:110px;top:400px;width:700px">Write a robot in Python.<br>Train <b><span class="cnt" data-to="4096" data-sep="1" data-d="2.1" data-dur="2.0">0</span> copies</b> on your Mac.<br><span class="gray">About a minute.</span></div>
-        <div class="fx sub" data-d="3.0" style="left:110px;top:600px;width:640px">Robots that learn to walk, grasp and balance: for RL classes, games and real robot arms.</div>
-        <div class="fx tag" data-d="3.4" style="left:110px;top:740px">PLANAR 2D, BY CHOICE</div>
-        <div class="fx spec" data-d="3.6" style="left:110px;top:1000px">Apple M3 Pro, 18 GB</div>`,
+      html: `<div class="shade"></div><div class="hb"><div class="ln " data-d="1.55"><span>MacGym.</span></div></div>
+        <div class="top fx" data-d="2.1">Write a robot in Python.<br>Train <span class="cnt" data-to="4096" data-sep="1" data-d="2.1" data-dur="2.0">0</span> copies on your Mac.<br><span class="sec">2D robots. About a minute.</span></div>`,
     });
   }
   // 03b THE THEME ---------------------------------------------------
@@ -171,14 +161,11 @@ export function buildSlides() {
         { at: 0, trans: 2.0, style: 'wipe', cam: camA, sweep: 'x', shape: { frame(t, cl) { laptop(cl, t, { yaw: -0.3 + 0.05 * Math.sin(t * 0.4), x: 1.5, chip: 0.8, chipTone: T.DIM }); } } },
         { at: 3.0, trans: 2.4, cam: camB, spread: 0.2, shape: { frame(t, cl) { laptop(cl, t, { yaw: -0.3 + 0.05 * Math.sin(t * 0.4), x: -2.5, y: -4.2, scale: 0.75, chip: 1.2, chipTone: T.ACC }); tiers(cl, t); } } },
       ],
-      html: `<div class="kicker fx" data-d="0.3" style="left:110px;top:120px">The theme</div>
-        <div class="h m" style="left:104px;top:160px"><div class="ln" data-d="0.4"><span>Elevate</span></div><div class="ln gray" data-d="0.55"><span>the ordinary.</span></div></div>
-        <div class="theme fx" data-d="1.2" style="left:110px;top:480px">
-          <div class="th"><span>ordinary</span><span>elevated</span></div>
-          <div class="tr fx" data-d="1.4"><span>the laptop already on your desk</span><span>a robot-learning lab</span></div>
-          <div class="tr fx" data-d="1.9"><span>a GPU that sits idle</span><span>4,096 robots training at once</span></div>
-          <div class="tr fx" data-d="2.4"><span>one minute of your time</span><span>7.8 days of robot practice</span></div>
-          <div class="tr fx" data-d="2.9"><span>15 lines of Python</span><span>a robot that learns to walk</span></div>
+      html: `<div class="hb"><div class="ln " data-d="0.4"><span>Elevate</span></div><div class="ln acc" data-d="0.55"><span>the ordinary.</span></div></div>
+        <div class="glass themecard fx" data-d="1.0">
+          <div class="tr"><span>The laptop on your desk</span><b>A robot lab</b></div>
+          <div class="tr"><span>An idle GPU</span><b>4,096 robots at once</b></div>
+          <div class="tr"><span>One minute</span><b>7.8 days of practice</b></div>
         </div>`,
     });
   }
@@ -212,11 +199,9 @@ export function buildSlides() {
         { at: 3.3, trans: 1.4, style: 'wipe', cam: camLat, sweep: 'x', shape: { frame(t, cl) { lattice(cl, t, false); } } },
         { at: 6.3, trans: 2.2, cam: camBot, sweep: 'y', mode: 'focus', focus: [0, 1.5, 0], shape: { frame(t, cl) { heroRobot(cl, t, 5.4, 0.08, {}); lattice(cl, t, true); } } },
       ],
-      html: `<div class="kicker fx" data-d="0.4" style="left:110px;top:120px">How it works</div>
-        <div class="h l" data-win="0.5,3.2" style="left:104px;top:160px">1 · You describe it.</div>
-        <div class="h l" data-win="3.5,6.2" style="left:104px;top:160px">2 · One GPU thread <span class="acc">per robot.</span></div>
-        <div class="h l" data-win="6.5,99" style="left:104px;top:160px">3 · It learns <span class="gray">to walk.</span></div>
-        <div class="steps fx" data-d="0.5" style="left:110px;top:980px"><i data-win="0,3.3">Python: a joint with motor 80</i><i data-win="3.3,6.3">4,096 threads, one compiled Metal kernel</i><i data-win="6.3,99">PPO in MLX, same memory</i></div>`,
+      html: `<div class="hb" data-win="0.5,3.2">1. You describe it.</div>
+        <div class="hb" data-win="3.5,6.2">2. One GPU thread <span class="acc">per robot.</span></div>
+        <div class="hb" data-win="6.5,99">3. It learns <span class="sec">to walk.</span></div>`,
     });
   }
   // 05 IT LEARNS -----------------------------------------------------
@@ -239,11 +224,9 @@ export function buildSlides() {
           cl.push(x, 0, -6.5 + r * 0.6, 0, 0, 0, (meter ? 0.16 : 0.09) * f, meter ? T.GRAY : T.LIGHT);
         }
       } } }],
-      html: `<div class="kicker fx" data-d="0.3" style="left:110px;top:120px">It learns · real replays from one run</div>
-        <div class="h m2" style="left:104px;top:160px"><div class="ln" data-d="0.4"><span>From falling to running.</span></div><div class="ln gray" data-d="0.6"><span>In one minute.</span></div></div>
-        <div class="meter fx" data-d="1.4" style="right:110px;top:150px"><span class="m-num">0.0</span><small>m · trained 1:00</small></div>
-        <div class="genrow" style="left:110px;top:930px"><span class="fx" data-d="1.55"><b>0:00</b> falls</span><span class="fx" data-d="1.7"><b>0:10</b> falls</span><span class="fx" data-d="1.85"><b>0:30</b> 15.1 m</span><span class="fx" data-d="2.0"><b>1:00</b> 21.5 m</span></div>
-        <div class="fx spec" data-d="2.6" style="left:110px;top:1000px">5 of 5 seeds learned · 8 s replays</div>`,
+      html: `<div class="hb"><div class="ln " data-d="0.4"><span>From falling to running.</span></div><div class="ln sec" data-d="0.6"><span>In one minute.</span></div></div>
+        <div class="meter fx" data-d="1.4"><span class="m-num">0.0</span><small>metres, trained 1 minute</small></div>
+        <div class="genrow glass cap"><span class="fx" data-d="1.55"><b>0:00</b> falls</span><span class="fx" data-d="1.7"><b>0:10</b> falls</span><span class="fx" data-d="1.85"><b>0:30</b> 15.1 m</span><span class="fx" data-d="2.0"><b>1:00</b> 21.5 m</span></div>`,
       onFrame(tl, eng, L) {
         const f0 = R.gens[3].frames[0], best = genFrame(3, Math.max(0, tl - start), F1);
         L.querySelector('.m-num').textContent = Math.max(0, (best[0] + best[2]) / 2 - (f0[0] + f0[2]) / 2).toFixed(1);
@@ -254,32 +237,29 @@ export function buildSlides() {
   {
     const cam = (t) => orbit([-4.5, 0, 0], 40, 0.16 * Math.sin(t * 0.3) - 0.06, 0.06, 7.2, 32, 0.5);
     const val = (t) => { const x = clamp((t - 1.3) / 4.4, 0, 1); return 3.2 * (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x)); };
-    const Sx = 3.0, NR = 6;
+    const Sx = 3.0, NR = 0;
     S.push({
       id: 'number', dur: 8.5,
       states: [{ at: 0, trans: 2.2, cam, sweep: 'x', spread: 0.28, shape: { frame(t, cl) {
         glyphs(); const v = val(t), f = v * 10, a = Math.floor(f + 1e-6), fr = f - a;
         const u = Math.floor(v + 1e-6), fu = v - u;
-        const sc = 0.019, y0 = 1.2;
-        pushGlyphMorph(cl, String(u % 10), String((u + 1) % 10), smooth(0.93, 1, fu), -10, y0, sc, 1.0);
+        const sc = 0.017, y0 = 4.6;
+        pushGlyphMorph(cl, String(u % 10), String((u + 1) % 10), smooth(0.93, 1, fu), -11.6, y0, sc, 1.0);
         pushGlyphMorph(cl, '.', '.', 0, -4.8, y0, sc, 1.0);
-        pushGlyphMorph(cl, String(a % 10), String((a + 1) % 10), v >= 3.2 ? 0 : smooth(0.4, 1, fr), 0.4, y0, sc, 1.0);
+        pushGlyphMorph(cl, String(a % 10), String((a + 1) % 10), v >= 3.2 ? 0 : smooth(0.4, 1, fr), 2.2, y0, sc, 1.0);
         for (let i = 0; i < NR; i++) {
           const W = 34, x = ((i * (W / NR) + t * loopSpd() * Sx) % W) - 6;
           const fade = smooth(-6, -2, x) * smooth(28, 24, x);
           heroRobot(cl, t + i * 0.37, Sx, 0.085, { x: x - 4.5, y: -10.0, z: 1, size: fade, dot: 0.95 });
         }
       } } }],
-      html: `<div class="kicker fx" data-d="0.4" style="left:110px;top:120px">The number · simulated robot time</div>
-        <div class="h m" style="left:104px;top:160px"><div class="ln" data-d="0.5"><span>Days of</span></div><div class="ln" data-d="0.62"><span>simulated</span></div><div class="ln" data-d="0.74"><span>practice.</span></div></div>
-        <div class="h l acc fx" data-d="1.3" style="left:104px;top:560px"><span class="cnt tab2" data-to="28" data-d="1.3" data-dur="4.4" data-ease="expo">0</span> seconds.</div>
-        <div class="fx sub" data-d="2.4" style="left:110px;top:745px;width:820px">Days of practice, squeezed into seconds.</div>
-        <div class="fx spec" data-d="3.0" style="left:110px;top:800px">4,096 robots. Live counter from the playground. Apple M3 Pro, 18 GB.</div>`,
+      html: `<div class="hb"><div class="ln " data-d="0.5"><span>Days of simulated practice.</span></div><div class="ln acc" data-d="1.0"><span><span class="cnt tab2" data-to="28" data-d="1.3" data-dur="4.4" data-ease="expo">0</span> seconds.</span></div></div>
+        <div class="top fx" data-d="2.4">Days of practice, squeezed into seconds.</div>`,
     });
   }
   // 08 IT'S REAL -----------------------------------------------------
   {
-    const PIV = [7.5, 13.0, 0], Lr = 7.4, per = 1.8049728;
+    const PIV = [7.5, 13.6, 0], Lr = 5.2, per = 1.8049728;
     const th = (t) => (60 * Math.PI / 180) * Math.cos((2 * Math.PI * t) / per);
     const cam = (t) => orbit([0, 6.0, -1], 37, -0.22 + 0.06 * Math.sin(t * 0.3), 0.06, 0, 32, 0);
     const pend = (cl, t, z, tone, dotS) => {
@@ -292,15 +272,13 @@ export function buildSlides() {
     S.push({
       id: 'real', dur: 9.5,
       states: [{ at: 0, trans: 2.2, cam, sweep: 'y', spread: 0.3, shape: { frame(t, cl) { pend(cl, t, -3.2, T.LIGHT, 0.95); pend(cl, t, 0, T.INK, 1); for (let i = -5; i <= 5; i++) cl.push(PIV[0] + i * 0.25, PIV[1] + 0.55, 0, 0, 0, 0, 0.14, T.INK); } } }],
-      html: `<div class="kicker fx" data-d="0.3" style="left:110px;top:120px">Is it real?</div>
-        <div class="h m" style="left:104px;top:160px"><div class="ln" data-d="0.4"><span>Checked against</span></div><div class="ln gray" data-d="0.55"><span>the pro simulator.</span></div></div>
-        <div class="trio">
-          <div class="fx" data-d="1.2"><b>0.01%</b><span class="lab">matches the textbook</span><span class="det">pendulum period vs the exact analytic answer (MuJoCo matches too)</span></div>
-          <div class="fx" data-d="1.5"><b class="acc">22×</b><span class="lab">faster than the industry standard</span><span class="det">same planar 2D walker · M3 Pro · 4,096 robots · vs MuJoCo C rollout on 11 CPU threads</span></div>
-          <div class="fx" data-d="1.8"><b>90%</b><span class="lab">still walks in the pro simulator</span><span class="det">19.7 m vs 22.0 m, sim-to-sim (MuJoCo), 20 runs</span></div>
-          <div class="fx" data-d="2.1"><b>2.74<small> m/s</small></b><span class="lab">honest gait, cheat removed</span><span class="det">first robots cheated at 6.16 m/s (unlimited motor power, skating feet); fixed with real motor curves + sticky contacts</span></div>
-        </div>
-        <div class="fx foot" data-d="2.6">n=20 · MuJoCo 4.0.1 · sim-to-sim, not hardware · Apple M3 Pro, 18 GB</div>`,
+      html: `<div class="hb"><div class="ln " data-d="0.4"><span>Checked against</span></div><div class="ln sec" data-d="0.55"><span>the pro simulator.</span></div></div>
+        <div class="quad">
+          <div class="glass fx" data-d="1.0"><b>0.01%</b><span>matches the textbook</span></div>
+          <div class="glass fx" data-d="1.2"><b class="acc">22×</b><span>faster than MuJoCo</span></div>
+          <div class="glass fx" data-d="1.4"><b>90%</b><span>still walks in MuJoCo</span></div>
+          <div class="glass fx" data-d="1.6"><b>2.74<small> m/s</small></b><span>honest speed, cheat removed</span></div>
+        </div>`,
     });
   }
   // 09 IT'S A FRAMEWORK ---------------------------------------------
@@ -313,12 +291,8 @@ export function buildSlides() {
         { at: 0, style: 'cut', cam, sweep: 'y', shape: { frame(t, cl) { const fr = genFrame(0, Math.max(0, (t - 1.2) * 0.8), F0); const rx = (fr[0] + fr[2]) / 2; for (let k = 0; k < 35; k += 5) { fr[k] -= rx; fr[k + 2] -= rx; } heroRobot(cl, t, Sx, 0.08, { x: 5.5, fr, tone: T.GRAY, far: T.LIGHT }); ground(cl, 0, 0, { x0: -14, x1: 30, z0: -7, z1: 7, sp: 0.62, dot: 0.1 }); } } },
         { at: 5.0, trans: 2.0, cam, sweep: 'y', spread: 0.15, shape: { frame(t, cl) { heroRobot(cl, t, Sx, 0.08, { x: 5.5 }); ground(cl, t, loopSpd() * Sx, { x0: -14, x1: 30, z0: -7, z1: 7, sp: 0.62, dot: 0.1 }); } } },
       ],
-      html: `<div class="kicker fx" data-d="0.3" style="left:110px;top:120px">It's a framework · fresh install on this laptop</div>
-        <div class="h m" style="left:104px;top:160px"><div class="ln" data-d="0.4"><span>One install.</span></div><div class="ln gray" data-d="0.55"><span>A real library.</span></div></div>
-        <div class="term fx" data-d="0.9" style="left:110px;top:460px"><div class="type" data-d="1.1" data-cps="55">$ git clone … &amp;&amp; pip install -e .</div><div class="type dim" data-d="1.9" data-cps="80">Successfully installed macgym-0.3.0  (10.6 s)</div><div class="type" data-d="2.6" data-cps="55">$ macgym train walker</div><div class="type ok" data-d="3.6" data-cps="90">done in 1m13s | best distance 54.26 m</div></div>
-        <div class="bigsec fx" data-d="4.6" style="left:110px;top:760px"><b>87 s</b><span>from clone to a trained robot</span></div>
-        <div class="fx spec" data-d="5.0" style="left:110px;top:950px"><b>Early access:</b> 2 people have committed to pay.</div>
-        <div class="fx spec" data-d="5.4" style="left:110px;top:1000px">Built today with AI coding agents. I designed the API and directed and tested it.</div>`,
+      html: `<div class="hb"><div class="ln " data-d="0.4"><span>One install.</span></div><div class="ln sec" data-d="0.55"><span>A real library.</span></div></div>
+        <div class="glass fwcard fx" data-d="1.0"><b>87 s</b><span>from clone to a trained robot</span><code>pip install -e . &amp;&amp; macgym train walker</code><em>Built today with AI coding agents.</em></div>`,
     });
   }
   // 10 CLOSE ---------------------------------------------------------
@@ -342,10 +316,9 @@ export function buildSlides() {
         } } },
         { at: 5.2, trans: 1.6, style: 'wipe', cam: camQ, sweep: 'x', shape: { frame(t, cl) { pushQR(cl, t, 8.8, 0.6, 0, 0.42, -0.1 + 0.04 * Math.sin(t * 0.5)); } } },
       ],
-      html: `<div class="h l" data-win="0.6,5.0" style="left:104px;top:160px">The same laptop.<br><span class="gray">Now a robot lab.</span></div>
-        <div class="h l2" style="left:104px;top:300px"><div class="ln" data-d="5.6"><span>Elevate</span></div><div class="ln acc" data-d="5.8"><span>the ordinary.</span></div></div>
-        <div class="fx sub" data-d="6.6" style="left:110px;top:700px">Scan for the code. Live demo: <kbd>L</kbd></div>
-        <div class="fx spec" data-d="6.8" style="left:110px;top:1000px">github.com/shlok-madhekar/macgym</div>`,
+      html: `<div class="hb" data-win="0.6,5.0">The same laptop.<br><span class="sec">Now a robot lab.</span></div>
+        <div class="hb"><div class="ln" data-d="5.6"><span>Elevate</span></div><div class="ln acc" data-d="5.8"><span>the ordinary.</span></div></div>
+        <div class="top fx" data-d="6.4">github.com/shlok-madhekar/macgym</div>`,
     });
   }
 
@@ -353,7 +326,7 @@ export function buildSlides() {
   const apx = (id, kick, title, body) => ({
     id, dur: 8, appendix: true, cls: 'apx',
     states: [{ at: 0, trans: 2, cam: (t) => orbit([0, 0, 0], 40, 0.2 * Math.sin(t * 0.2), 0.1, -9), sweep: 'x', shape: sphereShape(0, 0, 0, 7.5, 9000, 0, T.LIGHT, 0.1) }],
-    html: `<div class="kicker fx" data-d="0.2" style="left:110px;top:120px">Appendix · ${kick}</div><div class="h s fx" data-d="0.3" style="left:104px;top:160px">${title}</div><div class="apxbody fx" data-d="0.45">${body}</div>`,
+    html: `<div class="h s fx" data-d="0.3" style="left:104px;top:160px">${title}</div><div class="apxbody fx" data-d="0.45">${body}</div>`,
   });
   S.push(apx('a-valid', 'validation vs MuJoCo 4.0.1', 'Textbook physics matches.', `<table>
     <tr><th>Test</th><th>MacGym</th><th>MuJoCo</th></tr>

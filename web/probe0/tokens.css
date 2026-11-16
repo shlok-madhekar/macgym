@@ -1,0 +1,589 @@
+/*
+ * macOS design tokens — the single source of truth for this renderer.
+ *
+ * No component may hardcode a colour, radius, duration or type size. If a value
+ * is missing, add it here rather than inlining it.
+ *
+ * Every number was measured from AppKit on macOS 26 (Tahoe) rather than
+ * eyeballed. 1 AppKit point == 1 CSS px on macOS, so Apple's published point
+ * values are typed literally as px with no conversion.
+ *
+ * THEMING
+ * -------
+ * Colours use `light-dark()` so both appearances sit on one line and the
+ * asymmetries between them stay visible in the source. The function resolves
+ * against the element's used `color-scheme`, which is driven by:
+ *   - the OS, via `color-scheme: light dark` + `prefers-color-scheme`, and
+ *   - a manual override, via `[data-theme="light"|"dark"]` on <html>.
+ * Both paths therefore flow through one declaration per token; there is no
+ * second dark block to drift out of sync.
+ *
+ * THE TWO RULES MOST LIKELY TO BE BROKEN BY HABIT
+ * -----------------------------------------------
+ * 1. line-height is absolute px, never a unitless ratio. Body is 16/13 = 1.23,
+ *    not 1.5. A 1.5 ratio is the single loudest "web app in a window" tell.
+ * 2. Dark mode is NOT inverted light mode. Secondary label needs *more* opacity
+ *    in dark (0.549) than in light (0.498); `--grid` is lighter than its surface
+ *    in light and darker in dark; controls are opaque swatches in light and
+ *    translucent fills in dark. Never collapse a pair to one rgba(128,128,128).
+ */
+
+:root {
+  /* OS-driven appearance. `light-dark()` reads this. */
+  color-scheme: light dark;
+}
+
+/* Manual override from Settings; also re-points every `light-dark()` below. */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+:root {
+  /* ==================================================================== */
+  /* Type — NSFont.preferredFont(forTextStyle:) + defaultLineHeight        */
+  /* ==================================================================== */
+
+  /* Geist, bundled with the app. See the @font-face block in base.css for why
+     this stopped being the system stack. */
+  --font-ui: 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* All values, IDs, hashes and code. The UI/mono split is the cheapest
+     legibility win available in a data tool. */
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+
+  /* Empty-state headline only. */
+  --text-large-title: 26px;
+  --lh-large-title: 32px;
+  /* Onboarding / first-run. */
+  --text-title-1: 22px;
+  --lh-title-1: 26px;
+  /* Detail-pane page title. */
+  --text-title-2: 17px;
+  --lh-title-2: 22px;
+  /* Section headline inside an inspector. */
+  --text-title-3: 15px;
+  --lh-title-3: 20px;
+  /* Emphasised row label / list-item title. Body metrics at weight 600. */
+  --text-headline: 13px;
+  --lh-headline: 16px;
+  /* THE DEFAULT. Everything, unless there is a reason otherwise. */
+  --text-body: 13px;
+  --lh-body: 16px;
+  /* Dense table cells and chips. */
+  --text-callout: 12px;
+  --lh-callout: 15px;
+  /* Sidebar small size, toolbar labels, table headers. */
+  --text-subheadline: 11px;
+  --lh-subheadline: 14px;
+  /* Timestamps, byte counts, status bar. */
+  --text-footnote: 10px;
+  --lh-footnote: 13px;
+  /* Chart axis labels and micro-labels. */
+  --text-caption: 10px;
+  --lh-caption: 13px;
+
+  /* SF weight map. 500 is the emphasis weight; never bold a table cell to 700. */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* --- Space — 4px grid with an 8px rhythm --- */
+  /* Deliberately tops out at 32px. A 48/64px step is a web habit that does
+     not survive at native density. */
+
+  --sp-1: 2px; /* hairline separation, icon-to-badge */
+  --sp-2: 4px; /* intra-control gap */
+  --sp-3: 6px; /* icon-to-label inside a row */
+  --sp-4: 8px; /* default gap between related controls */
+  --sp-5: 10px; /* sidebar horizontal inset, form row gap */
+  --sp-6: 12px; /* group padding, toolbar item gap, inspector inset */
+  --sp-7: 18px; /* content pane edge inset, card padding */
+  --sp-8: 24px; /* between unrelated groups */
+  --sp-9: 32px; /* major section break */
+  --sp-10: 44px; /* maximum */
+
+  /* ==================================================================== */
+  /* Controls — intrinsicContentSize heights                               */
+  /* ==================================================================== */
+  /* Use `regular` everywhere. `small` only in a filter bar or inspector.
+     `large`/`extraLarge` read as iOS and are intentionally absent. */
+
+  --ctl-h-mini: 16px;
+  --ctl-h-small: 20px;
+  --ctl-h: 28px; /* regular — the default for every control */
+  --ctl-h-large: 32px;
+  --field-h: 28px; /* bezeled text fields are 24 at every control size */
+  /* A regular push button with a 6-char label measures 65px including bezel;
+     68 stops "OK"/"Save" collapsing into cramped pills. */
+  --ctl-min-w: 68px;
+
+  /* Checkbox / radio box, excluding the label. */
+  --box-h-small: 14px;
+  --box-h: 16px;
+
+  /* NSSwitch regular: 54x24 with a 20px knob. */
+  --switch-w: 54px;
+  --switch-h: 24px;
+  --switch-w-small: 44px;
+  --switch-h-small: 20px;
+
+  /* NSSlider regular: 16px row, 4px track, 16px knob. */
+  --slider-row-h: 16px;
+  --slider-track-h: 4px;
+  --slider-knob: 16px;
+
+  /* Progress bar: a 4px track inside a 20px regular row. */
+  --progress-h: 4px;
+  --progress-h-large: 6px;
+
+  /* Tahoe moved push buttons, pop-ups and segmented controls to full capsules;
+     measured radii are ~0.40-0.47 x height across all five control sizes,
+     which is capsule within measurement error. Text fields stayed at ~6px. */
+  --radius-control: 10px;
+  --radius-field: 10px;
+  --radius-checkbox: 6px;
+  --radius-card: 14px;
+  --radius-selection: 11px; /* sidebar / list selection pill */
+  --radius-popover: 14px;
+  --radius-window: 16px;
+
+  /* --- Icons — SF Symbols point size -> rendered box --- */
+  /* Always reserve a fixed-width slot; SF Symbol glyphs have variable widths
+     and labels will not align otherwise. */
+
+  --icon-inline: 14px; /* inline in a table row */
+  --icon-btn: 13px; /* button leading icon */
+  --icon: 16px; /* sidebar medium — the default */
+  --icon-toolbar: 18px;
+
+  /* --- Layout --- */
+
+  /* `unifiedCompact`. 66px of permanent chrome would cost ~2 table rows. */
+  --toolbar-h: 46px;
+  --statusbar-h: 22px;
+  --filterbar-h: 28px;
+
+  --sidebar-w: 236px;
+  --sidebar-w-min: 180px;
+  --sidebar-w-max: 300px;
+  /*
+   * 28px, not the 32px medium source-list default.
+   *
+   * This is a deliberate deviation and the only one in the layout block: the
+   * app is a dense observability tool and runs the compact source-list density,
+   * the same call Xcode and Proxyman make. It is written here rather than
+   * overridden downstream — the file's own rule is that a component may not
+   * hold a value the token file disagrees with, and a token nobody honours is
+   * worse than no token.
+   */
+  --sidebar-row-h: 36px;
+  --sidebar-header-h: 26px;
+  --sidebar-inset: 14px; /* row leading inset */
+  --sidebar-header-inset: 14px;
+  --sidebar-indent: 13px; /* per nesting level */
+  --sidebar-header-gap: 13px; /* space above a section header */
+  --sidebar-pill-inset: 8px; /* selection pill inset from both edges */
+  /* Measured NSScrollView contentInsets.top under a unified toolbar. Content
+     scrolling *under* the translucent toolbar is what makes vibrancy read. */
+  --sidebar-scroll-top: 58px;
+
+  --inspector-w: 280px;
+  --content-inset: 28px;
+
+  /*
+   * 26px rather than the 24px AppKit table row. Two of the ten columns in the
+   * traffic table carry a 14px pill, and a 14px pill in a 24px row leaves 5px
+   * of air above and below it — visibly tighter than the pill's own optical
+   * padding. 26 is still 24 rows in a 760px window.
+   *
+   * `views/requests/columns.ts` duplicates this as `ROW_HEIGHT` because the
+   * virtualiser needs it in JS before first paint. Change both or neither.
+   */
+  --table-row-h: 32px;
+  --table-header-h: 28px;
+  --table-cell-px: 8px; /* column horizontal padding */
+  --table-cell-lead: 12px; /* first column leading inset */
+
+  /* Traffic lights are 14px on a 23px pitch; close origin x = 19, so the last
+     button ends at 65. 86 = 65 + 14 + breathing room. */
+  --traffic-reserve: 86px;
+
+  /* Menus and popovers. */
+  --menu-row-h: 20px;
+  --menu-gutter: 22px; /* checkmark / icon column before the label */
+  --menu-w-min: 180px;
+  --menu-pad: 5px;
+
+  /* Splitter: a 1px hairline with a 6px invisible grab area. */
+  --splitter-w: 1px;
+  --splitter-grab: 6px;
+
+  /* --- Elevation order --- */
+
+  --z-sticky: 10;
+  --z-popover: 100;
+  --z-menu: 200;
+  --z-tooltip: 300;
+  --z-sheet: 400;
+
+  /* ==================================================================== */
+  /* Motion                                                                */
+  /* ==================================================================== */
+  /* Nothing exceeds 300ms, and only transform / opacity / filter animate. */
+
+  --dur-instant: 80ms; /* press feedback */
+  --dur-fast: 120ms; /* hover, selection, state change */
+  --dur-normal: 200ms; /* disclosure, expand, pane swap */
+  --dur-sheet: 300ms; /* sheet present */
+
+  /* The macOS default ease. Use for state changes. */
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Decelerating; use for disclosure and anything that travels a distance. */
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0, 0, 0.58, 1);
+  /* Overshoots past 1 before settling. The only curve in the system that does,
+     and it is reserved for direct manipulation — a press, a toggle — where the
+     bounce reads as physical rather than decorative. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ==================================================================== */
+  /* Colour — semantic labels and surfaces                                 */
+  /* ==================================================================== */
+  /* Resolved from the real semantic NSColor in .aqua and .darkAqua. Note
+     `windowBackgroundColor` is #FFFFFF in light on macOS 26; it was #ECECEC
+     pre-Tahoe. Do not copy older references. */
+
+  --label-primary: light-dark(rgba(0, 0, 0, 0.847), rgba(255, 255, 255, 0.847));
+  /* Dark needs MORE opacity than light to read at the same weight. */
+  --label-secondary: light-dark(rgba(0, 0, 0, 0.498), rgba(255, 255, 255, 0.549));
+  /* ...and tertiary goes the other way. */
+  --label-tertiary: light-dark(rgba(0, 0, 0, 0.259), rgba(255, 255, 255, 0.247));
+  --label-quaternary: light-dark(rgba(0, 0, 0, 0.098), rgba(255, 255, 255, 0.098));
+
+  /*
+   * Text fields are recessed wells, and a well over vibrancy has to be a
+   * TRANSLUCENT DARKENING, not an opaque colour. This was `#1e1e1e`, which
+   * punched a solid near-black rectangle through the window material every
+   * time a port number or a hostname appeared — the same defect the module
+   * config group had. Darkening the material reads as recessed; painting over
+   * it reads as a hole.
+   */
+  --text-bg: light-dark(rgba(255, 254, 250, 0.72), rgba(0, 0, 0, 0.22));
+  --text-placeholder: light-dark(rgba(0, 0, 0, 0.498), rgba(255, 255, 255, 0.549));
+  --text-selection-bg: light-dark(#b3d7ff, #3f638b);
+
+  --separator: light-dark(rgba(0, 0, 0, 0.11), rgba(255, 255, 255, 0.098));
+  /* Recedes in both appearances: lighter than its surface in light, darker in
+     dark. One shared grey would advance in one of the two. */
+  --grid: light-dark(#e6e6e6, #1a1a1a);
+  --link: light-dark(#0068da, #419cff);
+
+  /* Focused-window selection — a white fill, not system blue. See --accent. */
+  /*
+   * Opaque. Same reasoning as --sidebar-selection: a translucent fill on a
+   * surface that is itself translucent composites against the user's wallpaper,
+   * so the selected row was washing out to whatever was behind the window.
+   * Lifted well clear of the row background so selection is obvious at a glance
+   * rather than being a subtle grey shift.
+   */
+  --selected-content-bg: light-dark(#cfcfd6, #3d3d4c);
+  /* Unfocused-window selection. Honouring this distinction is mandatory and is
+     one of the strongest native signals there is; web UIs never do it. It
+     survives the switch to achromatic: the pair is now two fill weights rather
+     than two hues. */
+  --unemphasized-selected-bg: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.055));
+  --selection-fill: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.09));
+  /* Selected rows carry a hairline as well, so the fill can stay this quiet. */
+  /* Opaque, so the sidebar's selection reads over any wallpaper. */
+  /* Switch "on" track. Dimmer than --accent so the white knob reads. */
+  --switch-on: light-dark(#6b6b73, #8a8a95);
+  /*
+   * Light, not a different grey.
+   *
+   * Both previous attempts were opaque slabs — first #34343f, then #434352 —
+   * and an opaque neutral sitting on a purple-tinted glass panel always reads
+   * as dirty, because it replaces the material instead of participating in it.
+   * A white at 18% BRIGHTENS the glass that is already there, so the selected
+   * row looks lit rather than patched, and it stays legible over any wallpaper
+   * because it adds light rather than substituting a colour.
+   */
+  --sidebar-selection: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.18));
+  --sidebar-selection-edge: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.16));
+  --selected-hairline: light-dark(rgba(0, 0, 0, 0.16), rgba(255, 255, 255, 0.14));
+
+  --control-bg: light-dark(#ffffff, #1e1e1e);
+  /* Light controls are solid swatches; dark controls are fills OVER the
+     surface. This asymmetry is why buttons need per-appearance treatment. */
+  --control-fill: light-dark(#ffffff, rgba(255, 255, 255, 0.14));
+  --control-fill-strong: light-dark(#ffffff, rgba(255, 255, 255, 0.247));
+  --control-text: light-dark(rgba(0, 0, 0, 0.847), rgba(255, 255, 255, 0.847));
+  --control-text-disabled: light-dark(rgba(0, 0, 0, 0.247), rgba(255, 255, 255, 0.247));
+  /* Recessed track behind a switch knob, segmented thumb or slider bar. */
+  --control-track: light-dark(rgba(0, 0, 0, 0.088), rgba(255, 255, 255, 0.11));
+  --control-hairline: light-dark(rgba(0, 0, 0, 0.14), rgba(255, 255, 255, 0.1));
+
+  /*
+   * Must invert with --accent. When accent was system blue this was correctly
+   * white; when accent became near-white for the achromatic palette, this was
+   * left behind and every primary button became white text on a white fill.
+   * The Continue button in onboarding was unreadable because of exactly this.
+   */
+  --on-accent: light-dark(#ffffff, #101014);
+  /*
+   * Cream, not paper-white.
+   *
+   * Pure #ffffff behind a full-window app is a flashbang: it is brighter than
+   * almost anything else on a macOS desktop, and every grey in the palette was
+   * mixed against it, so the whole scheme read as blown out. A few points of
+   * warmth costs nothing in contrast — text is still near-black — and takes the
+   * glare off.
+   */
+  --window-bg: light-dark(#faf9f6, #1e1e1e);
+  /* Recessed wells (code blocks, log bodies) darken the material rather than
+     replacing it, for the same reason as --text-bg above. */
+  --under-page-bg: light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.24));
+
+  /* AppKit systemFill family — the correct way to group content on macOS.
+     Colour-tinted 1px borders as the primary grouping device are a web idiom;
+     native groups with a translucent FILL plus a --separator hairline. */
+  --fill-primary: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+  --fill-secondary: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+  --fill-tertiary: light-dark(rgba(0, 0, 0, 0.045), rgba(255, 255, 255, 0.05));
+  --fill-quaternary: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.03));
+
+  /* Row hover / press. 4% overlay only: no transform, no shadow, no border. */
+  --hover-overlay: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
+  --press-overlay: light-dark(rgba(0, 0, 0, 0.09), rgba(255, 255, 255, 0.09));
+
+  /* ==================================================================== */
+  /* GLASS SCRIM — the fix for "shitty transparency bolted on"             */
+  /* ==================================================================== */
+  /*
+   * AppKit composites the real NSVisualEffectView behind the window. Left
+   * uncovered it passes the wallpaper through at FULL CHROMA, so over a
+   * saturated desktop the sidebar became a pink/olive/purple smear that moved
+   * with the window. That is transparency, not a material.
+   *
+   * Liquid Glass is a layered material: the backdrop contributes LUMINANCE,
+   * never HUE. CSS cannot desaturate the desktop (backdrop-filter samples only
+   * the web layer, which is transparent here), so the one available lever is
+   * scrim opacity. At 0.82 roughly 18% of the desktop survives — enough to
+   * modulate light and dark as the window moves, not enough to name a colour.
+   *
+   * Standard: if you can identify a hue in the sidebar, the scrim is too thin.
+   */
+  /*
+   * ASIDE MODEL. The reference build (the owner's browser) lets a LOT of the
+   * desktop through the sidebar and it looks good, which rules out "let colour
+   * through" as the defect. What made ours muddy was that the backdrop arrived
+   * UNUNIFIED: a pink-to-olive-to-purple gradient with nothing tying it
+   * together, so the panel read as a smeared photo rather than a material.
+   *
+   * The fix is a thin, neutral, EVEN tint. At 0.42 the wallpaper still reads as
+   * colour and motion, but every part of the panel is pulled toward the same
+   * dark base, so it resolves as one surface instead of three.
+   *
+   * The content pane is the opposite: near-opaque, because data has to stay
+   * legible over whatever happens to be behind the window. Glass is the accent
+   * here, not the environment.
+   */
+  /*
+   * LIGHT MODE HAD NO MATERIAL.
+   *
+   * These were tuned against a dark desktop and the light values were guessed:
+   * 0.50-0.76 alpha over `light` vibrancy renders as flat white, so the sidebar
+   * and content pane became opaque panels and the whole app read as a plain web
+   * page with grey boxes. The dark values were doing real work — the light ones
+   * were painting over the material they were supposed to sit in.
+   *
+   * Light vibrancy is already bright, so the scrim only has to lift contrast a
+   * little rather than establish a surface. These are roughly HALF the previous
+   * alphas, which is what lets the wallpaper read through at all.
+   */
+  --glass-scrim: light-dark(rgba(250, 249, 245, 0.26), rgba(18, 18, 24, 0.26));
+  --glass-scrim-bar: light-dark(rgba(251, 250, 246, 0.34), rgba(20, 20, 26, 0.34));
+  /* Content: a hint of backdrop, no more. */
+  --glass-content: light-dark(rgba(252, 251, 247, 0.58), rgba(20, 20, 26, 0.62));
+  --glass-specular: inset 0 1px 0 light-dark(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.1));
+  --glass-edge: light-dark(rgba(0, 0, 0, 0.09), rgba(255, 255, 255, 0.07));
+
+  /*
+   * ACCENT — achromatic by decision.
+   *
+   * The rejected build put system blue on selection, buttons and toggles while
+   * the brand site is strictly achromatic, so the app and the product looked
+   * like different companies. Selection is now a white fill, the way Finder's
+   * unfocused selection reads, and it holds at every wallpaper.
+   *
+   * This deliberately forfeits systemPreferences.getAccentColor(). That is a
+   * real native signal being given up, traded for brand coherence, which the
+   * owner ranked higher.
+   */
+  --accent: light-dark(rgba(0, 0, 0, 0.86), rgba(255, 255, 255, 0.92));
+  --accent-hover: light-dark(rgba(0, 0, 0, 0.94), rgba(255, 255, 255, 1));
+  --accent-press: light-dark(rgba(0, 0, 0, 0.78), rgba(255, 255, 255, 0.82));
+  /* Tinted background for a selected chip or a highlighted row. */
+  --accent-tint: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.08));
+  --focus-ring-color: light-dark(rgba(0, 0, 0, 0.28), rgba(255, 255, 255, 0.3));
+  /* 3px, offset 0. A 2px ring at 2px offset is the web default and reads wrong. */
+  --focus-ring: 0 0 0 3px var(--focus-ring-color);
+
+  /* ==================================================================== */
+  /* Colour — system palette, appearance-corrected for contrast            */
+  /* ==================================================================== */
+
+  /*
+   * COLLAPSED TO THE BUDGET.
+   *
+   * These were the real macOS system colours, and components across the cache,
+   * settings and chrome layers reference them DIRECTLY rather than going
+   * through the semantic tokens below. That is why green kept surviving every
+   * attempt to remove it: fixing --money-saved did nothing for a Pill hardcoded
+   * to var(--system-green).
+   *
+   * Repointing the palette itself fixes every consumer at once. Only red and
+   * orange keep a hue, because they mean "you are about to be charged" and
+   * "you have been blocked" — the two things worth interrupting someone for.
+   * Everything else is a step on the greyscale, so the meaning now comes from
+   * weight rather than colour.
+   */
+  --system-red: light-dark(#c0343a, #e5484d);
+  --system-orange: light-dark(#b8791f, #e8a33d);
+  --system-yellow: light-dark(#b8791f, #e8a33d);
+  /*
+   * Spread far apart on lightness, not bunched.
+   *
+   * The first pass at this set every non-red hue to a similar mid-grey, which
+   * satisfied the colour budget and broke the cache chart: four categories
+   * arrived as four indistinguishable swatches and the legend became
+   * unreadable. Greyscale can carry categorical meaning, but only if the steps
+   * are genuinely far apart, so these are spaced across the full range instead
+   * of clustered around 0.6.
+   */
+  --system-green: light-dark(rgba(0, 0, 0, 0.92), rgba(255, 255, 255, 1));
+  --system-mint: light-dark(rgba(0, 0, 0, 0.62), rgba(255, 255, 255, 0.68));
+  --system-teal: light-dark(rgba(0, 0, 0, 0.38), rgba(255, 255, 255, 0.42));
+  --system-cyan: light-dark(rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.55));
+  --system-blue: light-dark(rgba(0, 0, 0, 0.75), rgba(255, 255, 255, 0.82));
+  --system-indigo: light-dark(rgba(0, 0, 0, 0.55), rgba(255, 255, 255, 0.6));
+  --system-purple: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.5));
+  --system-pink: light-dark(rgba(0, 0, 0, 0.68), rgba(255, 255, 255, 0.74));
+  --system-brown: light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.34));
+  /* Deliberately the quietest: "went upstream" is the default, not a finding. */
+  --system-gray: light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.24));
+
+  /* ==================================================================== */
+  /* THE COLOUR BUDGET                                                     */
+  /* ==================================================================== */
+  /*
+   * The rejected build showed blue, green, teal, mint, orange, purple, indigo
+   * and red on one screen. Nine hues carrying nine meanings is not a legend a
+   * person learns; it is confetti, and it made a measurement tool look like a
+   * toy.
+   *
+   * Budget from here: ACHROMATIC, plus exactly two semantic colours that only
+   * ever describe SPEND STATE. Everything else separates by fill weight, text
+   * weight, or a hairline. If you want a colour to tell two things apart, use
+   * one of those instead.
+   *
+   * The system palette above is retained only because macOS owns those values;
+   * nothing in this app may reference it directly.
+   */
+
+  --spend-warn: light-dark(#b8791f, #e8a33d); /* approaching the cap */
+  --spend-over: light-dark(#c0343a, #e5484d); /* cap hit, request blocked */
+
+  /* Request outcomes. Weight, not hue. A cache hit is BRIGHT because it is the
+     good outcome; a miss recedes because it is merely the default. */
+  --status-hit: light-dark(rgba(0, 0, 0, 0.86), rgba(255, 255, 255, 0.95));
+  --status-semantic: light-dark(rgba(0, 0, 0, 0.7), rgba(255, 255, 255, 0.78));
+  --status-dedup: light-dark(rgba(0, 0, 0, 0.7), rgba(255, 255, 255, 0.78));
+  --status-local: light-dark(rgba(0, 0, 0, 0.7), rgba(255, 255, 255, 0.78));
+  --status-miss: light-dark(rgba(0, 0, 0, 0.42), rgba(255, 255, 255, 0.45));
+  --status-streaming: light-dark(rgba(0, 0, 0, 0.55), rgba(255, 255, 255, 0.6));
+  --status-tls: light-dark(rgba(0, 0, 0, 0.55), rgba(255, 255, 255, 0.6));
+  /* The two exceptions, and they are exceptions because money is at stake. */
+  --status-warn: var(--spend-warn);
+  --status-error: var(--spend-over);
+
+  /* Money saved renders in plain bright white. Green would be a decorative
+     hue doing a job that scale and weight already do. */
+  --money-saved: light-dark(rgba(0, 0, 0, 0.86), rgba(255, 255, 255, 0.95));
+
+  /* Chart series. Two series is the real requirement — billed and avoided —
+     and they separate by fill weight, so the chart stays readable in both
+     appearances without a legend chip. */
+  --series-1: light-dark(rgba(0, 0, 0, 0.9), rgba(255, 255, 255, 0.96)); /* billed */
+  --series-2: light-dark(rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.55)); /* avoided */
+  --series-3: light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.34));
+  --series-4: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.14));
+  --series-5: var(--series-1);
+  --series-6: var(--series-2);
+  --series-7: var(--series-3);
+  --series-8: var(--series-4);
+  --series-fill-1: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
+  --series-fill-2: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  --chart-grid: var(--label-quaternary);
+  --chart-tick: var(--label-tertiary);
+
+  /* ==================================================================== */
+  /* Materials — CSS fallbacks only                                        */
+  /* ==================================================================== */
+  /* The OS composites the real NSVisualEffectView behind the window; CSS
+     cannot sample the desktop and `backdrop-filter` must not appear anywhere
+     in this renderer. These are used ONLY when vibrancy is unavailable
+     (Reduce Transparency, non-macOS) or for in-window floating layers that
+     the OS is not drawing. Alphas are measured occlusion: sidebar at 0.925
+     means ~7.5% of the desktop shows through. rgba(255,255,255,0.6) is not
+     "glass", it is simply wrong. */
+
+  --material-sidebar: light-dark(rgba(238, 236, 230, 0.925), rgba(46, 46, 46, 0.776));
+  --material-titlebar: light-dark(rgba(251, 250, 246, 0.839), rgba(63, 63, 63, 0.773));
+  --material-header: light-dark(rgba(252, 251, 247, 0.839), rgba(31, 31, 31, 0.749));
+  --material-popover: light-dark(rgba(235, 235, 235, 0.98), rgba(48, 48, 48, 0.98));
+  --material-menu: light-dark(rgba(233, 233, 233, 0.98), rgba(48, 48, 48, 0.98));
+  --material-sheet: light-dark(#ffffff, #1f1f1f);
+  --material-hud: light-dark(rgba(238, 238, 238, 0.92), rgba(54, 54, 54, 0.92));
+
+  /* ==================================================================== */
+  /* Shadow                                                                */
+  /* ==================================================================== */
+  /* Reserved for FLOATING layers: popovers, menus, sheets, control knobs,
+     dragged items. A resting inline card gets no shadow — in dark mode
+     elevation is expressed by a lighter surface, not a darker shadow. */
+
+  --shadow-color: light-dark(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.44));
+  --shadow-color-strong: light-dark(rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.62));
+
+  --shadow-popover: 0 0 0 0.5px var(--separator), 0 6px 20px var(--shadow-color);
+  --shadow-menu: 0 0 0 0.5px var(--separator), 0 8px 26px var(--shadow-color-strong);
+  --shadow-sheet: 0 18px 60px var(--shadow-color-strong);
+  --shadow-tooltip: 0 0 0 0.5px var(--separator), 0 3px 10px var(--shadow-color);
+  /* Knobs on switches and sliders genuinely float above their track. */
+  --shadow-knob: 0 0 0 0.5px light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.3)),
+    0 1px 2px light-dark(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.4));
+  /* A bezeled push button. This IS a resting shadow, and it is the exception
+     that proves the rule: AppKit controls carry a real bezel, and on macOS 26
+     the content pane is pure #FFFFFF, so a white button with only a 0.13-alpha
+     ring is literally invisible. Cards still get no shadow. */
+  /* NOTE: `light-dark()` accepts COLORS only. Wrapping a whole shadow in it
+     makes the box-shadow invalid at computed-value time and the property
+     silently resolves to `none` — which reads as "my button has no bezel" and
+     is impossible to spot in the source. Keep the geometry outside. */
+  --shadow-bezel: inset 0 0 0 0.5px light-dark(rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.09));
+  --shadow-bezel-lip: 0 0.5px 1.5px light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.3));
+}
+
+/* Reduced motion collapses every transition to zero rather than shortening it;
+   a 40ms animation still reads as motion. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0ms;
+    --dur-fast: 0ms;
+    --dur-normal: 0ms;
+    --dur-sheet: 0ms;
+  }
+}

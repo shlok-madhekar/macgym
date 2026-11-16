@@ -1,0 +1,159 @@
+/*
+ * hiddenInset title bar, 40px (`unifiedCompact`).
+ *
+ * 40px rather than the 66px `unified` height on purpose: Probe0 is a dense
+ * observability tool and 26px of permanent chrome costs a full table row. 40px
+ * is a real AppKit number for compact windows, not an `h-14` guess.
+ *
+ * Transparent, so the window material carries through the strip.
+ */
+
+.titlebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  height: var(--toolbar-h);
+  /* 65 (close-button right edge) + 14 + breathing room. */
+  padding-left: var(--traffic-reserve);
+  padding-right: var(--sp-6);
+  background: var(--glass-scrim-bar);
+  box-shadow: var(--glass-specular);
+  border-bottom: 1px solid var(--separator);
+
+  /* The whole strip drags. */
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+/*
+ * ...and every interactive descendant opts back out. A draggable region
+ * swallows pointer events entirely, so a control that misses this is silently
+ * dead — the single most common bug in an Electron title bar.
+ */
+.titlebar button,
+.titlebar input,
+.titlebar select,
+.titlebar a,
+.titlebar [role='tab'],
+.titlebar .no-drag {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.titlebar__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 0 auto;
+}
+
+/*
+ * Centred against the window, not against the space left between the clusters —
+ * which is why this is absolute rather than a `1fr auto 1fr` grid cell.
+ * `pointer-events: none` keeps it from stealing the drag region.
+ */
+.titlebar__title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 40%;
+  margin: 0;
+  font-size: var(--text-headline);
+  line-height: var(--lh-headline);
+  font-weight: 600;
+  color: var(--label-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+body.window-inactive .titlebar__title {
+  color: var(--label-tertiary);
+}
+
+.titlebar__trail {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-left: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* --- buttons ----------------------------------------------------------- */
+
+.titlebar__button {
+  display: grid;
+  place-items: center;
+  width: var(--chrome-hit-min);
+  height: var(--chrome-hit-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-selection);
+  background: transparent;
+  color: var(--label-secondary);
+  cursor: default;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.titlebar__button:hover {
+  background: var(--hover-overlay);
+  color: var(--label-primary);
+}
+
+.titlebar__button:active {
+  background: color-mix(in srgb, var(--label-primary) 10%, transparent);
+}
+
+.titlebar__button[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+/*
+ * Recording is the one semantic colour allowed in this strip, and it earns it:
+ * the difference between "measuring your traffic" and "not" is the single most
+ * consequential piece of app state there is.
+ */
+/*
+ * Recording is the NORMAL state, so it is not red.
+ *
+ * A red dot in the corner of a window is the universal "something is wrong or
+ * being recorded against your wishes" signal, and here it was firing whenever
+ * the app was doing its job. Red now means interception has STOPPED, which is
+ * the state actually worth interrupting someone for.
+ */
+.titlebar__button[data-tone='recording'],
+.titlebar__button[data-tone='recording'][aria-pressed='true'] {
+  color: var(--label-secondary);
+}
+
+.titlebar__button[data-tone='recording'][aria-pressed='false'] {
+  color: var(--spend-warn);
+}
+
+/* Toolbar controls dim with the window, exactly as AppKit's do. Leaving them
+   fully saturated while the title greys out is a giveaway. */
+body.window-inactive .titlebar__button,
+body.window-inactive .titlebar__button[aria-pressed='true'],
+body.window-inactive .titlebar__button[data-tone='recording'] {
+  color: var(--label-tertiary);
+}
+
+/*
+ * There was a status cluster here — a daemon dot with its label, today's spend,
+ * and an intercept chip. All three moved to the status bar, which was already
+ * reporting the first of them verbatim. What is left is a toolbar: controls
+ * only, evenly spaced, icon-only with the name and shortcut in the tooltip.
+ */
+
+/* Reduce Transparency flattens every material to grey; paint the measured
+   opaque equivalent so the strip keeps its identity. */
+@media (prefers-reduced-transparency: reduce) {
+  .titlebar {
+    background: var(--material-titlebar);
+  }
+}

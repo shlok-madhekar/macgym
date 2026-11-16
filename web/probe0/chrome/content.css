@@ -1,0 +1,97 @@
+/*
+ * Content surface — the one opaque pane in the window.
+ *
+ * Translucency behind dense numeric text destroys legibility, and two adjacent
+ * vibrant panes is the glassmorphism mistake. Finder, Mail, Xcode and Notes all
+ * pair a vibrant sidebar with a solid content area; so do we.
+ */
+
+.content-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--glass-content);
+  /* Nested inside the window, matching the onboarding pane. See layout.css. */
+  margin: 0 var(--sp-2) var(--sp-2) 0;
+  border-radius: calc(var(--radius-window) - var(--sp-2));
+  overflow: hidden;
+
+  /*
+   * Specular rim.
+   *
+   * A flat 1px border does not read as glass — real glass catches light along
+   * its top edge and loses it toward the bottom. A gradient painted into the
+   * border box does exactly that and, unlike an inset box-shadow, it follows
+   * the corner radius round instead of stopping at the straight edges, which is
+   * precisely where the effect was missing.
+   *
+   * padding-box carries the surface fill, border-box carries the rim, so the
+   * two composite without a second element.
+   */
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--glass-content), var(--glass-content)) padding-box,
+    /* Shallower falloff than before. The old ramp went from 0.16 to zero by
+       55%, which put a visible bright-to-dark transition right at the top-right
+       corner radius — read as a colour difference in the corner rather than as
+       a lit edge. */
+    linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.055) 45%,
+        rgba(255, 255, 255, 0.03) 100%
+      )
+      border-box;
+
+  border-left: 1px solid var(--separator);
+}
+
+/* --- sticky toolbar slot ----------------------------------------------- */
+
+.content-pane__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex: 0 0 auto;
+  background: var(--window-bg);
+  /*
+   * The separator is transparent until something has scrolled underneath. That
+   * appear-on-scroll hairline is a small detail that reads as unmistakably
+   * native; a permanent border reads as a web page header.
+   */
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-fast) var(--ease-standard);
+}
+
+.content-pane__toolbar.is-scrolled {
+  border-bottom-color: var(--separator);
+}
+
+/* --- scroller ---------------------------------------------------------- */
+
+.content-pane__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--content-inset);
+  outline: none;
+  scrollbar-width: thin;
+}
+
+/*
+ * Full-bleed. A virtualized table has to reach both edges — stopping its column
+ * rules at a 16px gutter is instantly wrong.
+ */
+.content-pane__scroll--bleed {
+  padding: 0;
+}
+
+/*
+ * The view owns its own scrolling. Two scrollers nested inside one another give
+ * you an outer scrollbar for the padding and an inner one for the content, and
+ * the wheel hands off between them at the boundary — unmistakably web.
+ */
+.content-pane__scroll--fills {
+  overflow: hidden;
+}

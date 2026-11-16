@@ -1,0 +1,360 @@
+/*
+ * Push buttons, segmented controls and pop-up buttons.
+ *
+ * All three are capsules on macOS 26 (Tahoe) at 24px regular height. That is
+ * 38% shorter than a Tailwind `h-9`; the height is the single most visible
+ * difference between a native control and a web one, so it is never overridden
+ * per call site — pick a size token instead.
+ *
+ * Hover and press are applied as a translucent overlay layered on top of the
+ * variant's own background (via `background-image`), so one rule works for a
+ * white push button, an accent fill and a transparent toolbar button alike.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Push button                                                             */
+/* ---------------------------------------------------------------------- */
+
+.px-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  flex: 0 0 auto;
+
+  height: var(--ctl-h);
+  min-width: var(--ctl-min-w);
+  padding: 0 var(--sp-6);
+  border: 0;
+  border-radius: var(--radius-control);
+
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  font-weight: var(--weight-regular);
+  white-space: nowrap;
+  color: var(--control-text);
+  background-color: transparent;
+  /* Placeholder layer that hover/press swap for a real overlay. */
+  background-image: none;
+  cursor: default;
+
+  transition:
+    background-color var(--dur-instant) var(--ease-standard),
+    background-image var(--dur-instant) var(--ease-standard),
+    color var(--dur-instant) var(--ease-standard),
+    opacity var(--dur-instant) var(--ease-standard);
+}
+
+.px-btn:not(:disabled):hover {
+  background-image: linear-gradient(var(--hover-overlay), var(--hover-overlay));
+}
+
+.px-btn:not(:disabled):active {
+  background-image: linear-gradient(var(--press-overlay), var(--press-overlay));
+}
+
+.px-btn:disabled {
+  color: var(--control-text-disabled);
+  opacity: 0.65;
+}
+
+.px-btn:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+/* --- sizes ------------------------------------------------------------ */
+
+.px-btn--small {
+  height: var(--ctl-h-small);
+  padding: 0 var(--sp-5);
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  min-width: 56px;
+}
+
+.px-btn--large {
+  height: var(--ctl-h-large);
+  padding: 0 var(--sp-7);
+}
+
+/* --- variants --------------------------------------------------------- */
+
+/* The default bezeled button: an opaque swatch in light, a translucent fill
+   over the surface in dark. The 1px lip exists only in light — dark elevation
+   comes from a lighter fill, not from a shadow. */
+.px-btn--push {
+  background-color: var(--control-fill);
+  box-shadow: var(--shadow-bezel), var(--shadow-bezel-lip);
+}
+.px-btn--push:focus-visible {
+  box-shadow: var(--shadow-bezel), var(--focus-ring);
+}
+
+/* NSButton with a return-key equivalent. One per pane, at most. */
+.px-btn--accent {
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+.px-btn--accent:not(:disabled):hover {
+  background-color: var(--accent-hover);
+  background-image: none;
+}
+.px-btn--accent:not(:disabled):active {
+  background-color: var(--accent-press);
+  background-image: none;
+}
+.px-btn--accent:disabled {
+  color: var(--on-accent);
+  opacity: 0.4;
+}
+
+/* Secondary action inside a dense pane — no bezel, just a fill. */
+.px-btn--subtle {
+  background-color: var(--fill-tertiary);
+}
+
+/* Toolbar / inline affordance. No bezel, no minimum width. */
+.px-btn--plain {
+  min-width: 0;
+  padding: 0 var(--sp-4);
+  color: var(--label-secondary);
+  border-radius: var(--radius-selection);
+}
+.px-btn--plain:not(:disabled):hover {
+  color: var(--label-primary);
+}
+
+.px-btn--destructive {
+  background-color: var(--system-red);
+  color: var(--on-accent);
+}
+.px-btn--destructive:disabled {
+  color: var(--on-accent);
+  opacity: 0.4;
+}
+/* A destructive action that is not the primary one reads as red text. */
+.px-btn--plain.px-btn--destructive {
+  background-color: transparent;
+  color: var(--system-red);
+}
+
+/* --- icon-only -------------------------------------------------------- */
+
+/* Square, no label, no minimum width. macOS pointer targets are 20x20 at the
+   smallest — do NOT inflate these to the iOS 44px number. */
+.px-btn--icon {
+  min-width: 0;
+  width: var(--ctl-h);
+  padding: 0;
+}
+.px-btn--icon.px-btn--small {
+  width: var(--ctl-h-small);
+}
+.px-btn--icon.px-btn--large {
+  width: var(--ctl-h-large);
+}
+
+.px-btn--block {
+  width: 100%;
+}
+
+/* Keeps the label from shifting while a spinner occupies the leading slot. */
+.px-btn__spinner {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Segmented control (NSSegmentedControl)                                  */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * A recessed track with a floating capsule thumb. The thumb translates rather
+ * than resizing, so selection animates on the compositor.
+ *
+ * `--px-seg-count` and `--px-seg-index` are set inline by the component.
+ */
+.px-seg {
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: stretch;
+
+  height: var(--ctl-h);
+  padding: 2px;
+  border-radius: var(--radius-control);
+  background: var(--control-track);
+}
+
+.px-seg--small {
+  height: var(--ctl-h-small);
+}
+
+.px-seg--block {
+  display: grid;
+  width: 100%;
+}
+
+.px-seg__thumb {
+  position: absolute;
+  z-index: 0;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / var(--px-seg-count, 1));
+  border-radius: var(--radius-control);
+  background: var(--control-fill-strong);
+  box-shadow: var(--shadow-knob);
+  transform: translateX(calc(var(--px-seg-index, 0) * 100%));
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+
+/* A control in an unfocused window desaturates, exactly like a selection. */
+body.window-inactive .px-seg__thumb {
+  box-shadow: none;
+  background: var(--unemphasized-selected-bg);
+}
+
+.px-seg__item {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+
+  height: 100%;
+  min-width: 0;
+  padding: 0 var(--sp-5);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  color: var(--label-secondary);
+  white-space: nowrap;
+  cursor: default;
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+
+.px-seg--small .px-seg__item {
+  padding: 0 var(--sp-4);
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+}
+
+.px-seg__item:not(:disabled):hover {
+  color: var(--label-primary);
+}
+
+.px-seg__item[aria-checked='true'] {
+  color: var(--label-primary);
+  font-weight: var(--weight-medium);
+}
+
+.px-seg__item:disabled {
+  color: var(--control-text-disabled);
+}
+
+.px-seg__item:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Pop-up button (NSPopUpButton)                                           */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * Backed by a real <select>, which means Chromium pops the actual macOS NSMenu
+ * — genuinely native rows, native scrolling, native dismiss. Never rebuild
+ * this as a div listbox.
+ */
+.px-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: var(--ctl-h);
+  max-width: 100%;
+}
+
+.px-select--small {
+  height: var(--ctl-h-small);
+}
+
+.px-select--block {
+  display: flex;
+  width: 100%;
+}
+
+.px-select__input {
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 calc(var(--sp-6) + 12px) 0 var(--sp-5);
+  border: 0;
+  border-radius: var(--radius-control);
+
+  background-color: var(--control-fill);
+  background-image: none;
+  box-shadow: var(--shadow-bezel), var(--shadow-bezel-lip);
+  color: var(--control-text);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  cursor: default;
+  text-overflow: ellipsis;
+  transition: background-image var(--dur-instant) var(--ease-standard);
+}
+
+.px-select--small .px-select__input {
+  padding: 0 calc(var(--sp-5) + 12px) 0 var(--sp-4);
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+}
+
+.px-select__input:not(:disabled):hover {
+  background-image: linear-gradient(var(--hover-overlay), var(--hover-overlay));
+}
+
+.px-select__input:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-bezel), var(--focus-ring);
+}
+
+.px-select__input:disabled {
+  color: var(--control-text-disabled);
+  opacity: 0.65;
+}
+
+/* chevron.up.chevron.down, the pop-up button's tell. */
+.px-select__chevron {
+  position: absolute;
+  right: var(--sp-4);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--label-secondary);
+}
+
+.px-select--small .px-select__chevron {
+  right: var(--sp-3);
+}
+
+.px-select__input:disabled + .px-select__chevron {
+  color: var(--control-text-disabled);
+}
+
+/* A borderless pop-up for toolbars and filter bars: label plus chevron only. */
+.px-select--plain .px-select__input {
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--label-primary);
+  padding-left: var(--sp-3);
+  border-radius: var(--radius-selection);
+}
+.px-select--plain .px-select__input:focus-visible {
+  box-shadow: var(--focus-ring);
+}

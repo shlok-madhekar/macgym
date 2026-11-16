@@ -1,0 +1,82 @@
+/*
+ * Window grid.
+ *
+ * Nothing here paints a background — the frame is a layout, and every surface
+ * decides its own opacity. If this element ever gets a background, the vibrancy
+ * behind the sidebar dies with it.
+ */
+
+.chrome-frame {
+  display: grid;
+  /*
+   * Two rows. The status bar is gone.
+   *
+   * It ran the full width of the window while the content pane is inset and
+   * rounded, so a full-bleed strip sat underneath a floating pane and belonged
+   * to neither surface — the dead band under the content. Everything it showed
+   * (daemon state, ports, today's spend, cache hit rate) is either in the
+   * titlebar or one click away on the view it belongs to.
+   */
+  grid-template-rows: var(--toolbar-h) minmax(0, 1fr);
+  height: 100%;
+  background: transparent;
+}
+
+.chrome-frame__body {
+  position: relative;
+  display: grid;
+  /* Inspector column is `auto`: the drawer owns its own width. */
+  /*
+   * Two columns. The inspector no longer takes one.
+   *
+   * It used to be an `auto` third column, so opening a row narrowed the table
+   * and every column jumped left — while the drawer ALSO animated in over the
+   * top. You paid the reflow and got the occlusion anyway. It is now an overlay
+   * positioned against this element, so the table behind it never moves.
+   */
+  grid-template-columns: var(--chrome-sidebar-w, var(--sidebar-w)) minmax(0, 1fr);
+  position: relative;
+  min-height: 0;
+}
+
+/*
+ * Vibrant. No background, no border — the hairline between sidebar and content
+ * is drawn by the content pane's leading edge, so there is exactly one line
+ * rather than two abutting ones.
+ */
+.chrome-frame__sidebar {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  background: transparent;
+}
+
+/*
+ * Explicit placement, because auto-placement breaks when the sidebar hides.
+ *
+ * Collapsing the sidebar sets `--chrome-sidebar-w` to 0 AND gives the element
+ * `hidden`, whose `display: none` takes it out of grid flow entirely. The
+ * content pane then auto-placed into the FIRST cell — the 0px sidebar track —
+ * and the window went blank while the real content column sat empty beside it.
+ *
+ * Naming both columns means hiding the sidebar only zeroes its track; the
+ * content stays in column 2 either way. The inspector is absolutely positioned
+ * and never takes a cell.
+ */
+.chrome-frame__sidebar {
+  grid-column: 1;
+}
+
+.chrome-frame__body > *:not(.chrome-frame__sidebar) {
+  grid-column: 2;
+}
+
+.chrome-frame__sidebar[hidden] {
+  display: none;
+}
+
+/* The grab area straddles the boundary rather than sitting inside the sidebar. */
+.chrome-frame__sidebar > .chrome-splitter {
+  right: calc(var(--chrome-splitter-hit) / -2);
+}

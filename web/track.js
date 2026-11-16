@@ -2,9 +2,26 @@
 // Used by the viewer (app.js) and the playground (playground.js). Classic script: exposes window.MacGymTrack.
 (function () {
   "use strict";
-  const C = { paper: "#F3F0E8", ink: "#121212", rule: "#D9D3C7", muted: "#6B665C", accent: "#FF4D00", old: "#8A94A6", faint: "#B4AD9F" };
-  const SANS = '"Inter Tight", "Helvetica Neue", Arial, sans-serif';
-  const MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+  // Colours and fonts come from the Probe0 design tokens (web/probe0/tokens.css), resolved at runtime.
+  // Custom properties built with light-dark() are not resolved by getPropertyValue, so each colour token
+  // is resolved by painting it onto a probe element and reading the used colour back.
+  const C = { paper: "#1e1e1e", ink: "#ffffff", rule: "rgba(255,255,255,0.08)", muted: "rgba(255,255,255,0.55)", accent: "#ffffff", old: "rgba(255,255,255,0.25)", faint: "rgba(255,255,255,0.25)", ground: "rgba(255,255,255,0.1)" };
+  let SANS = '"Geist", -apple-system, system-ui, sans-serif';
+  let MONO = '"Geist Mono", ui-monospace, Menlo, monospace';
+  const TOKEN_MAP = { paper: "--window-bg", ink: "--label-primary", rule: "--chart-grid", muted: "--label-secondary", accent: "--accent", old: "--label-tertiary", faint: "--label-tertiary", ground: "--separator" };
+  function refreshTokens() {
+    const root = document.documentElement, cs = getComputedStyle(root);
+    if (!cs.getPropertyValue("--label-primary")) return;
+    const probe = document.createElement("span");
+    probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none";
+    (document.body || root).appendChild(probe);
+    for (const [k, v] of Object.entries(TOKEN_MAP)) { probe.style.color = `var(${v})`; const c = getComputedStyle(probe).color; if (c) C[k] = c; }
+    probe.remove();
+    const fu = cs.getPropertyValue("--font-ui").trim(), fm = cs.getPropertyValue("--font-mono").trim();
+    if (fu) SANS = fu; if (fm) MONO = fm;
+  }
+  refreshTokens();
+  if (document.readyState !== "complete") window.addEventListener("load", refreshTokens);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
@@ -49,9 +66,9 @@
       }
     }
   }
-  function mono(ctx, size, color) { ctx.font = `500 ${size}px ${MONO}`; ctx.fillStyle = color; }
+  function mono(ctx, size, color) { ctx.font = `400 ${size + 1}px ${SANS}`; ctx.fillStyle = color; } // canvas labels: Geist, not mono
   function tracked(ctx, text, x, y, align, spacing = 0.8) {
-    ctx.letterSpacing = spacing + "px";
+    ctx.letterSpacing = "0px";
     ctx.textAlign = align || "left"; ctx.fillText(text, x, y); ctx.letterSpacing = "0px";
   }
   function dashed(ctx, x, y1, y2, color, dash) {
@@ -133,18 +150,17 @@
     const X = (x) => x0 + x * s, Y = (y) => groundY - y * s;
     const visibleM = (w - pad - x0) / s;
 
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pad, groundY); ctx.lineTo(w - pad, groundY); ctx.stroke();
+    ctx.strokeStyle = C.ground; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(opts.groundFrom ?? pad, groundY); ctx.lineTo(w - pad, groundY); ctx.stroke();
     const labelEvery = s > 60 ? 1 : s > 22 ? 5 : s > 9 ? 10 : 20;
     const minorEvery = s > 6 ? 1 : 5;
     for (let m = 0; m <= visibleM + 1e-6; m += minorEvery) {
       const x = Math.round(X(m)) + 0.5;
       const major = m % labelEvery === 0;
-      ctx.strokeStyle = major ? C.ink : C.muted;
+      ctx.strokeStyle = major ? C.ground : C.rule;
       ctx.beginPath(); ctx.moveTo(x, groundY); ctx.lineTo(x, groundY + (major ? 9 : 4)); ctx.stroke();
-      if (major) { mono(ctx, 11, m === 0 ? C.ink : C.muted); tracked(ctx, `${m} m`, x, groundY + 25, "center", 0.4); }
+      if (major) { mono(ctx, 11, C.faint); tracked(ctx, `${m} m`, x, groundY + 25, "center", 0.4); }
     }
-    if (!st.avgMarks.length) { mono(ctx, 10.5, C.muted); tracked(ctx, "START", X(0), groundY + 43, "center"); }
 
     if (!f) return;
     // Figures keep a legible size even when the runway is 100 m long: scale each body about its own torso.
@@ -162,7 +178,7 @@
     const mTop = Math.max(58, groundY - robotH * sb - 64);
 
     // --- where the whole pack is: smoothed distance histogram over the runway (real per-robot dist) ---
-    if (f.dist) {
+    if (false && f.dist) {
       const bandBot = Math.round(mTop - 34), bandTop = Math.max(52, bandBot - 54);
       if (bandBot - bandTop >= 22) {
         const nb = Math.max(24, Math.min(160, Math.floor((w - pad - x0) / 7)));
@@ -183,7 +199,7 @@
         ctx.beginPath(); ctx.moveTo(X(0), bandBot);
         for (let b = 0; b < nb; b++) ctx.lineTo(X((b + 0.5) * span), bandBot - (st.dens[b] / peak) * hh);
         ctx.lineTo(X(visibleM), bandBot); ctx.closePath();
-        ctx.fillStyle = "rgba(18,18,18,0.07)"; ctx.fill();
+        ctx.fillStyle = C.rule; ctx.fill();
         ctx.strokeStyle = C.ink; ctx.lineWidth = 1.1; ctx.lineJoin = "round"; ctx.stroke();
         ctx.strokeStyle = C.rule; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(pad, bandBot + 0.5); ctx.lineTo(w - pad, bandBot + 0.5); ctx.stroke();
@@ -208,38 +224,43 @@
     }
 
     strokeRobots(ctx, f, buf, X, Y, s, opts.alpha || (f.R > 128 ? 0.13 : 0.22), C.ink, bi);
-    for (const mk of st.avgMarks) {
+    for (const mk of []) {
       const x = Math.round(X(mk.x)) + 0.5;
       ctx.strokeStyle = C.old; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, groundY + 34); ctx.lineTo(x, groundY + 46); ctx.stroke();
     }
-    st.avgMarks.forEach((mk, i) => {
-      const next = st.avgMarks[i + 1];
+    [].forEach((mk, i) => {
+      const next = null;
       if (next && X(next.x) - X(mk.x) < 34) return;
       mono(ctx, 9.5, C.old); tracked(ctx, mk.label, X(mk.x) + 4, groundY + 46, "left", 0.2);
     });
     st.liveMean = mean;
     const bestNow = f.dist && bi >= 0 ? dist[bi] : max;
-    if (st.record > 0.3 && st.record - bestNow > 0.4) {
+    if (false && st.record > 0.3 && st.record - bestNow > 0.4) {
       const xr = X(st.record);
       dashed(ctx, xr, mTop + 30, groundY, C.old, [1, 3]);
       mono(ctx, 10.5, C.old); tracked(ctx, `RECORD ${st.record.toFixed(1)} M`, xr + 6, mTop + 40, "left", 0.6);
     }
     if (f.dist) {
       const xa = X(mean), xb = X(dist[bi] ?? max);
-      dashed(ctx, xa, mTop + 8, groundY, C.ink, [4, 4]);
       dashed(ctx, xb, mTop - 14, groundY, C.accent, []);
       const avgTxt = `pack median now ${mean.toFixed(1)} m`, bestTxt = `best ${(dist[bi] ?? max).toFixed(1)} m`;
       ctx.font = `600 14px ${SANS}`;
       const aw = ctx.measureText(avgTxt).width;
       let close = Math.abs(xb - xa) < aw + 20;
       if (close && xa - 6 - aw < 4) close = false; // no room on the left: keep it on screen
-      label(ctx, avgTxt, close ? xa - 6 : xa + 6, close ? mTop + 18 : (Math.abs(xb - xa) < aw + 20 ? mTop + 40 : mTop + 18), C.ink, close ? "right" : "left");
+      if (false) label(ctx, avgTxt, close ? xa - 6 : xa + 6, close ? mTop + 18 : (Math.abs(xb - xa) < aw + 20 ? mTop + 40 : mTop + 18), C.ink, close ? "right" : "left");
       ctx.font = `600 14px ${SANS}`;
       const bestFlip = xb + 6 + ctx.measureText(bestTxt).width > w - 4; // keep the label on screen
       label(ctx, bestTxt, bestFlip ? xb - 6 : xb + 6, mTop - 4, C.accent, bestFlip ? "right" : "left");
     }
-    if (bi >= 0) strokeOne(ctx, buf, bi * f.K * 5, f.K, X, Y, s, C.accent, true);
+    if (bi >= 0) {
+      ctx.save(); ctx.lineCap = "round"; ctx.strokeStyle = C.paper;
+      const o = bi * f.K * 5;
+      for (let k = 0; k < f.K; k++) { const q = o + k * 5; ctx.lineWidth = clamp(buf[q + 4] * 2 * s * 0.6, 1.6, 4.5) + 2.5; ctx.beginPath(); ctx.moveTo(X(buf[q]), Y(buf[q + 1])); ctx.lineTo(X(buf[q + 2]), Y(buf[q + 3])); ctx.stroke(); }
+      ctx.restore();
+      strokeOne(ctx, buf, o, f.K, X, Y, s, C.accent, true);
+    }
   }
 
   // ---------------- progress chart ----------------
@@ -264,23 +285,27 @@
     ctx.lineWidth = 1;
     for (let v = Math.ceil(vMin / vStep) * vStep; v <= vMax + 1e-9; v += vStep) {
       const y = Math.round(ys(v)) + 0.5;
-      ctx.strokeStyle = Math.abs(v) < 1e-9 ? C.ink : C.rule;
+      ctx.strokeStyle = Math.abs(v) < 1e-9 ? C.ground : C.rule;
       ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(L + pw, y); ctx.stroke();
       const txt = vStep < 1 ? v.toFixed(1) : String(Math.round(v));
       mono(ctx, 10.5, C.muted); tracked(ctx, txt, L - 8, y + 3.5, "right", 0.2);
     }
     // y title sits above the plot, left-aligned, clear of every tick label
     const yTitle = opts.yTitle || Y_TITLE[st.unit || ""] || String(st.unit || "").toUpperCase();
-    mono(ctx, 10, C.muted); tracked(ctx, `\u2191 ${yTitle}`, 2, 11, "left", 0.8);
-    const tStep = [10, 15, 30, 60, 120, 300, 600].find((sp) => tMax / sp <= 7) || 1200;
-    for (let t = 0; t <= tMax; t += tStep) {
+
+    // tick spacing is chosen in pixels so labels never collide, even after hours of training
+    const long = tMax >= 3600;
+    const fmtT = long ? (s) => `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}` : mmss;
+    const minPx = long ? 50 : 46;
+    const tStep = [10, 15, 30, 60, 120, 300, 600, 900, 1200, 1800, 3600, 7200, 14400, 28800].find((sp) => pw / (tMax / sp) >= minPx) || 28800;
+    for (let t = 0; t <= tMax + 1e-6; t += tStep) {
       const x = Math.round(xs(t)) + 0.5;
       ctx.strokeStyle = C.ink;
       ctx.beginPath(); ctx.moveTo(x, T + ph); ctx.lineTo(x, T + ph + 4); ctx.stroke();
-      mono(ctx, 10.5, C.muted); tracked(ctx, mmss(t), x, T + ph + 18, "center", 0.2);
+      mono(ctx, 10.5, C.muted); tracked(ctx, fmtT(t), x, T + ph + 18, "center", 0.2);
     }
-    mono(ctx, 10, C.muted); tracked(ctx, "TRAINING TIME (MIN:SEC) \u2192", L + pw, T + ph + 34, "right", 0.8);
-    ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.moveTo(L + 0.5, T); ctx.lineTo(L + 0.5, T + ph + 0.5); ctx.lineTo(L + pw, T + ph + 0.5); ctx.stroke();
+
+    ctx.strokeStyle = C.ground; ctx.beginPath(); ctx.moveTo(L + 0.5, T); ctx.lineTo(L + 0.5, T + ph + 0.5); ctx.lineTo(L + pw, T + ph + 0.5); ctx.stroke();
     for (const r of st.replays || []) {
       if (r.train_seconds == null || r.label === "now") continue;
       const x = Math.round(xs(r.train_seconds)) + 0.5;
@@ -408,5 +433,5 @@
     ctx.fillRect(Math.round(xNow) - 0.5, gy - 1, 2, 3);
   }
 
-  window.MacGymTrack = { C, SANS, MONO, clamp, mmss, fit, strokeRobots, strokeOne, mono, tracked, dashed, label, niceStep, median, Interp, drawLoco, drawChart, drawReplay, drawLane, drawLaneRect };
+  window.MacGymTrack = { C, get SANS() { return SANS; }, get MONO() { return MONO; }, refreshTokens, clamp, mmss, fit, strokeRobots, strokeOne, mono, tracked, dashed, label, niceStep, median, Interp, drawLoco, drawChart, drawReplay, drawLane, drawLaneRect };
 })();

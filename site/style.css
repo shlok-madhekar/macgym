@@ -1,16 +1,16 @@
 /* MacGym docs. Paper / ink, hairline rules, one accent. */
 :root {
-  --paper: #F3F0E8;
-  --paper-2: #ECE8DE;
-  --ink: #121212;
-  --ink-2: #2A2925;
-  --rule: #D9D3C7;
-  --rule-2: #C9C2B4;
-  --muted: #6B665C;
-  --accent: #FF4D00;
-  --old: #8A94A6;
-  --sans: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --paper: #FFFFFF;
+  --paper-2: #F7F7F7;
+  --ink: #0A0A0A;
+  --ink-2: #2A2A2A;
+  --rule: #EDEDED;
+  --rule-2: #DDDDDD;
+  --muted: #8A8A8A;
+  --accent: #1F9D55;
+  --old: #BDBDBD;
+  --sans: "Geist", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
   --header: 56px;
   --side: 248px;
 }
@@ -25,7 +25,7 @@ a { color: inherit; text-decoration: none; }
 
 .mono-label {
   font-family: var(--mono); font-size: 11px; font-weight: 500;
-  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  letter-spacing: 0; text-transform: none; color: var(--muted);
 }
 
 /* ---------- header ---------- */
@@ -71,7 +71,7 @@ pre {
 }
 .codeblock .cap + pre { margin: 0; }
 .copy {
-  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0; text-transform: none;
   color: var(--muted); background: none; border: 0; cursor: pointer; padding: 2px 0;
 }
 .copy:hover { color: var(--ink); }
@@ -127,7 +127,7 @@ pre > .copy { position: absolute; top: 8px; right: 10px; background: #FBFAF6; pa
 .note .mono-label { display: block; margin-bottom: 4px; color: var(--ink); }
 
 table.t { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
-table.t th { text-align: left; font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink); padding: 8px 12px 8px 0; }
+table.t th { text-align: left; font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); border-bottom: 1px solid var(--ink); padding: 8px 12px 8px 0; }
 table.t td { border-bottom: 1px solid var(--rule); padding: 9px 12px 9px 0; vertical-align: top; }
 table.t td code { white-space: nowrap; }
 table.t td.num, table.t th.num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -188,7 +188,7 @@ table.t tr.best .bar { background: var(--accent); }
 }
 .install .p { color: var(--muted); padding: 0 10px 0 14px; user-select: none; }
 .install code { flex: 1; background: none; border: 0; padding: 0; font-size: 14px; }
-.install button { height: 100%; border: 0; border-left: 1px solid var(--ink); background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 16px; cursor: pointer; }
+.install button { height: 100%; border: 0; border-left: 1px solid var(--ink); background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: 0; text-transform: none; padding: 0 16px; cursor: pointer; }
 .install button:hover { background: var(--ink-2); }
 .hero .req { margin-top: 12px; }
 .hero .stage { margin-top: auto; padding-top: 40px; }

@@ -1,0 +1,243 @@
+/*
+ * Chrome primitives: tones, dot, meter, numerals, chip, splitter.
+ *
+ * Every colour resolves through `--tone-color`, which one block below maps from
+ * a semantic tone to a system colour. Nothing in this directory writes a hex
+ * literal — the palette lives in `styles/tokens.css` and shifts between light
+ * and dark, so a hardcoded colour would be wrong in one appearance by
+ * construction.
+ */
+
+:root {
+  /*
+   * Chrome-local metrics. Namespaced so they never shadow the shared tokens —
+   * but the ones that have a token ALIAS it rather than restating the number.
+   * These three previously carried their own literals, which is how the token
+   * file came to claim a 32px source list while the app painted 28px.
+   */
+  --chrome-sidebar-row-h: var(--sidebar-row-h);
+  --chrome-sidebar-header-h: var(--sidebar-header-h);
+  --chrome-sidebar-w: var(--sidebar-w);
+  /* The in-content view toolbar, NOT the window titlebar — that is
+     `--toolbar-h` (40px) and is a different surface. */
+  --chrome-toolbar-h: 32px;
+  --chrome-splitter-hit: var(--splitter-grab);
+  /* macOS pointer-target minimum. 44px is an iOS number and inflating a Mac
+     control to it is one of the loudest tells there is. */
+  --chrome-hit-min: 20px;
+}
+
+/* --- tones ------------------------------------------------------------- */
+
+.chrome-dot--ok,
+.chrome-meter--ok,
+.chrome-num--ok,
+.chrome-chip--ok,
+[data-tone='ok'] {
+  --tone-color: var(--system-green);
+}
+
+.chrome-dot--warn,
+.chrome-meter--warn,
+.chrome-num--warn,
+.chrome-chip--warn,
+[data-tone='warn'] {
+  --tone-color: var(--system-orange);
+}
+
+.chrome-dot--over,
+.chrome-meter--over,
+.chrome-num--over,
+.chrome-chip--over,
+[data-tone='over'] {
+  --tone-color: var(--system-red);
+}
+
+.chrome-dot--info,
+.chrome-meter--info,
+.chrome-num--info,
+.chrome-chip--info,
+[data-tone='info'] {
+  --tone-color: var(--system-blue);
+}
+
+.chrome-dot--idle,
+.chrome-meter--idle,
+.chrome-num--idle,
+.chrome-chip--idle,
+[data-tone='idle'] {
+  --tone-color: var(--system-gray);
+}
+
+.chrome-dot--accent,
+.chrome-meter--accent,
+.chrome-num--accent,
+.chrome-chip--accent,
+[data-tone='accent'] {
+  --tone-color: var(--accent);
+}
+
+/* --- icon -------------------------------------------------------------- */
+
+.chrome-icon {
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* --- status dot -------------------------------------------------------- */
+
+.chrome-dot {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone-color, var(--system-gray));
+}
+
+/* A slow halo, not a blink. Anything faster reads as an alert. */
+.chrome-dot--live::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--tone-color, var(--system-gray));
+  opacity: 0.25;
+  animation: chrome-breathe 2.4s var(--ease-standard) infinite;
+}
+
+@keyframes chrome-breathe {
+  0%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.28;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.06;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chrome-dot--live::after {
+    animation: none;
+    opacity: 0.2;
+  }
+}
+
+/* --- meter ------------------------------------------------------------- */
+
+.chrome-meter {
+  position: relative;
+  height: 4px;
+  width: 100%;
+  border-radius: 2px;
+  background: var(--label-quaternary);
+  overflow: hidden;
+}
+
+.chrome-meter__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  border-radius: inherit;
+  background: var(--tone-color, var(--accent));
+  transition: transform var(--dur-normal) var(--ease-standard);
+}
+
+/* --- numerals ---------------------------------------------------------- */
+
+/*
+ * Numbers are the product. Proportional digits make a live counter jitter as it
+ * ticks, which is the single loudest "web page" tell in a status bar.
+ */
+.chrome-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--tone-color, inherit);
+}
+
+.chrome-num--mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-subheadline);
+}
+
+.chrome-num--emphasis {
+  font-weight: 600;
+  color: var(--tone-color, var(--label-primary));
+}
+
+/* --- chip -------------------------------------------------------------- */
+
+.chrome-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 18px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--radius-control);
+  border: 1px solid color-mix(in srgb, var(--tone-color) 45%, transparent);
+  color: var(--tone-color);
+  font-size: var(--text-footnote);
+  line-height: var(--lh-footnote);
+  white-space: nowrap;
+}
+
+.chrome-chip--idle {
+  border-color: var(--separator);
+  color: var(--label-secondary);
+}
+
+/* --- splitter ---------------------------------------------------------- */
+
+/*
+ * Reads as a 1px hairline, hit-tested over 6px. A 1px pointer target is
+ * unusable; AppKit has always widened the grab area rather than the line.
+ */
+.chrome-splitter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--chrome-splitter-hit);
+  z-index: 4;
+  cursor: col-resize;
+  outline: none;
+  touch-action: none;
+}
+
+.chrome-splitter__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--separator);
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+
+.chrome-splitter:hover .chrome-splitter__line {
+  background: var(--label-tertiary);
+}
+
+.chrome-splitter:focus-visible {
+  box-shadow: none;
+}
+
+.chrome-splitter:focus-visible .chrome-splitter__line {
+  width: 2px;
+  background: var(--accent);
+}
+
+/*
+ * While dragging, the pointer must not flicker between col-resize, the I-beam
+ * over text and the arrow over buttons. This is the one place `!important` is
+ * correct: it is a transient, body-scoped state.
+ */
+body.is-resizing,
+body.is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}

@@ -53,3 +53,11 @@ The laptop on your desk is the most ordinary computer you own. MacGym turns it i
 - A6 Built today: 11:38 first commit. Mine: the idea, framework over demo, scrapping the first UI, every experiment. AI coding agents wrote most of the code; I reviewed, tested and directed.
 
 Q&A detail (fairness of 22×, MJX/Warp, cheating ablation) is unchanged from `../deck/NOTES.md`.
+
+
+## Slide "real" details (moved off the slide in the de-slop pass)
+- 0.01%, matches the textbook: pendulum period 1.80511 s vs the exact analytic 1.80497 s (+0.008%). MuJoCo matches too.
+- 22×, faster than MuJoCo: same planar 2D walker, Apple M3 Pro 18 GB, 4,096 robots, vs MuJoCo C rollout on 11 CPU threads (3.64M vs 165K env-steps/s; 40× at 16,384).
+- 90%, still walks in MuJoCo: 19.7 m vs 22.0 m in 8 s, sim-to-sim (MuJoCo 4.0.1), 20 runs. Not hardware.
+- 2.74 m/s, honest speed, cheat removed: first robots ran 6.16 m/s with unlimited motor power and skating feet; fixed with a real motor torque-speed curve and contacts that hold.
+- Other small print removed from slides: "5 of 5 seeds learned", "8 s replays", "Apple M3 Pro, 18 GB", "planar 2D, by choice", live-counter caption (4,096 robots, playground counter).

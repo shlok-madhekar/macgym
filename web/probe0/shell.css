@@ -1,0 +1,59 @@
+/*
+ * The renderer's stylesheet entry point.
+ *
+ * `main.tsx` imports exactly two sheets, `tokens.css` then this file, so the
+ * whole design system is pulled in from here. Order matters: tokens must
+ * already be declared when `base.css` starts using them.
+ *
+ * THE ONE RULE THAT MAKES OR BREAKS THIS APP: vibrancy is drawn by AppKit
+ * *behind* the web contents. If any element paints an opaque background over
+ * the window, the material is invisible and you get a flat grey rectangle.
+ *
+ * So: `html`, `body`, `#root` (base.css), `.chrome-frame` and
+ * `.chrome-frame__sidebar` (chrome/frame.css), `.titlebar` and
+ * `.statusbar-chrome` are all transparent, and exactly ONE surface — the
+ * content pane — is opaque. That vibrant-sidebar / solid-content split is what
+ * Finder, Mail, Xcode and Notes all do. Two adjacent translucent panes is the
+ * glassmorphism mistake.
+ *
+ * There is deliberately no `backdrop-filter` anywhere in this renderer. CSS
+ * blur cannot sample the desktop wallpaper; only the OS material can.
+ *
+ * The window frame itself lives in `components/chrome/` — this file no longer
+ * declares one. `App.tsx` composes `ChromeFrame` + `TitleBar` + `Sidebar` +
+ * `ContentPane` + `StatusBar`, and each of those imports its own sheet.
+ */
+
+@import './base.css';
+@import './surfaces.css';
+@import './buttons.css';
+@import './inputs.css';
+@import './toggles.css';
+@import './feedback.css';
+@import './overlays.css';
+@import './error-boundary.css';
+/* Last, so its press transitions win over each control's own. */
+@import './feel.css';
+
+/* ---------------------------------------------------------------------- */
+/* Reduced transparency                                                    */
+/* ---------------------------------------------------------------------- */
+
+/*
+ * With Reduce Transparency on, macOS renders the material as flat grey. Paint
+ * the measured opaque equivalent ourselves so the vibrant surfaces keep their
+ * identity instead of blending into the content pane.
+ *
+ * This lives here rather than in each chrome sheet because it is one rule about
+ * the *window*, and splitting it three ways is how the three copies drift.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  .chrome-frame__sidebar,
+  .statusbar-chrome {
+    background: var(--material-sidebar);
+  }
+
+  .titlebar {
+    background: var(--material-titlebar);
+  }
+}

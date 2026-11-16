@@ -1,0 +1,340 @@
+/*
+ * View toolbar / filter bar and its controls.
+ *
+ * Measured AppKit heights: regular controls are 24px, small are 20px. A 32px
+ * bar holding 20px controls is the native filter-bar proportion. `h-9` buttons
+ * and 40px inputs are web numbers and are the fastest way to make an Electron
+ * app look like a website.
+ *
+ * Tahoe moved buttons, pop-ups and segmented controls to full capsules; text
+ * and search fields stayed rectangular at 6px. That split is a signal, not a
+ * preference — do not round them the same.
+ */
+
+.tbr {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  height: var(--chrome-toolbar-h);
+  padding: 0 var(--content-inset);
+  min-width: 0;
+  overflow: hidden;
+  /* Queried below so the toolbar degrades on its own width, independent of the
+     window — the same bar has very different room with the inspector open. */
+  container: tbr / inline-size;
+}
+
+/*
+ * Toolbar items never shrink below their content. Flex's default
+ * `flex-shrink: 1` silently compresses a chip past its label and the text
+ * spills over its neighbour — which looks like a rendering bug rather than a
+ * layout decision. Only the two items marked below are allowed to give ground.
+ */
+.tbr > *,
+.tbr__group > * {
+  flex: none;
+}
+
+/* 4px inside a group, 12px between groups. That contrast is what stops a
+   toolbar reading as an undifferentiated row of buttons. */
+.tbr__group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  /*
+   * When the pane genuinely runs out of room — narrow window, inspector open —
+   * the filter group is what gives, scrolling horizontally rather than letting
+   * anything clip. Search and actions keep their size, because those are the
+   * controls a user reaches for without looking.
+   */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.tbr__group::-webkit-scrollbar {
+  display: none;
+}
+
+.tbr__spacer {
+  flex: 1 1 auto;
+}
+
+.tbr__sep {
+  width: 1px;
+  height: 14px;
+  background: var(--separator);
+}
+
+/*
+ * The count degrades in steps rather than truncating: a half-rendered "1,2…" is
+ * worse than no number at all. The noun goes first, then the whole readout —
+ * and the same figures still live in the status bar, so nothing is lost.
+ */
+.tbr__count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-size: var(--text-footnote);
+  line-height: var(--lh-footnote);
+  color: var(--label-secondary);
+  white-space: nowrap;
+}
+
+@container tbr (max-width: 760px) {
+  .tbr__count-noun {
+    display: none;
+  }
+}
+
+@container tbr (max-width: 660px) {
+  .tbr__count {
+    display: none;
+  }
+}
+
+.tbr__count-arrow,
+.tbr__count-noun {
+  color: var(--label-tertiary);
+}
+
+/* --- button ------------------------------------------------------------ */
+
+.tbr-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  height: var(--ctl-h-small);
+  min-width: var(--chrome-hit-min);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--label-primary);
+  font: inherit;
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  white-space: nowrap;
+  cursor: default;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.tbr-button--regular {
+  height: var(--ctl-h);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  /* Stops "OK"/"Save" collapsing into a cramped pill. */
+  min-width: var(--ctl-min-w);
+}
+
+.tbr-button--icon {
+  padding: 0;
+  width: var(--chrome-hit-min);
+  min-width: var(--chrome-hit-min);
+  border-color: transparent;
+  color: var(--label-secondary);
+}
+
+.tbr-button:not(:disabled):hover {
+  background: var(--hover-overlay);
+  color: var(--label-primary);
+}
+
+.tbr-button:not(:disabled):active {
+  background: color-mix(in srgb, var(--label-primary) 10%, transparent);
+}
+
+.tbr-button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: transparent;
+  color: var(--accent);
+}
+
+.tbr-button[data-tone] {
+  color: var(--tone-color);
+  border-color: color-mix(in srgb, var(--tone-color) 45%, transparent);
+}
+
+.tbr-button:disabled {
+  color: var(--control-text-disabled);
+  border-color: var(--label-quaternary);
+}
+
+/* --- segmented --------------------------------------------------------- */
+
+.tbr-seg {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ctl-h-small);
+  padding: 1px;
+  border-radius: var(--radius-control);
+  background: var(--label-quaternary);
+}
+
+.tbr-seg--regular {
+  height: var(--ctl-h);
+}
+
+.tbr-seg__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  height: 100%;
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--label-secondary);
+  font: inherit;
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  white-space: nowrap;
+  cursor: default;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.tbr-seg__item:hover[aria-checked='false'] {
+  color: var(--label-primary);
+}
+
+/* The selected segment is a raised chip inside the track — AppKit's model. In
+   dark mode elevation is lightness, not shadow, hence the fill rather than a
+   drop shadow. */
+.tbr-seg__item[aria-checked='true'] {
+  background: var(--control-fill);
+  color: var(--label-primary);
+  font-weight: 500;
+}
+
+@media (prefers-color-scheme: light) {
+  .tbr-seg__item[aria-checked='true'] {
+    box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--label-primary) 10%, transparent);
+  }
+}
+
+/* --- search field ------------------------------------------------------ */
+
+.tbr-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  /* The one control allowed to narrow, down to a floor where the placeholder
+     is still readable. Its inline `width` is the preferred size, not a fixed one. */
+  flex: 0 1 auto;
+  min-width: 110px;
+  height: var(--field-h);
+  padding: 0 var(--sp-3);
+  /* Rectangular-with-rounded-corners: fields did NOT become capsules. */
+  border-radius: var(--radius-field);
+  background: var(--label-quaternary);
+  color: var(--label-secondary);
+  transition: box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.tbr-search:focus-within {
+  background: var(--text-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.tbr-search__glyph {
+  flex: 0 0 12px;
+  color: var(--label-tertiary);
+}
+
+.tbr-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--label-primary);
+  font: inherit;
+  font-size: var(--text-callout);
+  line-height: var(--lh-callout);
+  outline: none;
+}
+
+.tbr-search__input::placeholder {
+  color: var(--text-placeholder, var(--label-secondary));
+}
+
+/* The system draws its own clear affordance for type=search; ours replaces it. */
+.tbr-search__input::-webkit-search-decoration,
+.tbr-search__input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.tbr-search__clear {
+  display: grid;
+  place-items: center;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--label-tertiary);
+  color: var(--text-bg);
+  cursor: default;
+}
+
+.tbr-search__clear:hover {
+  background: var(--label-secondary);
+}
+
+/* --- filter chip ------------------------------------------------------- */
+
+.tbr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: var(--ctl-h-small);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--label-secondary);
+  font: inherit;
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  white-space: nowrap;
+  cursor: default;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.tbr-chip:hover {
+  color: var(--label-primary);
+  border-color: var(--label-tertiary);
+}
+
+.tbr-chip[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--tone-color, var(--accent)) 16%, transparent);
+  border-color: transparent;
+  color: var(--tone-color, var(--accent));
+  font-weight: 500;
+}
+
+.tbr-chip__count {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-footnote);
+  color: var(--label-tertiary);
+}
+
+.tbr-chip[aria-pressed='true'] .tbr-chip__count {
+  color: inherit;
+  opacity: 0.7;
+}

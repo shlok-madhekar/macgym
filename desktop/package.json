@@ -1,0 +1,8 @@
+{
+  "name": "MacGym",
+  "productName": "MacGym",
+  "version": "0.1.0",
+  "description": "MacGym desktop shell (Electron)",
+  "main": "main.js",
+  "private": true
+}

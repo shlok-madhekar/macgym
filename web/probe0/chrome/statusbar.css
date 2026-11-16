@@ -1,0 +1,109 @@
+/*
+ * Status bar, 22px.
+ *
+ * Transparent so the window material carries through, 10px footnote type,
+ * secondary label, hairline on top. Clickable segments get a hover affordance;
+ * static ones do not, so the difference is visible before you click.
+ */
+
+.statusbar-chrome {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: var(--statusbar-h);
+  padding: 0 var(--sp-6);
+  border-top: 1px solid var(--separator);
+  background: var(--glass-scrim-bar);
+  font-size: var(--text-footnote);
+  line-height: var(--lh-footnote);
+  color: var(--label-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/*
+ * OPAQUE FROM THE SIDEBAR'S TRAILING EDGE RIGHTWARD.
+ *
+ * The bar spans the whole window, so with a fully transparent ground the
+ * sidebar material bled under it for the full width and the bottom-right of the
+ * window visibly picked up the wallpaper. AppKit does not do that: Finder and
+ * Mail run the sidebar material floor-to-ceiling and draw the bottom bar of the
+ * CONTENT region on `contentBackground`.
+ *
+ * So the 22px strip stays vibrant for exactly the sidebar's width — which
+ * `ChromeFrame` publishes as `--chrome-sidebar-w`, and which is `0px` when the
+ * sidebar is collapsed — and is opaque from there on. `z-index: -1` puts the
+ * fill behind the bar's own inline content; every ancestor up to the root is
+ * transparent, so nothing occludes it.
+ */
+.statusbar-chrome::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 var(--chrome-sidebar-w, 0px);
+  z-index: -1;
+  background: var(--window-bg);
+  pointer-events: none;
+}
+
+.statusbar-chrome__cell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.statusbar-chrome__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 16px;
+  padding: 0 var(--sp-2);
+  border: 0;
+  border-radius: var(--radius-selection);
+  background: transparent;
+  color: var(--tone-color, inherit);
+  font: inherit;
+  font-size: var(--text-footnote);
+  line-height: var(--lh-footnote);
+  cursor: default;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Segments that map to a filter behave like controls. This is what replaces
+   90% of the toasts a web app would ship. */
+.statusbar-chrome__item--action {
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.statusbar-chrome__item--action:hover {
+  background: var(--hover-overlay);
+  color: var(--tone-color, var(--label-primary));
+}
+
+.statusbar-chrome__divider {
+  color: var(--label-quaternary);
+  user-select: none;
+}
+
+.statusbar-chrome__spacer {
+  flex: 1 1 auto;
+}
+
+body.window-inactive .statusbar-chrome {
+  color: var(--label-tertiary);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .statusbar-chrome {
+    background: var(--material-sidebar);
+  }
+}
+
+/* The frame's own transparency invariant applies to the *sidebar* strip only;
+   the opaque half is the content pane's floor and belongs there. */

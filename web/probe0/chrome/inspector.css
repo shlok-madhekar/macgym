@@ -1,0 +1,192 @@
+/*
+ * Trailing detail drawer.
+ *
+ * Opaque, like the content pane: this is where request bodies, headers and
+ * token accounting get read, and translucency behind that is a legibility bug
+ * dressed up as a style.
+ */
+
+.inspector {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--inspector-w);
+  max-width: 100%;
+  z-index: var(--z-sticky);
+  /* Elevated, because it now floats over content rather than sitting beside it.
+     This is the one place in the app that gets a real shadow. */
+  box-shadow: -1px 0 0 var(--separator), -18px 0 40px rgba(0, 0, 0, 0.34);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: var(--window-bg);
+  border-left: 1px solid var(--separator);
+  /* Compositor-only entrance. The grid column snaps to its final width while
+     the panel itself slides — animating the column would animate layout. */
+  animation: inspector-in var(--dur-normal) var(--ease-standard);
+  will-change: transform;
+}
+
+.inspector--closing {
+  animation: inspector-out var(--dur-normal) var(--ease-standard) forwards;
+  pointer-events: none;
+}
+
+@keyframes inspector-in {
+  from {
+    transform: translateX(12px);
+    opacity: 0;
+  }
+}
+
+@keyframes inspector-out {
+  to {
+    transform: translateX(12px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inspector,
+  .inspector--closing {
+    animation: none;
+  }
+}
+
+/* Grab area straddles the drawer's leading edge. */
+.inspector > .chrome-splitter {
+  left: calc(var(--chrome-splitter-hit) / -2);
+}
+
+/* --- header ------------------------------------------------------------ */
+
+.inspector__header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  min-height: var(--toolbar-h);
+  padding: var(--sp-4) var(--sp-6) var(--sp-3);
+  border-bottom: 1px solid var(--separator);
+}
+
+.inspector__identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.inspector__title {
+  font-size: var(--text-title-3);
+  line-height: var(--lh-title-3);
+  font-weight: 600;
+  color: var(--label-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Identifiers are meant to be copied, so this one span opts back into
+   selection — the rest of the chrome deliberately does not. */
+.inspector__subtitle {
+  font-family: var(--font-mono);
+  font-size: var(--text-footnote);
+  line-height: var(--lh-footnote);
+  color: var(--label-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 0 auto;
+}
+
+.inspector__close {
+  display: grid;
+  place-items: center;
+  width: var(--chrome-hit-min);
+  height: var(--chrome-hit-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-selection);
+  background: transparent;
+  color: var(--label-secondary);
+  cursor: default;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+}
+
+.inspector__close:hover {
+  background: var(--hover-overlay);
+  color: var(--label-primary);
+}
+
+/* --- tabs -------------------------------------------------------------- */
+
+/*
+ * Underlined tabs rather than a segmented control: there are up to eight
+ * sections here and a capsule segmented control stops working past four.
+ */
+.inspector__tabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-1);
+  padding: 0 var(--sp-4);
+  border-bottom: 1px solid var(--separator);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.inspector__tab {
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 var(--sp-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--label-secondary);
+  font: inherit;
+  font-size: var(--text-subheadline);
+  line-height: var(--lh-subheadline);
+  white-space: nowrap;
+  cursor: default;
+  transition:
+    color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+
+.inspector__tab:hover {
+  color: var(--label-primary);
+}
+
+.inspector__tab[aria-selected='true'] {
+  color: var(--label-primary);
+  font-weight: 500;
+  border-bottom-color: var(--accent);
+}
+
+body.window-inactive .inspector__tab[aria-selected='true'] {
+  border-bottom-color: var(--label-tertiary);
+}
+
+/* --- body -------------------------------------------------------------- */
+
+.inspector__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  /* Inspector inset is 12px, tighter than the content pane's 16px. */
+  padding: var(--sp-6);
+  outline: none;
+  scrollbar-width: thin;
+}
