@@ -2,7 +2,7 @@
  * MacGym desktop shell.
  *
  * A real native macOS window in the Probe0 style: hiddenInset title bar,
- * traffic lights at {19,13}, AppKit 'sidebar' vibrancy behind a transparent
+ * traffic lights at {19,13}, AppKit 'under-window' vibrancy behind a transparent
  * web layer, one opaque content pane. The renderer is the MacGym server's own
  * /shell.html over loopback; this process only owns the window, the menu and
  * (when nothing is already listening) the server's lifetime.
@@ -105,6 +105,11 @@ function nav(view) {
   js(`window.macgymNav && window.macgymNav(${JSON.stringify(view)})`);
 }
 
+function cmd(name) {
+  if (!win || win.isDestroyed()) return;
+  js(`window.macgymCmd && window.macgymCmd(${JSON.stringify(name)})`);
+}
+
 function present() {
   if (!win || win.isDestroyed()) return;
   nav('slides');
@@ -121,7 +126,7 @@ function createWindow() {
     /* macOS chrome, same as Probe0's main window */
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 19, y: 13 },
-    vibrancy: 'sidebar',
+    vibrancy: 'under-window',
     visualEffectState: 'active',
     backgroundColor: '#00000000',
     transparent: false,
@@ -220,8 +225,11 @@ function buildMenu() {
           click: present,
         },
         { type: 'separator' },
-        { role: 'reload' },
-        { role: 'forceReload' },
+        {
+          label: 'Reload Window',
+          accelerator: 'CmdOrCtrl+Alt+R',
+          click: () => win && !win.isDestroyed() && win.webContents.reload(),
+        },
         { role: 'toggleDevTools' },
         { type: 'separator' },
         { role: 'resetZoom' },
@@ -229,6 +237,13 @@ function buildMenu() {
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Product',
+      submenu: [
+        { label: 'Run', accelerator: 'CmdOrCtrl+R', click: () => cmd('run') },
+        { label: 'Stop', accelerator: 'CmdOrCtrl+.', click: () => cmd('stop') },
       ],
     },
     { role: 'windowMenu' },

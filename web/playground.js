@@ -221,6 +221,7 @@ function onPreview(m) {
   S.robotH = Math.max(0.8, top);
   S.robotW = caps.length ? x1 - x0 : 1;
   $("meta").textContent = `${m.bodies} bodies, ${m.joints} motors`;
+  if (typeof postStatus === "function") postStatus();
   setStatusMsg(`${m.name || "robot"} · ${m.bodies} bodies · ${m.joints} joints · preview ${m.ms ?? "–"} ms`, false);
   renderStageText();
 }
@@ -256,7 +257,7 @@ function onStatus(m) {
     log(`stopped after ${mmss(S.trainSeconds)} · ${fmtInt(S.iter)} iterations`, "info");
     S.sps = 0;
   }
-  renderControls(); renderStageText(); renderFoot(); renderHeadline();
+  renderControls(); renderStageText(); renderFoot(); renderHeadline(); postStatus();
 }
 function onFrame(m) {
   const R = m.R | 0, K = m.K | 0;
@@ -327,7 +328,7 @@ function run() {
   logRule();
   log(`run ${S.preset}.py${S.dirty ? " (edited)" : ""} · ${fmtInt(S.numEnvs)} copies`, "info");
   S.state = "building";
-  renderControls(); renderStageText();
+  renderControls(); renderStageText(); postStatus();
   send({ cmd: "run_code", code, num_envs: S.numEnvs, render_envs: 256 });
 }
 function stop() { send({ cmd: "stop" }); }
@@ -344,6 +345,7 @@ document.addEventListener("keydown", (e) => {
 async function loadPreset(name) {
   S.preset = name;
   $("preset").value = name;
+  $("jumpFile").textContent = `${name}.py`;
   let text;
   try {
     const r = await fetch(`/presets/${name}`);
@@ -438,6 +440,7 @@ function logRule() {
   el.style.cssText = `border-top:1px solid ${C.rule};margin:6px 0`;
   consoleEl.appendChild(el);
 }
+$("consoleClear").addEventListener("click", () => { consoleEl.innerHTML = ""; });
 consoleEl.addEventListener("click", (e) => {
   const a = e.target.closest("a[data-line]");
   if (!a || !editor || !editor.view) return;
@@ -586,6 +589,45 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 window.addEventListener("resize", () => { chartTick = 0; });
+// Redraw canvases at their new size immediately (fit() re-reads clientWidth/devicePixelRatio every draw).
+if (window.ResizeObserver) {
+  const ro = new ResizeObserver(() => { chartTick = 0; const n = performance.now(); drawStage(n, 0); T.drawChart(chartCv, S, { tMin: 60, emptyText: " " }); drawGens(n); });
+  for (const el of [stageCv, chartCv, $("gens")]) ro.observe(el);
+}
+
+// ======================================================================
+// Shell contract (XCODE.md): status out, commands in
+// ======================================================================
+const EMBED = params.get("embed") === "1";
+function shellState() { return S.state === "training" ? "training" : (S.state === "building" || S.state === "measuring" || S.state === "starting") ? "building" : "idle"; }
+function postStatus() {
+  if (!EMBED || window.parent === window) return;
+  const xp = S.hasFrame && S.envSteps && S.ctrlDt ? S.envSteps * S.ctrlDt / 3600 : 0;
+  const v = !xp ? "" : xp >= 48 ? `${(xp / 24).toFixed(xp >= 240 ? 0 : 1)} days` : xp >= 1 ? `${xp.toFixed(xp >= 10 ? 0 : 1)} hours` : `${Math.round(xp * 60)} minutes`;
+  const p = S.preview;
+  try {
+    window.parent.postMessage({
+      type: "macgym:status", view: "playground", state: shellState(), robot: S.preset,
+      detail: p ? `${p.bodies} bodies, ${p.joints} motors` : "", copies: S.numEnvs,
+      headline: v ? `${v} of practice` : "", sub: v ? `in ${fmtWall(S.trainSeconds)}` : "",
+      best: S.record > 0 ? fmtM(S.record) : "",
+    }, "*");
+  } catch (e) { /* parent gone */ }
+}
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || m.type !== "macgym:cmd") return;
+  if (m.cmd === "run") run();
+  else if (m.cmd === "stop") stop();
+  else if (m.cmd === "setCopies" && m.value) {
+    const sel = $("count"), v = String(m.value);
+    if (![...sel.options].some((o) => o.value === v)) sel.add(new Option(Number(v).toLocaleString("en-US"), v));
+    sel.value = v; sel.dispatchEvent(new Event("change"));
+  }
+});
+setInterval(() => { if (S.state === "training") postStatus(); }, 1000);
+$("count").addEventListener("change", postStatus);
+$("preset").addEventListener("change", () => setTimeout(postStatus, 300));
 
 fetch("bench.json").then((r) => r.ok ? r.json() : null).then((j) => {
   const chip = j && /Apple M\d+( Pro| Max| Ultra)?/.exec(j.machine || "");
