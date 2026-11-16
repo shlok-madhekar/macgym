@@ -323,6 +323,7 @@ export function buildSlides() {
         <div class="h m" style="left:104px;top:160px"><div class="ln" data-d="0.4"><span>One install.</span></div><div class="ln gray" data-d="0.55"><span>A real library.</span></div></div>
         <div class="term fx" data-d="0.9" style="left:110px;top:460px"><div class="type" data-d="1.1" data-cps="55">$ git clone … &amp;&amp; pip install -e .</div><div class="type dim" data-d="1.9" data-cps="80">Successfully installed macgym-0.3.0  (10.6 s)</div><div class="type" data-d="2.6" data-cps="55">$ macgym train walker</div><div class="type ok" data-d="3.6" data-cps="90">done in 1m13s | best distance 54.26 m</div></div>
         <div class="bigsec fx" data-d="4.6" style="left:110px;top:760px"><b>87 s</b><span>from clone to a trained robot</span></div>
+        <div class="fx spec" data-d="5.0" style="left:110px;top:950px"><b>Early access:</b> 2 people have committed to pay.</div>
         <div class="fx spec" data-d="5.4" style="left:110px;top:1000px">Built today with AI coding agents. I designed the API and directed and tested it.</div>`,
     });
   }
@@ -392,7 +393,7 @@ export function buildSlides() {
     </table><p>MacGym itself: 22.0 m. This is MuJoCo, not real hardware.</p>`));
   S.push(apx('a-who', 'who it is for', 'RL classes on MacBooks.', `<table>
     <tr><th>vs free Colab / MJX</th><td>Runs offline on the laptop you own. No GPU quota, no disconnects, a live viewer and a code playground, nothing to rent.</td></tr>
-    <tr><th>First users</th><td>DVHS CS Club (I'm an officer), my hackathons (Cove Hacks, HackPilot)</td></tr>
+    <tr><th>First users</th><td>DVHS CS Club (I'm an officer), my hackathons (Cove Hacks, HackPilot). 2 people have committed to pay.</td></tr>
     <tr><th>Next</th><td>MJCF import and 3D. Idea, not built: the same compiler emitting CUDA or ROCm.</td></tr>
     </table>`));
   S.push(apx('a-built', 'built today', 'One day. One laptop.', `<table>

@@ -3,6 +3,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
+    { "source": "/slides", "destination": "/deck", "permanent": false },
     { "source": "/playground", "destination": "/quickstart", "permanent": false },
     { "source": "/docs", "destination": "/quickstart", "permanent": false }
   ],
