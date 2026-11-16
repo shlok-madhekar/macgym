@@ -154,6 +154,34 @@ export function buildSlides() {
         <div class="fx spec" data-d="3.6" style="left:110px;top:1000px">Apple M3 Pro, 18 GB</div>`,
     });
   }
+  // 03b THE THEME ---------------------------------------------------
+  {
+    const camA = (t) => orbit([1.5, 3.6, 0], 40, -0.1 + 0.05 * Math.sin(t * 0.3), 0.22, 7.0);
+    const camB = (t) => orbit([1.0, 6.0, 0], 50 - 2 * easeOut(t / 6), -0.18 + 0.04 * Math.sin(t * 0.3), 0.14, 12.5);
+    const tiers = (cl, t) => {
+      const steps = [[-4.8, 2.6, 2.8, T.LIGHT, 0.0], [0.8, 6.6, 3.5, T.GRAY, 0.37], [6.8, 11.0, 4.3, T.INK, 0.71]];
+      for (const [x, y, sc, tone, ph] of steps) {
+        heroRobot(cl, t + ph, sc, 0.09, { x, y, z: 0, tone, far: tone === T.INK ? T.GRAY : T.LIGHT });
+        for (let i = -12; i <= 12; i++) for (let k = -3; k <= 3; k++) cl.push(x + i * 0.16, y - 0.05, k * 0.3, 0, 1, 0, 0.1, T.GRAY);
+      }
+    };
+    S.push({
+      id: 'theme', dur: 10,
+      states: [
+        { at: 0, trans: 2.0, style: 'wipe', cam: camA, sweep: 'x', shape: { frame(t, cl) { laptop(cl, t, { yaw: -0.3 + 0.05 * Math.sin(t * 0.4), x: 1.5, chip: 0.8, chipTone: T.DIM }); } } },
+        { at: 3.0, trans: 2.4, cam: camB, spread: 0.2, shape: { frame(t, cl) { laptop(cl, t, { yaw: -0.3 + 0.05 * Math.sin(t * 0.4), x: -2.5, y: -4.2, scale: 0.75, chip: 1.2, chipTone: T.ACC }); tiers(cl, t); } } },
+      ],
+      html: `<div class="kicker fx" data-d="0.3" style="left:110px;top:120px">The theme</div>
+        <div class="h m" style="left:104px;top:160px"><div class="ln" data-d="0.4"><span>Elevate</span></div><div class="ln gray" data-d="0.55"><span>the ordinary.</span></div></div>
+        <div class="theme fx" data-d="1.2" style="left:110px;top:480px">
+          <div class="th"><span>ordinary</span><span>elevated</span></div>
+          <div class="tr fx" data-d="1.4"><span>the laptop already on your desk</span><span>a robot-learning lab</span></div>
+          <div class="tr fx" data-d="1.9"><span>a GPU that sits idle</span><span>4,096 robots training at once</span></div>
+          <div class="tr fx" data-d="2.4"><span>one minute of your time</span><span>7.8 days of robot practice</span></div>
+          <div class="tr fx" data-d="2.9"><span>15 lines of Python</span><span>a robot that learns to walk</span></div>
+        </div>`,
+    });
+  }
   // 04 HOW -----------------------------------------------------------
   {
     const camCode = (t) => orbit([0, 0, 0], 31, -0.12 + 0.03 * Math.sin(t * 0.5), 0.05, 0, 32, -1.2);
@@ -249,41 +277,6 @@ export function buildSlides() {
         <div class="fx spec" data-d="3.0" style="left:110px;top:800px">4,096 robots. Live counter from the playground. Apple M3 Pro, 18 GB.</div>`,
     });
   }
-  // 07 THE TWIST -----------------------------------------------------
-  {
-    const Sx = 5.2, tFreeze = 4.6, tHonest = 6.0, K = 7;
-    const cam = (t) => orbit([4.5, 4.3, 0], 29, 0.3 + 0.03 * Math.sin(t * 0.4), 0.12, 6.5);
-    const gt = (t) => (t < tFreeze ? t : t < tHonest ? tFreeze : t - (tHonest - tFreeze));
-    const scroll = (t) => { const v = loopSpd() * Sx; const a = Math.min(t, tFreeze) * v * 2.25; return t < tHonest ? a : a + (t - tHonest) * v; };
-    const smpH = () => smp('h' + Sx + 0.08, Sx, 0.08, 1.9);
-    S.push({
-      id: 'twist', dur: 10,
-      states: [{ at: 0, trans: 1.1, style: 'wipe', cam, sweep: 'x', shape: { frame(t, cl) {
-        const cheat = t < tHonest, g = gt(t);
-        heroRobot(cl, g, Sx, 0.08, { x: 4.5, foot: cheat ? T.BAD : undefined });
-        // red skate trails: feet at past times, displaced by how far the ground moved
-        const m = smpH(); const n3 = m.caps[3].n, n6 = m.caps[6].n;
-        for (let j = 1; j <= K; j++) {
-          const tp = Math.max(0, Math.min(t, tFreeze) - j * 0.06), fr = loopFrame(tp, F1);
-          const dx = (scroll(Math.min(t, tFreeze)) - scroll(tp)) - (Math.min(t, tFreeze) - tp) * 0;
-          const vis = cheat ? (1 - j / (K + 1)) : 0;
-          for (const k of [3, 6]) {
-            const b = k * 5, cap = m.caps[k], step = 9;
-            for (let i = 0; i < cap.n; i += step) {
-              const u = cap.S[i * 6] ; const x = (fr[b] + (fr[b + 2] - fr[b]) * clamp(u, 0, 1)) * Sx, y = (fr[b + 1] + (fr[b + 3] - fr[b + 1]) * clamp(u, 0, 1)) * Sx;
-              const ang = cap.S[i * 6 + 2], rho = cap.S[i * 6 + 3];
-              cl.push(4.5 + x - dx, y + Math.cos(ang) * rho * 0.5, (k === 3 ? 1 : -1) * m.zsep + Math.sin(ang) * rho * 0.5, 0, 0, 0, 0.12 * vis, T.BAD);
-            }
-          }
-        }
-        ground(cl, scroll(t), 1, { x0: -22, x1: 34, z0: -8, z1: 8, sp: 0.62, dot: 0.1 });
-      } } }],
-      html: `<div class="kicker fx" data-d="0.3" style="left:110px;top:120px">The twist</div>
-        <div class="h m" style="left:104px;top:160px"><div class="ln" data-d="0.4"><span>My first robots</span></div><div class="ln bad" data-d="0.55"><span>cheated.</span></div></div>
-        <div class="speed" data-win="1.4,99" style="left:104px;top:470px"><span class="strike bad" data-d="${tFreeze + 0.35}">6.16</span><span class="grow" data-d="${tHonest + 0.1}">&nbsp;→ 2.74</span> <span class="unit">m/s</span></div>
-        <div class="fx sub big halo" data-d="${tFreeze + 0.5}" style="left:110px;top:700px;width:820px">Unlimited motor power. Feet that skated. <b>Both fixed.</b></div>`,
-    });
-  }
   // 08 IT'S REAL -----------------------------------------------------
   {
     const PIV = [7.5, 13.0, 0], Lr = 7.4, per = 1.8049728;
@@ -305,6 +298,7 @@ export function buildSlides() {
           <div class="fx" data-d="1.2"><b>0.01%</b><span class="lab">matches the textbook</span><span class="det">pendulum period vs the exact analytic answer (MuJoCo matches too)</span></div>
           <div class="fx" data-d="1.5"><b class="acc">22×</b><span class="lab">faster than the industry standard</span><span class="det">same planar 2D walker · M3 Pro · 4,096 robots · vs MuJoCo C rollout on 11 CPU threads</span></div>
           <div class="fx" data-d="1.8"><b>90%</b><span class="lab">still walks in the pro simulator</span><span class="det">19.7 m vs 22.0 m, sim-to-sim (MuJoCo), 20 runs</span></div>
+          <div class="fx" data-d="2.1"><b>2.74<small> m/s</small></b><span class="lab">honest gait, cheat removed</span><span class="det">first robots cheated at 6.16 m/s (unlimited motor power, skating feet); fixed with real motor curves + sticky contacts</span></div>
         </div>
         <div class="fx foot" data-d="2.6">n=20 · MuJoCo 4.0.1 · sim-to-sim, not hardware · Apple M3 Pro, 18 GB</div>`,
     });

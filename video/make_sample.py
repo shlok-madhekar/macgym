@@ -10,14 +10,20 @@ DECK = f"{R}/deck2/export/macgym-deck.mp4"
 VOICE = "en-US-AndrewNeural"
 # (source, start, dur, big caption, small tag, voice line, is_placeholder)
 SEGS = [
- (TRIPOD4, 6.0, 6.0, "4,096 robots. One MacBook. No NVIDIA.", "", "That's four thousand robots learning to walk. On my MacBook.", False),
- (DECK, 6.5, 7.0, "", "YOUR ON-CAMERA SHOT GOES HERE", "Every serious robot sim needs an NVIDIA GPU. The one in my laptop just sits there. So I built MacGym.", True),
- (EDIT, 0.6, 14.5, "Add a 4th leg. Cmd+Enter.", "real recording · recompiles to one Metal kernel", "This is a robot, about fifteen lines of Python. I'll give it a fourth leg. Command enter. It just compiled into one GPU program, one thread per robot.", False),
- (TRIPOD4, 0.0, 15.0, "4,096 copies practicing at once", "4x speed · real run · Apple M3 Pro", "Now four thousand copies practice at once. Thirty seconds in, they've done three days of practice. A minute ago they couldn't stand.", False),
- (DECK, 51.0, 10.0, "", "YOUR ON-CAMERA SHOT CAN CUT IN HERE", "My first robots cheated. Infinite motor power, feet that skated. So we caught it and fixed the physics.", True),
- (DECK, 61.5, 9.0, "", "", "Same tests as the pro simulator. Textbook physics matches. Twenty two times faster than MuJoCo on the same robot. And the trained robot still walks when you drop it into MuJoCo.", False),
- (DECK, 71.0, 9.0, "", "", "And it's a real library. Pip install, train from the terminal, export to CoreML. Clone to a trained robot in eighty seven seconds.", False),
- (DECK, 80.0, 11.0, "", "YOUR ON-CAMERA CLOSER CAN GO HERE", "MacGym. Robot learning on the laptop you already own.", True),
+ # ---- PART 1: SLIDES ----
+ (DECK, 0.0, 5.5, "", "OPTIONAL: YOUR ON-CAMERA INTRO", "I'm Shlok, and this is MacGym.", True),
+ (DECK, 5.5, 8.0, "", "", "Every laptop here has a GPU. For robots, it sits idle, because the fast robot simulators need NVIDIA.", False),
+ (DECK, 13.5, 9.0, "", "", "So I built MacGym. You write a robot in Python, and your Mac trains four thousand copies of it at once.", False),
+ (DECK, 22.5, 10.0, "", "", "And that's the theme. Elevate the ordinary. The laptop already on your desk becomes a robot learning lab. A GPU that sits idle trains four thousand robots at once.", False),
+ (DECK, 32.5, 9.5, "", "", "You describe it. MacGym compiles it into one GPU program, one thread per robot, and it learns to walk.", False),
+ (DECK, 42.0, 10.5, "", "", "From falling to running in one minute. Five out of five training runs learned.", False),
+ (DECK, 52.5, 8.5, "", "", "Three days of practice, squeezed into twenty eight seconds.", False),
+ (DECK, 61.0, 9.5, "", "", "Checked against the pro simulator. Twenty two times faster than MuJoCo on the same robot, it still walks inside MuJoCo, and when my first robots cheated, we caught it and fixed the physics.", False),
+ (DECK, 70.5, 9.5, "", "", "And it's a real library. Clone to a trained robot in eighty seven seconds.", False),
+ # ---- PART 2: THE SOFTWARE RUNNING ----
+ (EDIT, 0.6, 14.5, "Live: add a 4th leg, Cmd+Enter", "real recording · Apple M3 Pro", "Here it is running. This is the playground. I give the robot a fourth leg and press command enter. It recompiles into one Metal kernel.", False),
+ (TRIPOD4, 0.0, 15.5, "4,096 copies learning at once", "4x speed · real run", "And four thousand copies start learning at once. Watch them go from flopping around to walking.", False),
+ (DECK, 80.0, 11.0, "", "OPTIONAL: YOUR ON-CAMERA CLOSER", "MacGym. Robot learning on the laptop you already own. Elevate the ordinary.", True),
 ]
 def run(c): subprocess.run(c, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 def dur(f): return float(subprocess.check_output([FP,"-v","error","-show_entries","format=duration","-of","csv=p=0",f]).strip())

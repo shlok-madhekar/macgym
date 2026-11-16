@@ -30,9 +30,6 @@ Real replays from one run. After zero and ten seconds of training it falls. Afte
 
 Three point two days of simulated practice in twenty eight seconds. Days of practice, squeezed into seconds. That is the live counter from the playground, 4,096 robots on this M3 Pro.
 
-## 07. The twist
-
-My favorite part. My first robots cheated: 6.16 metres a second, with unlimited motor power and feet that skated. We caught it, then fixed both: a real motor curve and contacts that hold. Now it does 2.74 metres a second.
 
 ## 08. Checked against the pro simulator
 
