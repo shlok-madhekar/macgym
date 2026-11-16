@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/playground", "destination": "/quickstart", "permanent": false },
+    { "source": "/docs", "destination": "/quickstart", "permanent": false }
+  ],
+  "headers": [
+    {
+      "source": "/media/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+    }
+  ]
+}

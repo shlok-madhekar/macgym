@@ -4,6 +4,15 @@
 
 MacGym is a robot-learning framework for Apple Silicon. Define a planar (2D) robot in about 15 lines of Python, train 4,096 copies of it on your Mac's GPU, and export the policy to CoreML. No NVIDIA card, no CUDA, no cloud.
 
+Built at **Bay-Valley Hacks 2026**. Honest scope, up front:
+
+- **Planar (2D) only.** Robots are capsules and hinges in the x/y plane. There is no 3D physics yet.
+- **Apple Silicon only.** The simulator is a generated Metal kernel and training runs in MLX, so it needs an M1 or newer Mac.
+- **Simple solver.** Maximal coordinates with an impulse-based contact solver. It is fast and good for RL experiments, not a replacement for MuJoCo-grade accuracy (see Benchmarks below).
+- **Hackathon-age code.** It works end to end (define, train, view, export), but expect rough edges and API changes.
+
+Docs: [`site/`](site/) (static HTML) · Source: https://github.com/shlok-madhekar/macgym · License: [MIT](LICENSE)
+
 ```python
 import macgym as mg
 
@@ -32,7 +41,7 @@ if __name__ == "__main__":   # `macgym train strider.py` only reads robot + task
 Requires an Apple Silicon Mac (M1 or newer) and Python 3.10+.
 
 ```bash
-git clone <repo-url> macgym
+git clone https://github.com/shlok-madhekar/macgym macgym
 cd macgym
 pip install -e .
 pip install -e ".[gym]"      # optional: gymnasium wrapper
@@ -161,3 +170,18 @@ examples/      runnable examples
 scripts/       bench.py
 docs/          DEVPOST.md, VIDEO_SCRIPT.md
 ```
+
+## Contributing
+
+Issues and pull requests are welcome.
+
+1. Fork, then `pip install -e ".[dev]"` on an Apple Silicon Mac.
+2. Run the tests: `python3 -m pytest tests`.
+3. Keep pull requests small and focused, and describe what you measured if you touch the physics or PPO (steps/s, distance, or return before and after).
+4. Do not commit run artifacts, logs, or videos; `.gitignore` covers the usual ones.
+
+Good first areas: new built-in robots in `macgym/presets/`, docs fixes in `site/`, and more Gymnasium compatibility tests.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

@@ -1,4 +1,35 @@
+# Python
 __pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+build/
+
+# Secrets (none are used today; keep it that way)
+.env
+.env.*
+
+# Logs and scratch
 logs/
+MUJOCO_LOG.TXT
+*.log
 runs/*_probe.npz
+runs/_*
+
+# Large / binary scratch from the decks (the web-encoded copy is kept out of git too;
+# scripts/build_site.sh regenerates it into dist/media/)
+web/deck2/export/*.mp4
+web/deck/export/*.mp4
+*.mov
+
+# Internal agent judging scratch (local paths, not useful publicly)
+web/deck/judging/
+
+# Static publish bundle
+dist/
+.vercel/
+
+# OS
 .DS_Store

@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;500&display=block');
+:root { --paper: #fafaf7; --ink: #111; --gray: #b4b4ae; --acc: #ff4d00; --bad: #d23a24; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--paper); }
+body { font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; cursor: default; }
+#gl { position: fixed; display: block; }
+#stage { position: fixed; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; pointer-events: none; }
+#text, .layer { position: absolute; inset: 0; }
+.layer > * { position: absolute; }
+.layer.veil::before, .layer.apx::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1180px; background: linear-gradient(90deg, #fafaf7 0%, #fafaf7 62%, rgba(250,250,247,0) 100%); }
+.layer.apx::before { width: 1700px; background: linear-gradient(90deg, rgba(250,250,247,.98) 0%, rgba(250,250,247,.95) 70%, rgba(250,250,247,0) 100%); }
+
+.kicker { font: 500 19px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: #8f8f8a; }
+.h { font-family: 'Bebas Neue', sans-serif; font-weight: 400; line-height: .9; text-transform: uppercase; letter-spacing: .005em; white-space: nowrap; }
+.h.xxl { font-size: 290px; line-height: .86; transform-origin: 0 60%; }
+.h.xl { font-size: 220px; transform-origin: 0 60%; }
+.h.l { font-size: 168px; }
+.h.l2 { font-size: 196px; }
+.h.m { font-size: 142px; }
+.h.m2 { font-size: 128px; }
+.h.s { font-size: 104px; }
+.ln { display: block; overflow: hidden; padding-bottom: .02em; margin-bottom: -.02em; }
+.ln > span { display: inline-block; will-change: transform; }
+.gray, .ln.gray { color: var(--gray); }
+.acc, .ln.acc { color: var(--acc); }
+.bad, .ln.bad { color: var(--bad); }
+.sub { font: 400 30px/1.35 'DM Sans', sans-serif; color: #2a2a2a; }
+.sub.big { font-size: 38px; line-height: 1.3; }
+.sub b { font-weight: 700; }
+.tag { font: 500 22px/1 'JetBrains Mono', monospace; color: #fff; background: var(--ink); padding: 10px 14px; }
+.steps { display: flex; gap: 0; font: 500 26px/1 'JetBrains Mono', monospace; }
+.steps i { font-style: normal; position: absolute; left: 0; top: 0; white-space: nowrap; color: #555; }
+.meter { text-align: right; font-family: 'Bebas Neue'; }
+.meter .m-num { font-size: 210px; line-height: .85; display: block; }
+.meter small { font: 500 24px 'JetBrains Mono', monospace; color: #777; }
+.lanelab { left: 110px; font: 500 22px/1.2 'JetBrains Mono', monospace; color: #444; background: rgba(250,250,247,.9); padding: 6px 10px 6px 0; white-space: nowrap; }
+.lanelab b { font: 400 50px/1 'Bebas Neue'; color: var(--ink); margin-right: 6px; vertical-align: -6px; }
+.lanelab span { color: #111; font-weight: 500; margin-left: 10px; }
+.lanelab.fell span { color: var(--bad); }
+.speed { font: 400 190px/1 'Bebas Neue'; white-space: nowrap; }
+.speed small { font: 500 26px 'JetBrains Mono', monospace; color: #666; vertical-align: 30px; margin-left: 14px; }
+.strike { position: relative; display: inline-block; --k: 0; }
+.strike::after { content: ''; position: absolute; left: 0; top: 46%; height: 12px; width: calc(100% * var(--k)); background: var(--bad); transform-origin: 0 50%; }
+.trio { left: 110px; top: 560px; display: grid; grid-template-columns: 540px 540px 540px; column-gap: 50px; }
+.trio b { display: block; font: 400 200px/.9 'Bebas Neue'; }
+.trio .lab { display: block; font: 700 30px/1.2 'DM Sans'; color: #111; margin-top: 10px; }
+.trio .det { display: block; font: 400 20px/1.35 'JetBrains Mono', monospace; color: #6d6d68; margin-top: 10px; width: 500px; }
+.foot { left: 110px; bottom: 44px; font: 400 20px 'JetBrains Mono', monospace; color: #8a8a85; }
+.term { width: 860px; background: #efeee8; border: 1.5px solid #dcdbd4; color: #1a1a1a; padding: 24px 30px; font: 400 26px/1.6 'JetBrains Mono', monospace; border-radius: 10px; min-height: 230px; }
+.term .dim { color: #7c7c76; font-size: 22px; }
+.term .ok { color: #111; font-weight: 500; }
+.term .caret::after { content: '▌'; color: var(--acc); }
+.bigsec b { font: 400 200px/.85 'Bebas Neue'; display: block; color: var(--acc); margin-bottom: 6px; }
+.bigsec > span { font: 500 30px 'DM Sans'; color: #333; }
+kbd { font: 500 28px 'JetBrains Mono', monospace; background: var(--ink); color: #fff; padding: 2px 12px; border-radius: 4px; }
+#brand { position: absolute; right: 56px; top: 44px; font: 400 30px/1 'Bebas Neue'; letter-spacing: .08em; display: flex; align-items: center; gap: 10px; }
+#brand i { width: 14px; height: 14px; border-radius: 50%; background: var(--acc); display: inline-block; }
+#pager { position: absolute; right: 56px; bottom: 40px; font: 500 18px 'JetBrains Mono', monospace; color: #9a9a95; }
+#notes { display: none; }
+.apxbody { left: 110px; top: 300px; width: 1500px; font: 400 28px/1.35 'DM Sans'; }
+.apxbody table { border-collapse: collapse; width: 100%; }
+.apxbody th, .apxbody td { text-align: left; padding: 14px 18px 14px 0; border-bottom: 1px solid #ddd; vertical-align: top; }
+.apxbody th { font-weight: 700; color: #111; }
+.apxbody td:nth-child(2), .apxbody td:nth-child(3) { font-family: 'JetBrains Mono', monospace; font-size: 25px; }
+.apxbody p { margin-top: 22px; color: #555; font-size: 24px; }
+
+.spec { font: 400 20px/1.3 'JetBrains Mono', monospace; color: #77776f; white-space: nowrap; }
+.genrow { display: grid; grid-template-columns: repeat(4, 300px); font: 500 30px/1 'DM Sans'; color: #333; }
+.genrow b { font: 400 46px/1 'Bebas Neue'; color: #111; margin-right: 10px; vertical-align: -4px; }
+.speed .arrow { display: inline-block; }
+.speed .unit { font-size: 110px; color: #111; }
+.tab2 { display: inline-block; min-width: .78em; text-align: right; }
+.tag { text-transform: uppercase; letter-spacing: .06em; }
+
+.halo { background: rgba(250,250,247,.92); padding: 10px 16px 12px 0; box-shadow: 0 0 24px 18px rgba(250,250,247,.92); }
+.grow { display: inline-block; overflow: hidden; white-space: nowrap; vertical-align: bottom; max-width: 0; }

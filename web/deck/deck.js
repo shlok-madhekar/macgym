@@ -416,7 +416,7 @@
     // ---------------------------------------------------------------- close
     {
       id: 'close', cls: 's-close',
-      html: () => { const e = endReading(); return hl(['Elevate the ordinary.']) + lede(`An ordinary MacBook, ${e.days} days of robot practice in ${e.clock}. Scan to try it.`, 0.35) + `<pre class="quick close rv" style="transition-delay:.45s">git clone github.com/shlokmadhekar/macgym && pip install -e .</pre>`; },
+      html: () => { const e = endReading(); return hl(['Elevate the ordinary.']) + lede(`An ordinary MacBook, ${e.days} days of robot practice in ${e.clock}. Scan to try it.`, 0.35) + `<pre class="quick close rv" style="transition-delay:.45s">git clone github.com/shlok-madhekar/macgym && pip install -e .</pre>`; },
       notes: 'The laptop on your desk is the most ordinary computer you own. MacGym turns it into a robot-learning lab: almost eight days of robot practice in a minute. Scan the code, it is all on GitHub. Thank you.',
       shape(w, t) { closeMark(w, t); },
       draw(ctx, t, a) { label(ctx, 'TRY IT · GITHUB.COM/SHLOKMADHEKAR/MACGYM', 1250, 575, a, '#9A9A95', 'center'); },
