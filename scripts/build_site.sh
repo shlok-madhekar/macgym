@@ -16,6 +16,8 @@ FFMPEG="${FFMPEG:-/opt/homebrew/bin/ffmpeg}"
 
 rm -rf "$DIST"
 mkdir -p "$DIST/deck" "$DIST/media" "$DIST/data"
+mkdir -p "$DIST/probe0/fonts" 2>/dev/null || mkdir -p dist/probe0/fonts
+cp web/probe0/fonts/*.woff2 "${DIST:-dist}/probe0/fonts/"
 
 # 1. docs site at /
 cp -R "$ROOT/site/." "$DIST/"
